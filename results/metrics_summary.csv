@@ -1,0 +1,6 @@
+Model,MAE (Original Units),RMSE (Original Units),MAPE (%),MAE (Norm),RMSE (Norm)
+Temporal_Transformer,16.345,39.2,11.53,0.2945,0.4287
+MLP,25.611,65.095,14.18,0.3682,0.514
+Linear_Interpolation,25.933,78.637,15.48,0.4042,0.61
+KNN,27.12,67.607,15.11,0.3955,0.5467
+Mean,98.534,228.889,35.13,0.9068,1.0724
