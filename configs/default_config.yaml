@@ -1,0 +1,57 @@
+# Configuration for Prototype V0.1 Air Pollution Imputation (Phase 1 & Phase 2)
+
+data:
+  dataset_name: "Beijing_Aotizhongxin"
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  station_name: "Aotizhongxin"
+  # Target pollutant features to impute
+  pollutants:
+    - "PM2.5"
+    - "PM10"
+    - "SO2"
+    - "NO2"
+    - "CO"
+    - "O3"
+  # Optional meteorological features (if available)
+  meteorology:
+    - "TEMP"
+    - "PRES"
+    - "DEWP"
+    - "RAIN"
+    - "WSPM"
+  window_size: 24       # 24-hour sequence window
+  stride: 1             # 1-hour sliding stride
+  train_ratio: 0.70     # Chronological train split
+  val_ratio: 0.15       # Chronological validation split
+  test_ratio: 0.15      # Chronological test split
+  random_seed: 42
+
+masking:
+  missing_rate: 0.30    # 30% artificial missing rate for evaluation
+  mechanism: "random"   # "random" (MCAR) or "block"
+  block_length: 4       # If mechanism == "block", missing duration in hours
+
+model:
+  name: "CTDI_Temporal_Transformer"
+  d_model: 64           # Hidden dimension after 1x1 CNN
+  nhead: 4              # Multi-head attention heads
+  num_layers: 2         # Transformer encoder layers
+  dim_feedforward: 128  # Feedforward network dimension
+  dropout: 0.1          # Dropout probability
+
+training:
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 25
+  patience: 5           # Early stopping patience
+  device: "auto"        # "cuda", "cpu", or "auto"
+
+evaluation:
+  metrics:
+    - "MAE"
+    - "RMSE"
+    - "MAPE"
+  results_dir: "results"
+  plots_dir: "results/plots"
