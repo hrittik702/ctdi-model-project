@@ -112,6 +112,36 @@ export const api = {
   /** PyTorch model architecture configuration & checkpoint info */
   async getModelConfig() {
     return request('/api/model/config');
+  },
+
+  /** Upload and preview user CSV for validation and missingness statistics */
+  async uploadAndPreviewCSV(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/api/impute/preview`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new ApiError(err.detail || `HTTP ${res.status}: ${res.statusText}`, res.status, err);
+    }
+    return await res.json();
+  },
+
+  /** Upload user CSV and run complete CTDI neural imputation pipeline */
+  async uploadAndImputeCSV(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/api/impute/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new ApiError(err.detail || `HTTP ${res.status}: ${res.statusText}`, res.status, err);
+    }
+    return await res.json();
   }
 };
 

@@ -1,0 +1,4 @@
+Model,MAE (ug/m3),RMSE (ug/m3),MAPE (%),Gain vs Linear (%)
+Keras3_Temporal_Transformer,5.729,14.036,9.73,0.0%
+Linear_Interpolation,5.73,14.034,9.91,0.0% (Baseline)
+Mean_Imputer,43.796,81.804,105.66,-664.3%

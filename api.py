@@ -12,13 +12,16 @@ import torch
 # Optimize PyTorch CPU thread pool for Intel Core i5-13500H (12 physical cores: 4 P-cores + 8 E-cores)
 # Bypasses hyperthreading contention across heterogeneous cores (cuts batch latency by ~50%)
 torch.set_num_threads(min(12, os.cpu_count() or 8))
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.models.temporal_transformer import CTDITemporalTransformer
+from src.models.temporal_transformer import CTDITemporalTransformer, torch_linear_interpolate_24h
 from src.data.masking import generate_artificial_mask, prepare_masked_inputs
 from src.models.baselines import LinearInterpolationImputer, MeanImputer
+from models.model_adapter import KerasTemporalModelAdapter
+from src.inference.imputation_service import ImputationService
+from src.inference.validation import ValidationError, load_and_validate_csv, compute_missingness_summary
 
 app = FastAPI(
     title="CTDI Air Imputation Studio API",
@@ -39,10 +42,13 @@ app.add_middleware(
 CACHE_PATH = "results/delhi/eval_cache.npz"
 SUMMARY_PATH = "results/delhi/delhi_benchmark_summary.csv"
 MODEL_CKPT = "checkpoints/delhi/best_temporal_transformer.pt"
+KERAS_CKPT = "checkpoints/delhi/best_temporal_transformer.keras"
+KERAS_SUMMARY_PATH = "results/delhi/delhi_keras_benchmark_summary.csv"
 
-# Indian Stations Network Catalog (29 CPCB Monitored Cities)
+# Indian Stations Network Catalog (29 CPCB Monitored Cities + Delhi Keras)
 INDIAN_STATIONS = [
-    {"id": "Delhi", "name": "Delhi", "state": "Delhi", "latitude": 28.6139, "longitude": 77.2090, "elevation_m": 216, "status": "active_model", "model_trained": True, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"]},
+    {"id": "Delhi", "name": "Delhi", "state": "Delhi", "latitude": 28.6139, "longitude": 77.2090, "elevation_m": 216, "status": "active_model", "model_trained": True, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"], "framework": "PyTorch"},
+    {"id": "Delhi (Keras)", "name": "Delhi (Keras)", "state": "Delhi", "latitude": 28.6139, "longitude": 77.2090, "elevation_m": 216, "status": "active_model", "model_trained": True, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"], "framework": "Keras 3 (PyTorch Backend)"},
     {"id": "Mumbai", "name": "Mumbai", "state": "Maharashtra", "latitude": 19.0760, "longitude": 72.8777, "elevation_m": 14, "status": "dataset_ready", "model_trained": False, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"]},
     {"id": "Bengaluru", "name": "Bengaluru", "state": "Karnataka", "latitude": 12.9716, "longitude": 77.5946, "elevation_m": 920, "status": "dataset_ready", "model_trained": False, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"]},
     {"id": "Kolkata", "name": "Kolkata", "state": "West Bengal", "latitude": 22.5726, "longitude": 88.3639, "elevation_m": 9, "status": "dataset_ready", "model_trained": False, "records_count": 29040, "pollutants": ["PM2.5", "PM10", "NO2", "SO2", "O3"]},
@@ -76,8 +82,18 @@ INDIAN_STATIONS = [
 current_active_station = "Delhi"
 data_cache: Optional[Dict[str, Any]] = None
 metrics_cache: Optional[List[Dict[str, Any]]] = None
+metrics_cache_keras: Optional[List[Dict[str, Any]]] = None
 pollutant_metrics_cache: Optional[Dict[str, Any]] = None
+pollutant_metrics_cache_keras: Optional[Dict[str, Any]] = None
 pytorch_model: Optional[CTDITemporalTransformer] = None
+keras_model: Optional[KerasTemporalModelAdapter] = None
+imputation_service_instance: Optional[ImputationService] = None
+
+def get_imputation_service() -> ImputationService:
+    global imputation_service_instance
+    if imputation_service_instance is None:
+        imputation_service_instance = ImputationService()
+    return imputation_service_instance
 
 def load_resources():
     global data_cache, metrics_cache, pollutant_metrics_cache, pytorch_model
@@ -467,6 +483,59 @@ def live_impute(req: LiveImputeRequest):
         "pollutants": res,
         "evaluation_scope": "hidden_values_only"
     }
+
+@app.post("/api/impute/preview")
+async def preview_csv(file: UploadFile = File(...)):
+    """
+    Validates uploaded CSV, parses schema and timestamps,
+    and returns dataset overview and missingness statistics without executing inference.
+    """
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files (.csv) are supported.")
+    try:
+        content = await file.read()
+        if len(content) > 25 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds maximum 25MB limit.")
+        df = load_and_validate_csv(content)
+        summary = compute_missingness_summary(df)
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "validation": {
+                "is_valid": True,
+                "message": f"Successfully validated {len(df)} hourly rows ({len(df) // 24} complete 24h windows)."
+            },
+            "summary": summary
+        }
+    except ValidationError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process CSV preview: {str(e)}")
+
+@app.post("/api/impute/upload")
+async def impute_csv(file: UploadFile = File(...)):
+    """
+    Authentic model inference on user-uploaded CSV dataset.
+    Validates schema, extracts 24h windows, normalizes using saved training distribution,
+    runs trained CTDI Temporal Transformer forward pass, strictly preserves observed values,
+    and returns reconstructed time-series with comprehensive latency metrics.
+    """
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files (.csv) are supported.")
+    try:
+        content = await file.read()
+        if len(content) > 25 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds maximum 25MB limit.")
+        service = get_imputation_service()
+        result = service.process_csv(content, filename=file.filename)
+        # Exclude internal DataFrame before JSON serialization
+        if "imputed_df" in result:
+            del result["imputed_df"]
+        return result
+    except ValidationError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference execution failed: {str(e)}")
 
 @app.get("/api/experiments")
 def get_experiments():

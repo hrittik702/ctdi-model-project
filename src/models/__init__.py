@@ -9,4 +9,13 @@ __all__ = [
     "KNNPollutionImputer",
     "CTDITemporalTransformer",
     "SimpleMLPImputer",
+    "KerasTemporalModelAdapter",
+    "build_keras_temporal_model",
+    "TemporalModelConfig",
 ]
+
+def __getattr__(name):
+    if name in ("KerasTemporalModelAdapter", "build_keras_temporal_model", "TemporalModelConfig"):
+        import models
+        return getattr(models, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
