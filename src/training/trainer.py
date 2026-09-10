@@ -10,6 +10,11 @@ from typing import Dict, Any, Optional, Tuple
 from src.training.losses import MaskedImputationLoss
 from src.data.masking import generate_artificial_mask
 
+try:
+    from torch.utils.tensorboard import SummaryWriter
+except ImportError:
+    SummaryWriter = None
+
 class PollutionImputationDataset(Dataset):
     """
     Dataset packaging 14-channel input data (9 context + 5 pollutants),
@@ -105,9 +110,14 @@ def train_imputation_model(
     else:
         dev = torch.device(device)
         
+    if dev.type == "cpu" and hasattr(torch, "set_num_threads"):
+        torch.set_num_threads(min(12, os.cpu_count() or 8))
+        
     model = model.to(dev)
     os.makedirs(checkpoint_dir, exist_ok=True)
     best_model_path = os.path.join(checkpoint_dir, "best_temporal_transformer.pt")
+    tb_logdir = os.path.join("runs", os.path.basename(checkpoint_dir) or "default")
+    tb_writer = SummaryWriter(log_dir=tb_logdir) if SummaryWriter is not None else None
     
     train_loader = DataLoader(
         train_dataset, 
@@ -197,11 +207,20 @@ def train_imputation_model(
             patience_counter += 1
             mark = f"(patience {patience_counter}/{patience})"
             
+        if tb_writer is not None:
+            tb_writer.add_scalar("Loss/train", avg_train_loss, epoch)
+            tb_writer.add_scalar("Loss/val_mae", avg_val_loss, epoch)
+            tb_writer.add_scalar("Learning_Rate", current_lr, epoch)
+            tb_writer.add_scalar("Time/epoch_seconds", duration, epoch)
+            
         print(f"Epoch {epoch:02d}/{epochs:02d} | Train Loss: {avg_train_loss:.4f} | Val MAE: {avg_val_loss:.4f} | LR: {current_lr:.1e} | Time: {duration:.2f}s {mark}")
         
         if patience_counter >= patience:
             print(f"[Training] Early stopping triggered at epoch {epoch}. Best Val MAE: {best_val_loss:.4f}")
             break
+            
+    if tb_writer is not None:
+        tb_writer.close()
             
     if os.path.exists(best_model_path):
         model.load_state_dict(torch.load(best_model_path, map_location=dev))
