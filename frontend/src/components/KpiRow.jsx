@@ -19,12 +19,20 @@ export default function KpiRow({
   isLoading = false
 }) {
   // Extract real benchmark results from backend metrics table
-  const transformerRow = metrics.find(m => m.Model === 'Temporal_Transformer');
-  const linearRow = metrics.find(m => m.Model === 'Linear_Interpolation' || m.Model === 'Linear_Interp');
+  const transformerRow = metrics.find(m => 
+    m.Model === 'CTDI_Temporal_Transformer' || 
+    m.Model === 'Temporal_Transformer' || 
+    m.Model?.toLowerCase().includes('transformer')
+  );
+  const linearRow = metrics.find(m => 
+    m.Model === 'Linear_Interpolation' || 
+    m.Model === 'Linear_Interp' || 
+    m.Model?.toLowerCase().includes('linear')
+  );
 
-  const ctdiMae = transformerRow ? parseFloat(transformerRow['MAE (Original Units)']) : null;
-  const ctdiRmse = transformerRow ? parseFloat(transformerRow['RMSE (Original Units)']) : null;
-  const linearMae = linearRow ? parseFloat(linearRow['MAE (Original Units)']) : null;
+  const ctdiMae = transformerRow ? parseFloat(transformerRow['MAE (Original Units)'] ?? transformerRow['MAE (ug/m3)']) : null;
+  const ctdiRmse = transformerRow ? parseFloat(transformerRow['RMSE (Original Units)'] ?? transformerRow['RMSE (ug/m3)']) : null;
+  const linearMae = linearRow ? parseFloat(linearRow['MAE (Original Units)'] ?? linearRow['MAE (ug/m3)']) : null;
   const evalPoints = metadata?.total_eval_points ?? transformerRow?.eval_points ?? null;
 
   // Calculate dynamic error reduction relative to linear baseline
@@ -32,8 +40,9 @@ export default function KpiRow({
     ? Math.round(((linearMae - ctdiMae) / linearMae) * 100)
     : null;
 
-  const rmseReduction = (linearRow && transformerRow)
-    ? Math.round(((parseFloat(linearRow['RMSE (Original Units)']) - ctdiRmse) / parseFloat(linearRow['RMSE (Original Units)'])) * 100)
+  const linearRmse = linearRow ? parseFloat(linearRow['RMSE (Original Units)'] ?? linearRow['RMSE (ug/m3)']) : null;
+  const rmseReduction = (linearRmse !== null && ctdiRmse !== null && linearRmse > 0)
+    ? Math.round(((linearRmse - ctdiRmse) / linearRmse) * 100)
     : null;
 
   const hiddenPercent = sampleHiddenCount !== null && totalHours > 0
@@ -71,8 +80,8 @@ export default function KpiRow({
         {/* Subtitle / Context */}
         <div className="mt-2.5 flex items-center gap-1.5 min-w-0 text-xs">
           {maeReduction !== null ? (
-            <Chip color="success" variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
-              <Chip.Label>↓ {maeReduction}%</Chip.Label>
+            <Chip color={maeReduction > 0 ? "success" : "default"} variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
+              <Chip.Label>{maeReduction > 0 ? `↓ ${maeReduction}%` : `${maeReduction}%`}</Chip.Label>
             </Chip>
           ) : null}
           <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
@@ -107,8 +116,8 @@ export default function KpiRow({
 
         <div className="mt-2.5 flex items-center gap-1.5 min-w-0 text-xs">
           {rmseReduction !== null ? (
-            <Chip color="success" variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
-              <Chip.Label>↓ {rmseReduction}%</Chip.Label>
+            <Chip color={rmseReduction > 0 ? "success" : "default"} variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
+              <Chip.Label>{rmseReduction > 0 ? `↓ ${rmseReduction}%` : `${rmseReduction}%`}</Chip.Label>
             </Chip>
           ) : null}
           <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">

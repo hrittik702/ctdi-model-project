@@ -31,7 +31,7 @@ class MaskedImputationLoss(nn.Module):
         elif self.loss_type == "mse":
             diff = torch.square(x_pred - x_true)
         elif self.loss_type == "smooth_l1":
-            diff = nn.functional.smooth_l1_loss(x_pred, x_true, reduction="none")
+            diff = nn.functional.smooth_l1_loss(x_pred, x_true, beta=0.1, reduction="none")
         else:
             raise ValueError(f"Unsupported loss_type: {self.loss_type}")
             

@@ -14,6 +14,30 @@ import {
 import ChartWidget from '../components/ChartWidget';
 import GlassmorphicTooltip from '../components/GlassmorphicTooltip';
 
+// Custom small dot for grid
+const DynamicGridErrorDot = (props) => {
+  const { cx, cy, payload } = props;
+  if (!cx || !cy || payload?.hidden == null) return null;
+  const actual = payload.actual;
+  const pred = payload.transformer;
+  const err = (actual != null && pred != null) ? Math.abs(pred - actual) : 0;
+  const norm = Math.min(err / 25, 1);
+  const hue = Math.max(0, Math.round(36 - norm * 36));
+  const sat = Math.min(100, Math.round(45 + norm * 55));
+  const light = Math.max(44, Math.round(58 - norm * 14));
+  const r = err >= 15 ? 5.5 : err >= 5 ? 4 : 3;
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={`hsl(${hue}, ${sat}%, ${light}%)`}
+      stroke="#ffffff"
+      strokeWidth={1}
+    />
+  );
+};
+
 export default function MultiPollutantView({
   sampleData,
   pollutants = [],
@@ -29,7 +53,7 @@ export default function MultiPollutantView({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-extrabold text-slate-900 dark:text-zinc-100 text-base sm:text-lg tracking-tight">
-            Synchronized 6-Pollutant Concentration Grid
+            Synchronized Criteria Pollutants Concentration Grid
           </h3>
           <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
             Simultaneous multivariate sequence reconstruction over 24-hour test window #{sampleIdx}.
@@ -46,23 +70,31 @@ export default function MultiPollutantView({
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Linear Baseline
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full border border-red-500" /> Hidden Target
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Masked Points
           </span>
         </div>
       </div>
 
-      {/* 3x2 Grid */}
+      {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {pollutants.map(pol => {
           const polData = sampleData?.pollutants?.[pol];
-          const gridChartData = sampleData?.hours?.map((hour, i) => ({
-            hour,
-            timestamp: sampleData?.timestamps?.[i],
-            actual: polData?.actual?.[i],
-            transformer: polData?.transformer?.[i],
-            linear: polData?.linear?.[i],
-            hidden: polData?.eval_mask?.[i] === 1 ? polData?.actual?.[i] : null
-          })) || [];
+          const gridChartData = sampleData?.hours?.map((hour, i) => {
+            const rawTimestamp = sampleData?.timestamps?.[i] || '';
+            const clockTime = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[1] : hour;
+            const datePart = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[0] : '';
+            return {
+              hour: clockTime,
+              time: clockTime,
+              stepOffset: `+${i}h`,
+              date: datePart,
+              timestamp: rawTimestamp,
+              actual: polData?.actual?.[i],
+              transformer: polData?.transformer?.[i],
+              linear: polData?.linear?.[i],
+              hidden: polData?.eval_mask?.[i] === 1 ? polData?.actual?.[i] : null
+            };
+          }) || [];
 
           const tfMae = polData?.sample_mae?.transformer ?? null;
 
@@ -95,7 +127,7 @@ export default function MultiPollutantView({
                         <Line type="monotone" dataKey="actual" stroke={isDark ? '#e4e4e7' : '#1e293b'} strokeWidth={1.5} dot={false} />
                         <Line type="monotone" dataKey="linear" stroke="#f59e0b" strokeWidth={1.2} strokeDasharray="3 3" dot={false} />
                         <Line type="monotone" dataKey="transformer" stroke="#10b981" strokeWidth={2.2} dot={false} />
-                        <Line type="monotone" dataKey="hidden" stroke="transparent" dot={{ stroke: '#ef4444', strokeWidth: 1.5, fill: 'transparent', r: 4 }} />
+                        <Line type="monotone" dataKey="hidden" stroke="transparent" dot={<DynamicGridErrorDot />} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>

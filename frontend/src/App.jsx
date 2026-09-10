@@ -41,6 +41,8 @@ export default function App() {
 
   // Backend data states
   const [metadata, setMetadata] = useState(null);
+  const [stations, setStations] = useState([]);
+  const [selectedStation, setSelectedStation] = useState('Delhi');
   const [metrics, setMetrics] = useState([]);
   const [pollutantMetrics, setPollutantMetrics] = useState({});
   const [experiments, setExperiments] = useState([]);
@@ -115,14 +117,21 @@ export default function App() {
       setHealthInfo(health);
       setBackendOnline(health.status === 'ok');
 
-      const [meta, metList, polMets, exps, config] = await Promise.all([
-        api.getMetadata(),
+      const [stnsRes, meta, metList, polMets, exps, config] = await Promise.all([
+        api.getStations(),
+        api.getMetadata(selectedStation),
         api.getMetrics(),
         api.getPollutantMetrics(),
         api.getExperiments(),
         api.getModelConfig()
       ]);
 
+      if (stnsRes?.stations) {
+        setStations(stnsRes.stations);
+        if (stnsRes.active_station) {
+          setSelectedStation(stnsRes.active_station);
+        }
+      }
       setMetadata(meta);
       setMetrics(metList);
       setPollutantMetrics(polMets);
@@ -136,7 +145,7 @@ export default function App() {
       console.warn('Initial data load failed:', err);
       setBackendOnline(false);
     }
-  }, [targetPollutant]);
+  }, [targetPollutant, selectedStation]);
 
   useEffect(() => {
     loadInitialData();
@@ -152,12 +161,26 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadInitialData]);
 
-  // Fetch sample telemetry whenever sampleIdx changes
+  // Handle station selection
+  const handleSelectStation = async (stationName) => {
+    setSelectedStation(stationName);
+    try {
+      await api.selectStation(stationName);
+      const newMeta = await api.getMetadata(stationName);
+      setMetadata(newMeta);
+      const newSample = await api.getSample(sampleIdx, stationName);
+      setSampleData(newSample);
+    } catch (err) {
+      console.warn('Failed to switch station:', err);
+    }
+  };
+
+  // Fetch sample telemetry whenever sampleIdx or selectedStation changes
   useEffect(() => {
     async function fetchSample() {
       setIsLoadingSample(true);
       try {
-        const data = await api.getSample(sampleIdx);
+        const data = await api.getSample(sampleIdx, selectedStation);
         setSampleData(data);
       } catch (err) {
         console.error(`Failed to fetch sample ${sampleIdx}:`, err);
@@ -166,7 +189,7 @@ export default function App() {
       }
     }
     fetchSample();
-  }, [sampleIdx]);
+  }, [sampleIdx, selectedStation]);
 
   // Execute live model inference with progress feedback
   const handleRunLiveImpute = async () => {
@@ -202,10 +225,17 @@ export default function App() {
     const isObs = pData?.observed_mask?.[i] === 1;
     const isEval = pData?.eval_mask?.[i] === 1;
     const actualVal = pData?.actual?.[i];
+    const rawTimestamp = sampleData.timestamps?.[i] || '';
+    const clockTime = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[1] : hour;
+    const datePart = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[0] : '';
 
     return {
-      hour,
-      timestamp: sampleData.timestamps?.[i],
+      hour: clockTime,
+      time: clockTime,
+      timeIndex: i,
+      stepOffset: `+${i}h`,
+      date: datePart,
+      timestamp: rawTimestamp,
       actual: actualVal,
       observed: isObs ? actualVal : null,
       hiddenTarget: isEval ? actualVal : null,
@@ -218,7 +248,7 @@ export default function App() {
   }) || [];
 
   // Theme-aware Recharts styling tokens
-  const gridStroke = isDark ? '#27272a' : '#f1f5f9';
+  const gridStroke = isDark ? '#3f3f46' : '#e2e8f0';
   const axisStroke = isDark ? '#71717a' : '#94a3b8';
 
   // Curve series definitions for interactive legend chips
@@ -263,7 +293,9 @@ export default function App() {
       {/* Top Navigation Bar - Sticky z-20 */}
       <TopNavbar
         currentViewTitle={viewTitles[currentTab] || 'Analytics Studio'}
-        currentStation={metadata?.station || 'Aotizhongxin'}
+        currentStation={selectedStation}
+        stations={stations}
+        onSelectStation={handleSelectStation}
         backendOnline={backendOnline}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -308,10 +340,10 @@ export default function App() {
               <TrajectoryExplorerView
                 sampleIdx={sampleIdx}
                 setSampleIdx={setSampleIdx}
-                maxSamples={metadata?.num_samples || 625}
+                maxSamples={metadata?.num_samples || 1500}
                 targetPollutant={targetPollutant}
                 setTargetPollutant={setTargetPollutant}
-                pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']}
+                pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
                 sampleData={sampleData}
                 chartData={chartData}
                 visibleModels={visibleModels}
@@ -334,10 +366,10 @@ export default function App() {
             <TrajectoryExplorerView
               sampleIdx={sampleIdx}
               setSampleIdx={setSampleIdx}
-              maxSamples={metadata?.num_samples || 625}
+              maxSamples={metadata?.num_samples || 1500}
               targetPollutant={targetPollutant}
               setTargetPollutant={setTargetPollutant}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']}
+              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
               sampleData={sampleData}
               chartData={chartData}
               visibleModels={visibleModels}
@@ -352,7 +384,7 @@ export default function App() {
           {currentTab === 'multigrid' && (
             <MultiPollutantView
               sampleData={sampleData}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']}
+              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
               sampleIdx={sampleIdx}
               onDrillDown={handleDrillDownToPollutant}
               isDark={isDark}
@@ -373,6 +405,9 @@ export default function App() {
           {currentTab === 'station' && (
             <StationAnalysisView
               metadata={metadata}
+              stations={stations}
+              selectedStation={selectedStation}
+              onSelectStation={handleSelectStation}
               sampleIdx={sampleIdx}
               pollutantMetrics={pollutantMetrics}
               isDark={isDark}
@@ -385,7 +420,7 @@ export default function App() {
             <DataExplorerView
               sampleData={sampleData}
               sampleIdx={sampleIdx}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']}
+              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
             />
           )}
 
@@ -404,7 +439,7 @@ export default function App() {
               onRunLiveImpute={handleRunLiveImpute}
               targetPollutant={targetPollutant}
               setTargetPollutant={setTargetPollutant}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']}
+              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
               isDark={isDark}
               gridStroke={gridStroke}
               axisStroke={axisStroke}
@@ -434,8 +469,8 @@ export default function App() {
         onClose={() => setIsExportOpen(false)}
         sampleIdx={sampleIdx}
         targetPollutant={targetPollutant}
-        station={metadata?.station || 'Aotizhongxin'}
-        dataset={metadata?.dataset || 'Beijing Multi-Site Air Quality Dataset'}
+        station={metadata?.station || selectedStation || 'Delhi'}
+        dataset={metadata?.dataset || 'Indian National Air Quality Dataset (CPCB)'}
         chartData={chartData}
         metrics={metrics}
       />

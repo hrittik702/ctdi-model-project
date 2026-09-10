@@ -1,5 +1,6 @@
-import React from 'react';
-import { Card, Chip } from '@heroui/react';
+import React, { useState } from 'react';
+import { Card, Chip, Button } from '@heroui/react';
+import { MapPin, CheckCircle, Navigation, Wind } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -15,25 +16,30 @@ import InfoTooltip from '../components/ui/InfoTooltip';
 
 export default function StationAnalysisView({ 
   metadata, 
+  stations = [],
+  selectedStation = 'Delhi',
+  onSelectStation,
   sampleIdx, 
   pollutantMetrics = {},
   isDark = false,
   gridStroke,
   axisStroke
 }) {
-  const stationName = metadata?.station || 'Aotizhongxin';
-  const pollutants = metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3'];
-  const totalSamples = metadata?.num_samples || 625;
-  const evalPoints = metadata?.total_eval_points || 26708;
+  const [stationSearch, setStationSearch] = useState('');
+  const stationName = metadata?.station || selectedStation || 'Delhi';
+  const stateName = metadata?.state || 'Delhi';
+  const pollutants = metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3'];
+  const totalSamples = metadata?.num_samples || 1500;
+  const evalPoints = metadata?.total_eval_points || 54084;
   const missingRate = metadata?.missing_rate_percent || 30.0;
+  const isModelTrained = metadata?.model_trained ?? (stationName.toLowerCase() === 'delhi');
 
   const pollutantGuidelines = {
-    'PM2.5': { unit: 'µg/m³', desc: 'Fine Particulate Matter (≤2.5µm)', threshold: '35 µg/m³ (WHO 24h)' },
-    'PM10': { unit: 'µg/m³', desc: 'Inhalable Particulate Matter (≤10µm)', threshold: '50 µg/m³ (WHO 24h)' },
-    'SO2': { unit: 'µg/m³', desc: 'Sulfur Dioxide (combustion byproduct)', threshold: '40 µg/m³ (WHO 24h)' },
-    'NO2': { unit: 'µg/m³', desc: 'Nitrogen Dioxide (traffic emissions)', threshold: '25 µg/m³ (WHO 24h)' },
-    'CO': { unit: 'µg/m³', desc: 'Carbon Monoxide (incomplete combustion)', threshold: '4000 µg/m³ (WHO 24h)' },
-    'O3': { unit: 'µg/m³', desc: 'Ground-level Ozone (photochemical)', threshold: '100 µg/m³ (WHO 8h)' }
+    'PM2.5': { unit: 'µg/m³', desc: 'Fine Particulate Matter (≤2.5µm)', threshold: '60 µg/m³ (NAAQS 24h)' },
+    'PM10': { unit: 'µg/m³', desc: 'Inhalable Particulate Matter (≤10µm)', threshold: '100 µg/m³ (NAAQS 24h)' },
+    'NO2': { unit: 'µg/m³', desc: 'Nitrogen Dioxide (combustion & traffic)', threshold: '80 µg/m³ (NAAQS 24h)' },
+    'SO2': { unit: 'µg/m³', desc: 'Sulfur Dioxide (industrial emissions)', threshold: '80 µg/m³ (NAAQS 24h)' },
+    'O3': { unit: 'µg/m³', desc: 'Ground-level Ozone (photochemical)', threshold: '100 µg/m³ (NAAQS 8h)' }
   };
 
   const chartData = pollutants.map(pol => {
@@ -47,9 +53,69 @@ export default function StationAnalysisView({
     };
   });
 
+  const filteredStations = stations.filter(s => 
+    s.name.toLowerCase().includes(stationSearch.toLowerCase()) ||
+    s.state.toLowerCase().includes(stationSearch.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      {/* Station Profile Card */}
+      {/* 1. Indian Monitoring Stations Network Selector */}
+      <Card className="bg-white dark:bg-zinc-900/90 p-5 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center font-bold">
+              <MapPin className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-slate-900 dark:text-zinc-100 text-sm tracking-tight">
+                Indian National Air Quality Network (CPCB)
+              </h4>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+                29 continuous hourly monitoring stations across India • Select a station to view telemetry profile
+              </p>
+            </div>
+          </div>
+          <div className="w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search Indian city or state..."
+              value={stationSearch}
+              onChange={(e) => setStationSearch(e.target.value)}
+              className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/70 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+        </div>
+
+        {/* Station Selection Chips Grid */}
+        <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto py-1 pr-1">
+          {filteredStations.map(stn => {
+            const isSelected = stn.id.toLowerCase() === stationName.toLowerCase();
+            return (
+              <button
+                key={stn.id}
+                type="button"
+                onClick={() => onSelectStation && onSelectStation(stn.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border-slate-200/70 dark:border-zinc-700/60 hover:bg-slate-100 dark:hover:bg-zinc-700'
+                }`}
+              >
+                <span>{stn.name}</span>
+                <span className={`text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-400 dark:text-zinc-500'}`}>
+                  ({stn.state})
+                </span>
+                {stn.model_trained && (
+                  <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-300' : 'bg-emerald-500'}`} title="Trained Model Active" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* 2. Active Station Profile Card */}
       <Card className="bg-white dark:bg-zinc-900/90 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 pb-4">
           <div className="flex items-center gap-3.5">
@@ -61,12 +127,12 @@ export default function StationAnalysisView({
                 <h3 className="font-extrabold text-slate-900 dark:text-zinc-100 text-lg sm:text-xl tracking-tight">
                   {stationName} Monitoring Station
                 </h3>
-                <Chip color="success" variant="soft" size="sm">
-                  <Chip.Label>Active Benchmark Site</Chip.Label>
+                <Chip color={isModelTrained ? "success" : "default"} variant="soft" size="sm">
+                  <Chip.Label>{isModelTrained ? "Active Benchmark Site" : "CPCB Continuous Station"}</Chip.Label>
                 </Chip>
               </div>
               <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-                {metadata?.dataset || 'Beijing Multi-Site Air Quality Dataset'} • Evaluation Scope: Hidden values only
+                {metadata?.dataset || 'Indian National Air Quality Dataset (CPCB)'} • State: <strong className="text-slate-700 dark:text-zinc-300">{stateName}</strong>
               </p>
             </div>
           </div>
@@ -75,13 +141,13 @@ export default function StationAnalysisView({
             <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60">
               <span className="text-slate-400 dark:text-zinc-500 mr-1.5">Coordinates:</span>
               <strong className="text-slate-800 dark:text-zinc-200 font-mono">
-                {metadata?.coordinates?.latitude ?? 39.982}° N, {metadata?.coordinates?.longitude ?? 116.397}° E
+                {metadata?.coordinates?.latitude ?? 28.6139}° N, {metadata?.coordinates?.longitude ?? 77.2090}° E
               </strong>
             </div>
             <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60">
               <span className="text-slate-400 dark:text-zinc-500 mr-1.5">Elevation:</span>
               <strong className="text-slate-800 dark:text-zinc-200 font-mono">
-                {metadata?.coordinates?.elevation_m ?? 43} m
+                {metadata?.coordinates?.elevation_m ?? 216} m
               </strong>
             </div>
           </div>
@@ -127,16 +193,16 @@ export default function StationAnalysisView({
         </div>
       </Card>
 
-      {/* Sensor Channel Model Gain Chart (Positioned directly after station info cards) */}
+      {/* 3. Cross-Pollutant Model Gain Chart */}
       <ChartWidget
-        title="Cross-Pollutant Model Gain: CTDI Error Reduction (%)"
-        subtitle="Evaluation improvement over 1D Linear Interpolation across all 26,708 hidden test points"
+        title={`Cross-Pollutant Evaluation: ${stationName}`}
+        subtitle={`Benchmark error performance across all ${evalPoints.toLocaleString()} hidden test points`}
         data={chartData}
         isDark={isDark}
         height="h-64"
         badges={[
           { label: 'Baseline: Linear Interp', variant: 'secondary' },
-          { label: 'Evaluation: Hidden Values Only', color: 'success' }
+          { label: 'Scope: Artificially Masked Only', color: 'success' }
         ]}
       >
         {({ showGrid }) => (
@@ -144,7 +210,7 @@ export default function StationAnalysisView({
             <BarChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
               <XAxis dataKey="pollutant" stroke={axisStroke} fontSize={12} tickLine={false} />
-              <YAxis stroke={axisStroke} fontSize={12} tickLine={false} unit="%" domain={[0, 50]} />
+              <YAxis stroke={axisStroke} fontSize={12} tickLine={false} unit=" µg/m³" />
               <Tooltip
                 contentStyle={{
                   backgroundColor: isDark ? '#18181b' : '#ffffff',
@@ -152,22 +218,22 @@ export default function StationAnalysisView({
                   borderRadius: '12px',
                   fontSize: '12px'
                 }}
-                formatter={(val) => [`${val}% error reduction`, 'CTDI Gain']}
               />
-              <Bar dataKey="reduction" fill="#10b981" radius={[6, 6, 0, 0]} name="MAE Reduction (%)" />
+              <Bar dataKey="ctdi_mae" fill="#10b981" radius={[6, 6, 0, 0]} name="CTDI Transformer MAE" />
+              <Bar dataKey="linear_mae" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Linear Baseline MAE" />
             </BarChart>
           </ResponsiveContainer>
         )}
       </ChartWidget>
 
-      {/* Monitored Sensor Channels Table (Situated below the graph) */}
+      {/* 4. Monitored Sensor Channels Table */}
       <Card className="bg-white dark:bg-zinc-900/90 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
         <div>
           <h4 className="font-bold text-slate-900 dark:text-zinc-100 text-base">
-            Backend-Computed Channel Metrics & Model Gain
+            Indian CPCB Criteria Pollutants & National Standards (NAAQS)
           </h4>
           <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-            Real test-set evaluation scores calculated across all 625 test sequences (strictly at hidden ground-truth positions).
+            Real test-set evaluation scores calculated across {totalSamples} test sequences (strictly at hidden ground-truth positions).
           </p>
         </div>
 
@@ -177,7 +243,7 @@ export default function StationAnalysisView({
               <tr className="border-b border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 font-bold uppercase">
                 <th className="py-3 px-3">Pollutant</th>
                 <th className="py-3 px-3">Description</th>
-                <th className="py-3 px-3">Standard Guideline</th>
+                <th className="py-3 px-3">India NAAQS Standard</th>
                 <th className="py-3 px-3">
                   <div className="flex items-center gap-1">
                     <span>Linear Baseline MAE</span>
@@ -190,7 +256,6 @@ export default function StationAnalysisView({
                     <InfoTooltip term="CTDI" />
                   </div>
                 </th>
-                <th className="py-3 px-3">Error Reduction</th>
                 <th className="py-3 px-3">
                   <div className="flex items-center gap-1">
                     <span>Hidden Points</span>
@@ -205,7 +270,6 @@ export default function StationAnalysisView({
                 const pMetrics = pollutantMetrics[pol];
                 const linMae = pMetrics?.linear_mae;
                 const ctdiMae = pMetrics?.ctdi_mae;
-                const redPct = pMetrics?.reduction_mae_pct;
                 const hiddenPts = pMetrics?.hidden_points;
 
                 return (
@@ -224,15 +288,6 @@ export default function StationAnalysisView({
                     </td>
                     <td className="py-3.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold">
                       {ctdiMae !== undefined ? `${ctdiMae.toFixed(2)} ${info.unit}` : 'Unavailable'}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      {redPct !== undefined ? (
-                        <Chip color="success" variant="soft" size="sm" className="font-bold">
-                          <Chip.Label>↓ {redPct}%</Chip.Label>
-                        </Chip>
-                      ) : (
-                        <span className="text-slate-400">N/A</span>
-                      )}
                     </td>
                     <td className="py-3.5 px-3 text-slate-500 dark:text-zinc-400">
                       {hiddenPts !== undefined ? hiddenPts.toLocaleString() : 'N/A'}

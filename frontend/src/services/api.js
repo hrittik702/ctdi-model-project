@@ -55,9 +55,23 @@ export const api = {
     return request('/api/health');
   },
 
+  /** List of Indian monitoring stations catalog */
+  async getStations() {
+    return request('/api/stations');
+  },
+
+  /** Switch active Indian monitoring station */
+  async selectStation(stationName) {
+    return request('/api/stations/select', {
+      method: 'POST',
+      body: JSON.stringify({ station: stationName })
+    });
+  },
+
   /** Dataset & station metadata */
-  async getMetadata() {
-    return request('/api/metadata');
+  async getMetadata(station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/metadata${query}`);
   },
 
   /** Global benchmark metrics table across test set */
@@ -71,8 +85,9 @@ export const api = {
   },
 
   /** 24-hour sequence trajectory for a given sample index */
-  async getSample(sampleIdx) {
-    return request(`/api/samples/${sampleIdx}`);
+  async getSample(sampleIdx, station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/samples/${sampleIdx}${query}`);
   },
 
   /** Live inference forward pass with custom missingness parameters */

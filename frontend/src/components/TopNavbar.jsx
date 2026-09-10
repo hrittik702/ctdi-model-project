@@ -1,10 +1,13 @@
 import React from 'react';
 import { Chip } from '@heroui/react';
+import { ChevronDown, MapPin } from 'lucide-react';
 import ProjectIcon from './ui/ProjectIcon';
 
 export default function TopNavbar({
   currentViewTitle,
-  currentStation = 'Aotizhongxin',
+  currentStation = 'Delhi',
+  stations = [],
+  onSelectStation,
   backendOnline,
   theme,
   onToggleTheme,
@@ -41,7 +44,7 @@ export default function TopNavbar({
                 CTDI Air Imputation Studio
               </h1>
               <Chip color="default" variant="soft" size="sm" className="hidden md:inline-flex h-5 text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
-                <Chip.Label>Research Prototype</Chip.Label>
+                <Chip.Label>Indian AQI Network</Chip.Label>
               </Chip>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium truncate hidden sm:block">
@@ -71,10 +74,31 @@ export default function TopNavbar({
 
       {/* Right Section: Station, API Status, Export, Presentation, Theme */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        {/* Station Indicator */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 text-xs font-semibold text-slate-700 dark:text-zinc-200">
-          <ProjectIcon name="station" size="sm" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <span className="truncate max-w-[110px]">{currentStation}</span>
+        {/* Interactive Indian Station Selector */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-2xs hover:border-indigo-400 dark:hover:border-indigo-500 transition">
+          <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <div className="relative flex items-center">
+            <select
+              value={currentStation}
+              onChange={(e) => onSelectStation && onSelectStation(e.target.value)}
+              className="bg-transparent border-none outline-none cursor-pointer text-xs font-bold text-slate-800 dark:text-zinc-100 pr-4 appearance-none hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+              title="Select Indian Monitoring Station"
+              aria-label="Select Indian Monitoring Station"
+            >
+              {stations.length > 0 ? (
+                stations.map(stn => (
+                  <option key={stn.id} value={stn.id} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
+                    {stn.name} {stn.model_trained ? '★ (Active Model)' : `(${stn.state})`}
+                  </option>
+                ))
+              ) : (
+                <option value={currentStation} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
+                  {currentStation} (Active)
+                </option>
+              )}
+            </select>
+            <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-0" />
+          </div>
         </div>
 
         {/* API Status Chip */}

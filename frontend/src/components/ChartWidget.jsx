@@ -18,15 +18,16 @@ export default function ChartWidget({
   badges = [],
   children,
   data = [],
-  station = 'Aotizhongxin (39.982° N, 116.397° E)',
-  dataset = 'Beijing Multi-Site Air Quality Dataset',
+  station = 'Delhi Monitoring Station (28.614° N, 77.209° E)',
+  dataset = 'Indian National Air Quality Dataset (CPCB)',
   sampleIdx = null,
   pollutant = null,
   metrics = null,
   isDark = false,
   className = '',
   height = 'h-96',
-  allowZoom = true
+  allowZoom = true,
+  headerControls = null
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
@@ -306,6 +307,8 @@ export default function ChartWidget({
 
           {/* Right Action Group: Compact, non-overlapping controls */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {headerControls}
+
             {/* Zoom Controls */}
             {allowZoom && (
               <div className="hidden md:flex items-center gap-0.5 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-zinc-700/60">

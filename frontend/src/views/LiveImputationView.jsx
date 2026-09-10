@@ -47,9 +47,16 @@ export default function LiveImputationView({
     const isObs = livePData?.observed_mask?.[i] === 1;
     const isEval = livePData?.eval_mask?.[i] === 1;
     const act = livePData?.actual?.[i];
+    const rawTimestamp = liveResult?.timestamps?.[i] || '';
+    const clockTime = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[1] : hour;
+    const datePart = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[0] : '';
+
     return {
-      hour,
-      timestamp: liveResult?.timestamps?.[i],
+      hour: clockTime,
+      time: clockTime,
+      stepOffset: `+${i}h`,
+      date: datePart,
+      timestamp: rawTimestamp,
       actual: act,
       observed: isObs ? act : null,
       hiddenTarget: isEval ? act : null,
@@ -88,9 +95,23 @@ export default function LiveImputationView({
           {({ showGrid }) => (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={liveChartData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
-                {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
-                <XAxis dataKey="hour" stroke={axisStroke} fontSize={12} tickLine={false} />
-                <YAxis stroke={axisStroke} fontSize={12} tickLine={false} unit=" µg/m³" />
+                {showGrid && (
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke={gridStroke} 
+                    horizontal={true}
+                    vertical={true}
+                    verticalValues={['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:00']}
+                  />
+                )}
+                <XAxis 
+                  dataKey="hour" 
+                  ticks={['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:00']}
+                  stroke={axisStroke} 
+                  fontSize={12} 
+                  tickLine={true} 
+                />
+                <YAxis stroke={axisStroke} fontSize={12} tickLine={true} unit=" µg/m³" />
                 <Tooltip content={<GlassmorphicTooltip isDark={isDark} />} />
                 <Legend />
                 <Line type="monotone" dataKey="actual" stroke={isDark ? '#e4e4e7' : '#0f172a'} strokeWidth={2.5} dot={false} name="Actual Ground Truth" />

@@ -1,0 +1,60 @@
+# Configuration for Training on Delhi 15-Feature Dataset (Phase 1 & Phase 2)
+
+data:
+  dataset_name: "Delhi_15_Features"
+  data_dir: "data/processed"
+  station_name: "Delhi"
+  # Target pollutant features to impute (5 criteria pollutants)
+  pollutants:
+    - "PM2_5_ugm3"
+    - "PM10_ugm3"
+    - "NO2_ugm3"
+    - "SO2_ugm3"
+    - "O3_ugm3"
+  # Environmental context features
+  context_features:
+    - "Hour"
+    - "Day_of_Week"
+    - "Month"
+    - "Season_Code"
+    - "Temp_2m_C"
+    - "Humidity_Percent"
+    - "Wind_Speed_10m_kmh"
+    - "Wind_Dir_10m"
+    - "Precipitation_mm"
+  window_size: 24       # 24-hour sequence window
+  stride: 1             # 1-hour sliding stride
+  train_ratio: 0.70     # Chronological train split
+  val_ratio: 0.15       # Chronological validation split
+  test_ratio: 0.15      # Chronological test split
+  random_seed: 42
+
+masking:
+  missing_rate: 0.30    # 30% artificial missingness for training/evaluation
+  mechanism: "random"   # "random" (MCAR) or "block"
+  block_length: 4       # Consecutive missing hours if mechanism == "block"
+
+model:
+  name: "CTDI_Temporal_Transformer_Delhi"
+  d_model: 128          # Hidden dimension after 1x1 CNN
+  nhead: 8              # Multi-head attention heads
+  num_layers: 3         # Transformer encoder layers
+  dim_feedforward: 256  # Feedforward network dimension
+  dropout: 0.1          # Dropout probability
+
+training:
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 25
+  patience: 10
+  checkpoint_dir: "checkpoints/delhi"
+  device: "auto"        # "cuda", "cpu", or "auto"
+  loss_type: "smooth_l1"
+
+evaluation:
+  metrics:
+    - "MAE"
+    - "RMSE"
+    - "MAPE"
+  results_dir: "results/delhi"

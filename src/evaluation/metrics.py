@@ -31,10 +31,14 @@ def compute_masked_mape(
     y_pred: np.ndarray,
     y_true: np.ndarray,
     eval_mask: np.ndarray,
-    eps: float = 1e-3
+    eps: float = 1e-3,
+    min_threshold: float = 1.0
 ) -> float:
-    """Mean Absolute Percentage Error over artificially hidden entries."""
-    valid = (eval_mask == 1.0) & (~np.isnan(y_true)) & (~np.isnan(y_pred))
+    """
+    Mean Absolute Percentage Error over artificially hidden entries.
+    Filters out near-zero values (abs_true < min_threshold) to prevent division-by-zero explosions.
+    """
+    valid = (eval_mask == 1.0) & (~np.isnan(y_true)) & (~np.isnan(y_pred)) & (np.abs(y_true) >= min_threshold)
     if not np.any(valid):
         return 0.0
     abs_true = np.abs(y_true[valid])
