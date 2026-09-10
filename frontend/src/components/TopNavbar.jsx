@@ -8,6 +8,8 @@ export default function TopNavbar({
   currentStation = 'Delhi',
   stations = [],
   onSelectStation,
+  activeModel = 'delhi_ctdi_original',
+  onSelectActiveModel,
   backendOnline,
   theme,
   onToggleTheme,
@@ -72,7 +74,7 @@ export default function TopNavbar({
         </button>
       </div>
 
-      {/* Right Section: Station, API Status, Export, Presentation, Theme */}
+      {/* Right Section: Station, Active Model Toggle, API Status, Export, Presentation, Theme */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Interactive Indian Station Selector */}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-2xs hover:border-indigo-400 dark:hover:border-indigo-500 transition">
@@ -88,7 +90,7 @@ export default function TopNavbar({
               {stations.length > 0 ? (
                 stations.map(stn => (
                   <option key={stn.id} value={stn.id} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
-                    {stn.name} {stn.model_trained ? '★ (Active Model)' : `(${stn.state})`}
+                    {stn.name} {stn.model_trained ? '★ (Trained City)' : `(${stn.state})`}
                   </option>
                 ))
               ) : (
@@ -100,6 +102,36 @@ export default function TopNavbar({
             <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-0" />
           </div>
         </div>
+
+        {/* Active Model Selector Pill for Delhi */}
+        {currentStation === 'Delhi' && (
+          <div className="hidden md:flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => onSelectActiveModel && onSelectActiveModel('delhi_ctdi_original')}
+              className={`px-2 py-0.5 rounded-lg transition-all ${
+                activeModel === 'delhi_ctdi_original' || !activeModel?.includes('keras')
+                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 font-bold shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
+              }`}
+              title="Active Production Model: PyTorch (Original)"
+            >
+              PyTorch
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectActiveModel && onSelectActiveModel('delhi_ctdi_keras')}
+              className={`px-2 py-0.5 rounded-lg transition-all ${
+                activeModel?.includes('keras')
+                  ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
+              }`}
+              title="Active Production Model: Keras 3 (PyTorch Backend)"
+            >
+              Keras 3
+            </button>
+          </div>
+        )}
 
         {/* API Status Chip */}
         <Chip 

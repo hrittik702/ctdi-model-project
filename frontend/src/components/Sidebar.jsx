@@ -8,7 +8,8 @@ export default function Sidebar({
   onToggleCollapse,
   backendOnline,
   modelName = 'CTDI Transformer',
-  modelStatus = 'Ready'
+  modelStatus = 'Ready',
+  framework = 'PyTorch'
 }) {
   const sections = [
     {
@@ -30,6 +31,7 @@ export default function Sidebar({
     {
       title: 'EXPERIMENTS',
       items: [
+        { id: 'comparison', label: 'Model Comparison Lab', icon: 'benchmark' },
         { id: 'sandbox', label: 'Live Imputation', icon: 'sandbox' },
         { id: 'experiments', label: 'Experiment History', icon: 'experiment' }
       ]
@@ -124,7 +126,7 @@ export default function Sidebar({
             </div>
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-slate-600 dark:text-zinc-300 font-medium truncate max-w-[130px]">{modelName}</span>
-              <span className="text-slate-400 font-mono text-[9px]">PyTorch</span>
+              <span className="text-slate-400 font-mono text-[9px] truncate max-w-[80px]" title={framework}>{framework}</span>
             </div>
           </div>
         ) : (

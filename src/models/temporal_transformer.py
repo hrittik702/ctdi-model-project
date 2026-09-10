@@ -68,19 +68,106 @@ def torch_linear_interpolate_24h(p_obs: torch.Tensor, mask: torch.Tensor) -> tor
     )
     return torch.where(mask == 1.0, p_obs, interp)
 
+def torch_compute_gap_features(mask: torch.Tensor) -> torch.Tensor:
+    """
+    Computes vectorized temporal missingness structure features strictly from mask tensor:
+    - dt_prev: Steps since last observed point (normalized [0, 1])
+    - dt_next: Steps until next observed point (normalized [0, 1])
+    - gap_len: Contiguous outage length (normalized [0, 1])
+    - is_boundary: Flag indicating boundary step adjacent to observed value
+    """
+    B, T, F = mask.shape
+    device = mask.device
+    
+    dt_prev = torch.zeros_like(mask)
+    curr = torch.zeros(B, 1, F, device=device)
+    for t in range(T):
+        m_t = mask[:, t:t+1, :]
+        curr = torch.where(m_t == 1.0, torch.zeros_like(curr), curr + 1.0)
+        dt_prev[:, t:t+1, :] = curr
+        
+    dt_next = torch.zeros_like(mask)
+    curr = torch.zeros(B, 1, F, device=device)
+    for t in range(T - 1, -1, -1):
+        m_t = mask[:, t:t+1, :]
+        curr = torch.where(m_t == 1.0, torch.zeros_like(curr), curr + 1.0)
+        dt_next[:, t:t+1, :] = curr
+        
+    norm_T = float(T)
+    dt_prev = dt_prev * (1.0 - mask) / norm_T
+    dt_next = dt_next * (1.0 - mask) / norm_T
+    gap_len = (dt_prev * norm_T + dt_next * norm_T - 1.0).clamp(min=0.0) / norm_T * (1.0 - mask)
+    
+    prev_obs = torch.cat([torch.ones(B, 1, F, device=device), mask[:, :-1, :]], dim=1) == 1.0
+    next_obs = torch.cat([mask[:, 1:, :], torch.ones(B, 1, F, device=device)], dim=1) == 1.0
+    is_boundary = ((1.0 - mask) * ((prev_obs.float() + next_obs.float()) > 0).float())
+    
+    return torch.cat([dt_prev, dt_next, gap_len, is_boundary], dim=-1)
+
+class MultiScaleTemporalBlock(nn.Module):
+    """
+    Parallel multi-scale temporal convolutions capturing:
+    k=1: Pointwise cross-feature mixing
+    k=3: Sharp rapid hourly transitions & peak events
+    k=5: Short-term trends (3-5h buildups/decays)
+    k=7: Diurnal shifts & atmospheric weather movements
+    """
+    def __init__(self, in_channels: int, out_channels: int):
+        super().__init__()
+        b_dim = out_channels // 4
+        self.conv1 = nn.Conv1d(in_channels, b_dim, kernel_size=1)
+        self.conv3 = nn.Conv1d(in_channels, b_dim, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv1d(in_channels, b_dim, kernel_size=5, padding=2)
+        self.conv7 = nn.Conv1d(in_channels, b_dim, kernel_size=7, padding=3)
+        self.proj = nn.Conv1d(b_dim * 4, out_channels, kernel_size=1)
+        self.bn = nn.BatchNorm1d(out_channels)
+        self.act = nn.GELU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b1 = self.conv1(x)
+        b3 = self.conv3(x)
+        b5 = self.conv5(x)
+        b7 = self.conv7(x)
+        cat = torch.cat([b1, b3, b5, b7], dim=1)
+        return self.act(self.bn(self.proj(cat)))
+
+class GatedResidualHead(nn.Module):
+    """
+    Gated non-linear reconstruction head:
+    x_pred = p_interp + Gate(h) * Delta(h)
+    where Gate in [0, 2] dynamically trusts linear prior on flat gaps
+    and permits large excursions for sharp peaks without drift.
+    """
+    def __init__(self, d_model: int, num_features: int, kernel_size: int = 3, dropout: float = 0.1):
+        super().__init__()
+        self.post_conv = nn.Sequential(
+            nn.Conv1d(d_model, d_model, kernel_size=kernel_size, padding=kernel_size // 2),
+            nn.GELU(),
+            nn.Dropout(p=dropout)
+        )
+        self.delta_head = nn.Conv1d(d_model, num_features, kernel_size=1)
+        self.gate_head = nn.Conv1d(d_model, num_features, kernel_size=1)
+        # Initialize gate weights and bias to 0 so gate is identically 1.0 (neutral baseline) at step 0
+        nn.init.zeros_(self.gate_head.weight)
+        nn.init.zeros_(self.gate_head.bias)
+
+    def forward(self, h: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        # h: (B, d_model, T)
+        feat = self.post_conv(h)
+        delta = self.delta_head(feat)
+        gate = 2.0 * torch.sigmoid(self.gate_head(feat))
+        return delta, gate
+
 class CTDITemporalTransformer(nn.Module):
     """
-    CTDI-Inspired Spatio-Temporal Imputation Transformer with Linear Prior Residual Learning.
-    
-    Architecture:
-    1. Continuous Linear Prior: Exact 1D temporal interpolation as inductive base
-    2. Input channels: [X_pollutant_obs, Mask_pollutant, X_linear_prior, Context]
-       Total input channels: 5 + 5 + 5 + 9 = 24 channels
-    3. Dual-Stage 1D CNN: Pointwise channel mixing + Local temporal neighborhood convolution
-    4. Positional Encoding
-    5. Temporal Transformer Encoder (Pre-LN, multi-head self-attention across 24 hours)
-    6. Post CNN: Deep atmospheric & meteorological non-linear adjustment
-    7. Residual Reconstruction: X_pred = X_linear_prior + Delta_transformer
+    Upgraded CTDI Spatio-Temporal Imputation Transformer:
+    1. Multi-scale temporal feature mixing (k=1, 3, 5, 7)
+    2. Vectorized structural missingness gap features (dt_prev, dt_next, gap_len, boundary)
+    3. Cross-pollutant interaction projection
+    4. Pre-LN Temporal Transformer Encoder (multi-head self-attention across 24h)
+    5. Gated residual correction head (learned amplitude scaling [0, 2])
+    6. Exact observation lock: x_imputed = mask * x_obs + (1 - mask) * x_pred
     """
     def __init__(
         self,
@@ -91,25 +178,49 @@ class CTDITemporalTransformer(nn.Module):
         num_layers: int = 3,
         dim_feedforward: int = 256,
         dropout: float = 0.1,
-        window_size: int = 24
+        window_size: int = 24,
+        use_gap_features: bool = False,
+        use_multiscale: bool = False,
+        use_gated_residual: bool = False
     ):
+
         super().__init__()
         self.num_features = num_features
         self.num_context = num_context
         self.d_model = d_model
         self.window_size = window_size
+        self.use_gap_features = use_gap_features
+        self.use_multiscale = use_multiscale
+        self.use_gated_residual = use_gated_residual
         
-        in_channels = 3 * num_features + num_context
+        # Channel calculation:
+        # Base: pollutants_obs (num_features) + mask (num_features) + p_interp (num_features) + context
+        base_channels = 3 * num_features + num_context
+        gap_channels = 4 * num_features if use_gap_features else 0
+        in_channels = base_channels + gap_channels
         
-        # Dual-Stage 1D CNN: Pointwise channel mixing + Local temporal neighborhood convolution (kernel_size=3)
-        self.pre_conv = nn.Sequential(
-            nn.Conv1d(in_channels=in_channels, out_channels=d_model, kernel_size=1),
-            nn.BatchNorm1d(d_model),
-            nn.GELU(),
-            nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=3, padding=1),
-            nn.BatchNorm1d(d_model),
-            nn.GELU()
-        )
+        if use_multiscale:
+            self.pre_conv = MultiScaleTemporalBlock(in_channels=in_channels, out_channels=d_model)
+        else:
+            self.pre_conv = nn.Sequential(
+                nn.Conv1d(in_channels=in_channels, out_channels=d_model, kernel_size=1),
+                nn.BatchNorm1d(d_model),
+                nn.GELU(),
+                nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=3, padding=1),
+                nn.BatchNorm1d(d_model),
+                nn.GELU()
+            )
+            
+        # Cross-pollutant interaction mixing projection
+        if use_multiscale:
+            self.cross_pollutant_proj = nn.Sequential(
+                nn.Conv1d(d_model, d_model, kernel_size=1),
+                nn.BatchNorm1d(d_model),
+                nn.GELU()
+            )
+        else:
+            self.cross_pollutant_proj = None
+
         
         # Positional Encoding for 24 hours
         self.pos_encoder = PositionalEncoding(d_model=d_model, max_len=window_size + 8, dropout=dropout)
@@ -126,13 +237,16 @@ class CTDITemporalTransformer(nn.Module):
         )
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
-        # Post CNN: Local temporal smoothing + channel projection back to target pollutants
-        self.post_conv = nn.Sequential(
-            nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=3, padding=1),
-            nn.GELU(),
-            nn.Dropout(p=dropout),
-            nn.Conv1d(in_channels=d_model, out_channels=num_features, kernel_size=1)
-        )
+        if use_gated_residual:
+            self.head = GatedResidualHead(d_model=d_model, num_features=num_features, dropout=dropout)
+        else:
+            self.post_conv = nn.Sequential(
+                nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=3, padding=1),
+                nn.GELU(),
+                nn.Dropout(p=dropout),
+                nn.Conv1d(in_channels=d_model, out_channels=num_features, kernel_size=1)
+            )
+            self.head = None
         
     def forward(
         self, 
@@ -151,7 +265,6 @@ class CTDITemporalTransformer(nn.Module):
             x_imputed: (B, T=24, F_pollutant) Tensor with missing values replaced
             x_pred_raw: (B, T=24, F_pollutant) Complete raw predicted tensor
         """
-        # Determine pollutants vs context if passed together in x_obs
         if context is not None:
             pollutants_obs = x_obs
             ctx = context
@@ -159,44 +272,52 @@ class CTDITemporalTransformer(nn.Module):
             ctx = x_obs[..., :self.num_context]
             pollutants_obs = x_obs[..., self.num_context:]
         elif x_obs.shape[-1] == self.num_features and self.num_context > 0:
-            # If context was configured but not passed, pad with zeros
             pollutants_obs = x_obs
             ctx = torch.zeros(x_obs.shape[0], x_obs.shape[1], self.num_context, device=x_obs.device)
         else:
             pollutants_obs = x_obs
             ctx = None
             
-        # Compute exact continuous 1D linear interpolation baseline prior
+        # 1. 1D linear interpolation baseline prior
         p_interp = torch_linear_interpolate_24h(pollutants_obs, mask)
         
-        # Concatenate: [pollutants_obs, mask, p_interp, ctx]
+        # 2. Structural temporal missingness gap features
+        features_list = [pollutants_obs, mask, p_interp]
+        if self.use_gap_features:
+            gap_feats = torch_compute_gap_features(mask)
+            features_list.append(gap_feats)
         if ctx is not None:
-            x_cat = torch.cat([pollutants_obs, mask, p_interp, ctx], dim=-1)
-        else:
-            x_cat = torch.cat([pollutants_obs, mask, p_interp], dim=-1)
+            features_list.append(ctx)
             
-        # 1x1 CNN expects shape: (B, Channels, Length)
-        x_trans = x_cat.transpose(1, 2)  # (B, Channels, T)
-        x_emb = self.pre_conv(x_trans)   # (B, d_model, T)
+        x_cat = torch.cat(features_list, dim=-1) # (B, T, Channels)
+        x_trans = x_cat.transpose(1, 2)         # (B, Channels, T)
         
-        # Transpose back to (B, T, d_model) for Transformer
-        x_seq = x_emb.transpose(1, 2)    # (B, T, d_model)
+        # 3. Multi-scale temporal feature extraction + cross-pollutant interaction
+        x_emb = self.pre_conv(x_trans)          # (B, d_model, T)
+        if self.cross_pollutant_proj is not None:
+            x_emb = self.cross_pollutant_proj(x_emb) # (B, d_model, T)
+
+        
+        # 4. Positional Encoding + Temporal Transformer Self-Attention
+        x_seq = x_emb.transpose(1, 2)           # (B, T, d_model)
         x_pe = self.pos_encoder(x_seq)
+        h = self.transformer_encoder(x_pe)      # (B, T, d_model)
         
-        # Temporal Transformer self-attention across 24 hours
-        h = self.transformer_encoder(x_pe)  # (B, T, d_model)
-        
-        # Post CNN: deep atmospheric & cross-pollutant non-linear adjustment
-        h_trans = h.transpose(1, 2)         # (B, d_model, T)
-        delta_pred = self.post_conv(h_trans).transpose(1, 2) # (B, T, num_features)
-        
-        # Combined residual prediction: linear interpolation baseline + transformer non-linear meteorological adjustment
+        # 5. Gated Residual or Standard Residual Reconstruction Head
+        h_trans = h.transpose(1, 2)             # (B, d_model, T)
+        if self.use_gated_residual:
+            delta, gate = self.head(h_trans)
+            delta_pred = (gate * delta).transpose(1, 2) # (B, T, num_features)
+        else:
+            delta_pred = self.post_conv(h_trans).transpose(1, 2)
+            
         x_pred_raw = p_interp + delta_pred
         
-        # Strictly preserve observed values, replace ONLY missing entries
+        # 6. Strict observation lock: preserve original values exactly
         x_imputed = mask * pollutants_obs + (1.0 - mask) * x_pred_raw
         
         return x_imputed, x_pred_raw
+
 
 class SimpleMLPImputer(nn.Module):
     """A straightforward feedforward autoencoder baseline for sanity checking."""

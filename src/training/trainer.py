@@ -39,6 +39,9 @@ class PollutionImputationDataset(Dataset):
         
         # Pollutants are the last num_pollutants channels
         self.pollutants_true = self.x_all[:, :, -num_pollutants:].copy()
+        self.use_curriculum = False
+        self.current_epoch = 1
+        self.total_epochs = 40
         
         if not dynamic_masking:
             assert fixed_m_art is not None and fixed_eval_mask is not None, \
@@ -53,26 +56,37 @@ class PollutionImputationDataset(Dataset):
         else:
             self.regenerate_epoch_masks()
             
-    def regenerate_epoch_masks(self):
+    def regenerate_epoch_masks(self, epoch: Optional[int] = None, total_epochs: Optional[int] = None):
         """Vectorized generation of dynamic artificial missingness masks in ~50ms."""
-        N = len(self.x_all)
-        rates = np.random.uniform(0.15, 0.40, size=(N, 1, 1)).astype(np.float32)
-        rand_draw = np.random.rand(N, 24, self.num_pollutants).astype(np.float32)
-        m_art = self.m_obs.copy()
-        art_hidden = (rand_draw < rates) & (self.m_obs == 1.0)
-        m_art[art_hidden] = 0.0
-        
-        # Add random missing contiguous blocks (2-6h) for ~35% of samples
-        block_mask = np.random.rand(N, 1, self.num_pollutants) < 0.35
-        starts = np.random.randint(0, 19, size=(N, 1, self.num_pollutants))
-        lens = np.random.randint(2, 7, size=(N, 1, self.num_pollutants))
-        time_indices = np.arange(24).reshape(1, 24, 1)
-        in_block = (time_indices >= starts) & (time_indices < (starts + lens)) & block_mask
-        m_art[in_block & (self.m_obs == 1.0)] = 0.0
-        
-        self.m_art = m_art.astype(np.float32)
-        self.eval_mask = ((self.m_obs == 1.0) & (self.m_art == 0.0)).astype(np.float32)
-        
+        if epoch is not None:
+            self.current_epoch = epoch
+        if total_epochs is not None:
+            self.total_epochs = total_epochs
+
+        if getattr(self, "use_curriculum", False):
+            from src.data.masking import generate_curriculum_mask
+            self.m_art, self.eval_mask = generate_curriculum_mask(
+                self.m_obs, epoch=self.current_epoch, total_epochs=self.total_epochs
+            )
+        else:
+            N = len(self.x_all)
+            rates = np.random.uniform(0.15, 0.40, size=(N, 1, 1)).astype(np.float32)
+            rand_draw = np.random.rand(N, 24, self.num_pollutants).astype(np.float32)
+            m_art = self.m_obs.copy()
+            art_hidden = (rand_draw < rates) & (self.m_obs == 1.0)
+            m_art[art_hidden] = 0.0
+            
+            # Add random missing contiguous blocks (2-6h) for ~35% of samples
+            block_mask = np.random.rand(N, 1, self.num_pollutants) < 0.35
+            starts = np.random.randint(0, 19, size=(N, 1, self.num_pollutants))
+            lens = np.random.randint(2, 7, size=(N, 1, self.num_pollutants))
+            time_indices = np.arange(24).reshape(1, 24, 1)
+            in_block = (time_indices >= starts) & (time_indices < (starts + lens)) & block_mask
+            m_art[in_block & (self.m_obs == 1.0)] = 0.0
+            
+            self.m_art = m_art.astype(np.float32)
+            self.eval_mask = ((self.m_obs == 1.0) & (self.m_art == 0.0)).astype(np.float32)
+            
         # Pre-mask pollutants in input tensor
         self.x_prepared = self.x_all.copy()
         p_masked = np.where(self.m_art == 1.0, self.pollutants_true, 0.0)
@@ -100,7 +114,9 @@ def train_imputation_model(
     patience: int = 8,
     checkpoint_dir: str = "checkpoints",
     device: str = "auto",
-    loss_type: str = "smooth_l1"
+    loss_type: str = "smooth_l1",
+    custom_criterion: Optional[nn.Module] = None,
+    checkpoint_name: str = "best_temporal_transformer.pt"
 ) -> Tuple[nn.Module, Dict[str, list]]:
     """
     Trains the imputation neural network with early stopping, dynamic masking, and CosineAnnealingLR.
@@ -115,8 +131,8 @@ def train_imputation_model(
         
     model = model.to(dev)
     os.makedirs(checkpoint_dir, exist_ok=True)
-    best_model_path = os.path.join(checkpoint_dir, "best_temporal_transformer.pt")
-    tb_logdir = os.path.join("runs", os.path.basename(checkpoint_dir) or "default")
+    best_model_path = os.path.join(checkpoint_dir, checkpoint_name)
+    tb_logdir = os.path.join("runs", os.path.splitext(checkpoint_name)[0])
     tb_writer = SummaryWriter(log_dir=tb_logdir) if SummaryWriter is not None else None
     
     train_loader = DataLoader(
@@ -130,13 +146,14 @@ def train_imputation_model(
     val_loader = DataLoader(
         val_dataset, 
         batch_size=batch_size, 
-        shuffle=False,
+        shuffle=False, 
         num_workers=0,
         pin_memory=(dev.type == "cuda")
     )
     
-    criterion = MaskedImputationLoss(loss_type=loss_type)
+    criterion = custom_criterion if custom_criterion is not None else MaskedImputationLoss(loss_type=loss_type)
     eval_criterion = MaskedImputationLoss(loss_type="l1")  # Pure MAE for validation metric
+
     
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-5)
@@ -151,7 +168,8 @@ def train_imputation_model(
     for epoch in range(1, epochs + 1):
         t0 = time.time()
         if hasattr(train_dataset, "dynamic_masking") and train_dataset.dynamic_masking:
-            train_dataset.regenerate_epoch_masks()
+            train_dataset.regenerate_epoch_masks(epoch=epoch, total_epochs=epochs)
+
             
         model.train()
         train_losses = []

@@ -64,7 +64,14 @@ class PyTorchTemporalModelAdapter(ImputationModel):
 
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Instantiate verified architecture
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        state_dict = checkpoint.get("model_state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint.state_dict()
+
+        # Auto-detect whether checkpoint is upgraded or legacy
+        is_upgraded = "pre_conv.conv1.weight" in state_dict or "head.gate_head.weight" in state_dict
+        has_cross_poll = "cross_pollutant_proj.0.weight" in state_dict
+
+        # Instantiate matching architecture
         self.model = CTDITemporalTransformer(
             num_features=5,
             num_context=9,
@@ -73,14 +80,16 @@ class PyTorchTemporalModelAdapter(ImputationModel):
             num_layers=3,
             dim_feedforward=256,
             dropout=0.1,
-            window_size=24
+            window_size=24,
+            use_gap_features=is_upgraded,
+            use_multiscale=is_upgraded,
+            use_gated_residual=is_upgraded
         )
 
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        state_dict = checkpoint.get("model_state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint.state_dict()
-        self.model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict, strict=False)
         self.model.to(self.device)
         self.model.eval()
+
 
         self.param_count = sum(p.numel() for p in self.model.parameters())
 

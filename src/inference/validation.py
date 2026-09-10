@@ -8,15 +8,35 @@ import pandas as pd
 
 class ValidationError(Exception):
     """Raised when uploaded CSV or input data fails schema or continuity validation."""
-    pass
+    def __init__(self, message: str, details: Optional[Any] = None):
+        super().__init__(message)
+        self.message = message
+        self.details = details or {}
 
 
 POLLUTANT_ALIASES: Dict[str, List[str]] = {
-    "PM2.5": ["pm2.5", "pm2_5", "pm25", "pm2_5_ugm3", "pm2.5_ugm3", "pm2_5 (ug/m3)"],
-    "PM10": ["pm10", "pm10_ugm3", "pm10 (ug/m3)"],
-    "NO2": ["no2", "no2_ugm3", "no2 (ug/m3)"],
-    "SO2": ["so2", "so2_ugm3", "so2 (ug/m3)"],
-    "O3": ["o3", "o3_ugm3", "o3 (ug/m3)"],
+    "PM2.5": [
+        "pm2.5", "pm2_5", "pm25", "pm2_5_ugm3", "pm2.5_ugm3", "pm2_5 (ug/m3)", "pm2.5 (ug/m3)",
+        "pm2.5_observed", "pm2_5_observed", "pm25_observed", "pm2.5 observed",
+        "pm2.5_imputed", "pm2_5_imputed", "pm25_imputed", "pm2.5 imputed",
+        "pm2.5_pred", "pm2_5_pred", "pm25_pred"
+    ],
+    "PM10": [
+        "pm10", "pm10_ugm3", "pm10 (ug/m3)", "pm10_observed", "pm10 observed",
+        "pm10_imputed", "pm10 imputed", "pm10_pred"
+    ],
+    "NO2": [
+        "no2", "no2_ugm3", "no2 (ug/m3)", "no2_observed", "no2 observed",
+        "no2_imputed", "no2 imputed", "no2_pred"
+    ],
+    "SO2": [
+        "so2", "so2_ugm3", "so2 (ug/m3)", "so2_observed", "so2 observed",
+        "so2_imputed", "so2 imputed", "so2_pred"
+    ],
+    "O3": [
+        "o3", "o3_ugm3", "o3 (ug/m3)", "ozone", "o3_observed", "o3 observed",
+        "o3_imputed", "o3 imputed", "o3_pred"
+    ],
 }
 
 CONTEXT_ALIASES: Dict[str, List[str]] = {
@@ -40,18 +60,44 @@ def resolve_columns(df_columns: List[str], alias_map: Dict[str, List[str]]) -> D
     """
     col_lookup = {c.strip().lower(): c for c in df_columns}
     resolved = {}
+    
     for canonical, aliases in alias_map.items():
-        # Check canonical lower first
-        if canonical.lower() in col_lookup:
-            resolved[canonical] = col_lookup[canonical.lower()]
+        canon_lower = canonical.lower()
+        # 1. Exact canonical name match (e.g. 'PM2.5')
+        if canon_lower in col_lookup:
+            resolved[canonical] = col_lookup[canon_lower]
             continue
-        # Check aliases
+            
+        # 2. Prioritize '_observed' column if present
+        obs_cand = f"{canon_lower}_observed"
+        if obs_cand in col_lookup:
+            resolved[canonical] = col_lookup[obs_cand]
+            continue
+            
+        # 3. Check alias list
         found = False
         for a in aliases:
+            a_clean = a.lower().replace(" ", "_")
             if a.lower() in col_lookup:
                 resolved[canonical] = col_lookup[a.lower()]
                 found = True
                 break
+            elif a_clean in col_lookup:
+                resolved[canonical] = col_lookup[a_clean]
+                found = True
+                break
+        if found:
+            continue
+            
+        # 4. Fallback: column name starts with canonical name followed by '_' or ' ' (excluding mask)
+        for cl, orig_col in col_lookup.items():
+            if "mask" in cl:
+                continue
+            if (cl.startswith(canon_lower + "_") or cl.startswith(canon_lower + " ") or 
+                cl.startswith(canon_lower.replace(".", "_") + "_") or cl.startswith(canon_lower.replace(".", "") + "_")):
+                resolved[canonical] = orig_col
+                break
+
     return resolved
 
 

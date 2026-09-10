@@ -44,6 +44,9 @@ export default function LiveImputationView({
   targetPollutant,
   setTargetPollutant,
   pollutants = ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3'],
+  selectedStation = 'Delhi',
+  framework = 'PyTorch',
+  checkpoint = 'checkpoints/delhi/best_temporal_transformer.pt',
   isDark = false,
   gridStroke,
   axisStroke
@@ -249,7 +252,7 @@ export default function LiveImputationView({
             <h2 className="font-bold text-slate-900 dark:text-zinc-100 text-base flex items-center gap-2">
               CTDI Neural Imputation Studio
               <Chip size="sm" color="accent" variant="soft" className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px]">
-                PyTorch v1.0
+                {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch v1.0') : 'PyTorch v1.0'}
               </Chip>
             </h2>
             <p className="text-xs text-slate-400 dark:text-zinc-500">
@@ -625,7 +628,7 @@ export default function LiveImputationView({
                 Interactive Neural Imputation Sandbox
               </h4>
               <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm">
-                Configure corruption pattern, missingness rate, and reproducibility seed below, then click <strong>Execute Live Imputation</strong> to test real-time PyTorch reconstruction.
+                Configure corruption pattern, missingness rate, and reproducibility seed below, then click <strong>Execute Live Imputation</strong> to test real-time {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch') : 'PyTorch'} reconstruction.
               </p>
             </Card>
           )}
@@ -739,7 +742,7 @@ export default function LiveImputationView({
             {/* Execution Button Row */}
             <div className="pt-2 flex items-center justify-between gap-4">
               <span className="text-xs text-slate-400 hidden sm:inline">
-                FastAPI server executes PyTorch checkpoint <code className="text-slate-600 dark:text-zinc-300 font-mono">best_temporal_transformer.pt</code>
+                FastAPI server executes {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch') : 'PyTorch'} checkpoint <code className="text-slate-600 dark:text-zinc-300 font-mono">{checkpoint ? checkpoint.split('/').pop() : 'best_temporal_transformer.pt'}</code>
               </span>
               <Button
                 variant="primary"
@@ -750,7 +753,7 @@ export default function LiveImputationView({
               >
                 {liveLoading ? <Spinner size="sm" color="current" /> : <ProjectIcon name="sandbox" size="sm" className="w-4 h-4 text-white" />}
                 <span>
-                  {liveLoading ? (liveStep || 'Running PyTorch Model...') : 'Execute Live Imputation'}
+                  {liveLoading ? (liveStep || 'Running Model Inference...') : 'Execute Live Imputation'}
                 </span>
               </Button>
             </div>

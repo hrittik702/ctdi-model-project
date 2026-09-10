@@ -16,11 +16,15 @@ class TemporalModelConfig:
     dropout: float = 0.1           # Dropout rate
     kernel_size: int = 3           # Local temporal convolution kernel size
     activation: str = "gelu"       # Activation function
+    use_gap_features: bool = True  # Enable structural missingness gap features
+    use_multiscale: bool = True    # Enable multi-scale temporal convolutions (k=1, 3, 5, 7)
 
     @property
     def total_input_channels(self) -> int:
-        """Total input channels: pollutants(5) + mask(5) + prior(5) + context(9) = 24."""
-        return 3 * self.num_features + self.num_context
+        """Total input channels: pollutants(5) + mask(5) + prior(5) + context(9) + [gap_features(20)]."""
+        base = 3 * self.num_features + self.num_context
+        return base + (4 * self.num_features if self.use_gap_features else 0)
+
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

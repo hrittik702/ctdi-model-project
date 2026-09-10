@@ -18,6 +18,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
     { label: 'Dropout Rate', value: `${modelConfig?.dropout || 0.1}` },
     { label: 'Positional Encoding', value: 'Sinusoidal (24 temporal positions)' },
     { label: 'Loss Function', value: modelConfig?.loss_function || 'Masked L1 Loss (artificially hidden points only)' },
+    { label: 'Execution Framework', value: modelConfig?.framework || 'PyTorch' },
     { label: 'Execution Device', value: (modelConfig?.device || 'cpu').toUpperCase() },
     { label: 'Loaded Checkpoint', value: modelConfig?.checkpoint_path || 'checkpoints/transformer/best_temporal_transformer.pt' }
   ];
@@ -46,7 +47,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
                   <Chip.Label>{modelConfig?.status === 'ready' ? 'Online' : 'Loaded'}</Chip.Label>
                 </Chip>
               </div>
-              <p className="text-xs text-slate-400 dark:text-zinc-500">CTDI PyTorch Spatial-Temporal Attention Specification</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500">CTDI {modelConfig?.framework || 'PyTorch'} Spatial-Temporal Attention Specification</p>
             </div>
           </div>
           <button

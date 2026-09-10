@@ -1,4 +1,4 @@
 Model,MAE (ug/m3),RMSE (ug/m3),MAPE (%),Gain vs Linear (%)
-CTDI_Temporal_Transformer,4.297,11.763,6.63,+25.0%
-Linear_Interpolation,5.73,14.034,9.91,0.0% (Baseline)
-Mean_Imputer,43.796,81.804,105.66,-664.3%
+CTDI_Temporal_Transformer,5.496,15.157,7.13,+17.9%
+Linear_Interpolation,6.693,17.237,9.56,0.0% (Baseline)
+Mean_Imputer,51.843,94.304,93.5,-664.3%

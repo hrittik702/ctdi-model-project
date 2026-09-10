@@ -16,6 +16,7 @@ import StationAnalysisView from './views/StationAnalysisView';
 import DataExplorerView from './views/DataExplorerView';
 import LiveImputationView from './views/LiveImputationView';
 import ExperimentHistoryView from './views/ExperimentHistoryView';
+import ModelComparisonLabView from './views/ModelComparisonLabView';
 
 // Modals
 import GlobalSearchModal from './components/GlobalSearchModal';
@@ -43,6 +44,7 @@ export default function App() {
   const [metadata, setMetadata] = useState(null);
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState('Delhi');
+  const [activeModel, setActiveModel] = useState('delhi_ctdi_original');
   const [metrics, setMetrics] = useState([]);
   const [pollutantMetrics, setPollutantMetrics] = useState({});
   const [experiments, setExperiments] = useState([]);
@@ -113,24 +115,22 @@ export default function App() {
   // Poll health and fetch initial metadata & global metrics
   const loadInitialData = useCallback(async () => {
     try {
-      const health = await api.getHealth();
+      const initialStation = selectedStation || 'Delhi';
+      const [health, stnsRes, meta, metList, polMets, exps, config] = await Promise.all([
+        api.getHealth(initialStation),
+        api.getStations(),
+        api.getMetadata(initialStation),
+        api.getMetrics(initialStation),
+        api.getPollutantMetrics(initialStation),
+        api.getExperiments(),
+        api.getModelConfig(initialStation)
+      ]);
+
       setHealthInfo(health);
       setBackendOnline(health.status === 'ok');
 
-      const [stnsRes, meta, metList, polMets, exps, config] = await Promise.all([
-        api.getStations(),
-        api.getMetadata(selectedStation),
-        api.getMetrics(),
-        api.getPollutantMetrics(),
-        api.getExperiments(),
-        api.getModelConfig()
-      ]);
-
       if (stnsRes?.stations) {
         setStations(stnsRes.stations);
-        if (stnsRes.active_station) {
-          setSelectedStation(stnsRes.active_station);
-        }
       }
       setMetadata(meta);
       setMetrics(metList);
@@ -145,33 +145,71 @@ export default function App() {
       console.warn('Initial data load failed:', err);
       setBackendOnline(false);
     }
-  }, [targetPollutant, selectedStation]);
+  }, []);
 
   useEffect(() => {
     loadInitialData();
-    // Health polling every 10 seconds
+  }, [loadInitialData]);
+
+  // Periodic health polling
+  useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const health = await api.getHealth();
+        const health = await api.getHealth(selectedStation);
         setBackendOnline(health.status === 'ok');
       } catch {
         setBackendOnline(false);
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [loadInitialData]);
+  }, [selectedStation]);
 
   // Handle station selection
   const handleSelectStation = async (stationName) => {
     setSelectedStation(stationName);
     try {
       await api.selectStation(stationName);
-      const newMeta = await api.getMetadata(stationName);
+      // Simultaneously fetch all updated model & station data dynamically
+      const [newHealth, newMeta, newSample, newMetrics, newPolMets, newConfig] = await Promise.all([
+        api.getHealth(stationName),
+        api.getMetadata(stationName),
+        api.getSample(sampleIdx, stationName),
+        api.getMetrics(stationName),
+        api.getPollutantMetrics(stationName),
+        api.getModelConfig(stationName)
+      ]);
+      setHealthInfo(newHealth);
       setMetadata(newMeta);
-      const newSample = await api.getSample(sampleIdx, stationName);
       setSampleData(newSample);
+      setMetrics(newMetrics);
+      setPollutantMetrics(newPolMets);
+      setModelConfig(newConfig);
     } catch (err) {
       console.warn('Failed to switch station:', err);
+    }
+  };
+
+  // Handle active model selection (e.g. PyTorch vs Keras 3 for Delhi)
+  const handleSelectActiveModel = async (modelId) => {
+    setActiveModel(modelId);
+    try {
+      await api.selectActiveModel(modelId);
+      const [newHealth, newMeta, newSample, newMetrics, newPolMets, newConfig] = await Promise.all([
+        api.getHealth(selectedStation),
+        api.getMetadata(selectedStation),
+        api.getSample(sampleIdx, selectedStation),
+        api.getMetrics(selectedStation),
+        api.getPollutantMetrics(selectedStation),
+        api.getModelConfig(selectedStation)
+      ]);
+      setHealthInfo(newHealth);
+      setMetadata(newMeta);
+      setSampleData(newSample);
+      setMetrics(newMetrics);
+      setPollutantMetrics(newPolMets);
+      setModelConfig(newConfig);
+    } catch (err) {
+      console.warn('Failed to switch active model:', err);
     }
   };
 
@@ -199,13 +237,15 @@ export default function App() {
       await new Promise(r => setTimeout(r, 120)); // Brief visual step
       setLiveStep(`Applying ${liveMechanism.toUpperCase()} corruption (${Math.round(liveRate * 100)}%)...`);
       await new Promise(r => setTimeout(r, 150));
-      setLiveStep('Executing PyTorch CTDI Transformer forward pass...');
+      const modelLabel = selectedStation.toLowerCase().includes('keras') ? 'Keras 3' : 'PyTorch';
+      setLiveStep(`Executing ${modelLabel} CTDI Transformer forward pass...`);
       
       const res = await api.liveImpute({
         sampleIdx,
         missingRate: liveRate,
         mechanism: liveMechanism,
-        seed: liveSeed
+        seed: liveSeed,
+        station: selectedStation
       });
 
       setLiveStep('Evaluating masked metrics...');
@@ -296,6 +336,8 @@ export default function App() {
         currentStation={selectedStation}
         stations={stations}
         onSelectStation={handleSelectStation}
+        activeModel={activeModel}
+        onSelectActiveModel={handleSelectActiveModel}
         backendOnline={backendOnline}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -318,6 +360,7 @@ export default function App() {
             backendOnline={backendOnline}
             modelName={healthInfo?.model_name || 'CTDI Transformer'}
             modelStatus={healthInfo?.status_label || (backendOnline ? 'Ready' : 'Offline')}
+            framework={healthInfo?.framework || 'PyTorch'}
           />
         )}
 
@@ -440,6 +483,17 @@ export default function App() {
               targetPollutant={targetPollutant}
               setTargetPollutant={setTargetPollutant}
               pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+              selectedStation={selectedStation}
+              framework={healthInfo?.framework || 'PyTorch'}
+              checkpoint={healthInfo?.checkpoint || 'checkpoints/delhi/best_temporal_transformer.pt'}
+              isDark={isDark}
+              gridStroke={gridStroke}
+              axisStroke={axisStroke}
+            />
+          )}
+
+          {currentTab === 'comparison' && (
+            <ModelComparisonLabView
               isDark={isDark}
               gridStroke={gridStroke}
               axisStroke={axisStroke}

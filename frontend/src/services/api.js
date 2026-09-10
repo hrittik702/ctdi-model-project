@@ -51,8 +51,9 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   /** Health check & active model status */
-  async getHealth() {
-    return request('/api/health');
+  async getHealth(station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/health${query}`);
   },
 
   /** List of Indian monitoring stations catalog */
@@ -75,13 +76,15 @@ export const api = {
   },
 
   /** Global benchmark metrics table across test set */
-  async getMetrics() {
-    return request('/api/metrics');
+  async getMetrics(station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/metrics${query}`);
   },
 
   /** Real computed per-pollutant test set metrics */
-  async getPollutantMetrics() {
-    return request('/api/metrics/pollutants');
+  async getPollutantMetrics(station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/metrics/pollutants${query}`);
   },
 
   /** 24-hour sequence trajectory for a given sample index */
@@ -91,7 +94,7 @@ export const api = {
   },
 
   /** Live inference forward pass with custom missingness parameters */
-  async liveImpute({ sampleIdx = 0, missingRate = 0.30, mechanism = 'random', seed = 42, blockLength = 4 }) {
+  async liveImpute({ sampleIdx = 0, missingRate = 0.30, mechanism = 'random', seed = 42, blockLength = 4, station = null }) {
     return request('/api/impute', {
       method: 'POST',
       body: JSON.stringify({
@@ -99,7 +102,8 @@ export const api = {
         missing_rate: Number(missingRate),
         mechanism,
         seed: Number(seed),
-        block_length: Number(blockLength)
+        block_length: Number(blockLength),
+        station
       })
     });
   },
@@ -110,38 +114,198 @@ export const api = {
   },
 
   /** PyTorch model architecture configuration & checkpoint info */
-  async getModelConfig() {
-    return request('/api/model/config');
+  async getModelConfig(station = null) {
+    const query = station ? `?station=${encodeURIComponent(station)}` : '';
+    return request(`/api/model/config${query}`);
   },
 
   /** Upload and preview user CSV for validation and missingness statistics */
   async uploadAndPreviewCSV(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${API_BASE}/api/impute/preview`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new ApiError(err.detail || `HTTP ${res.status}: ${res.statusText}`, res.status, err);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/api/impute/preview`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) {
+        let err;
+        try {
+          err = await res.json();
+        } catch {
+          err = { detail: res.statusText };
+        }
+        const msg = typeof err?.detail === 'object'
+          ? (err.detail.message || JSON.stringify(err.detail))
+          : (err?.detail || `HTTP ${res.status}: ${res.statusText}`);
+        throw new ApiError(msg, res.status, err);
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(`Unable to connect to backend service: ${err.message}`, 0, null);
     }
-    return await res.json();
   },
 
   /** Upload user CSV and run complete CTDI neural imputation pipeline */
   async uploadAndImputeCSV(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${API_BASE}/api/impute/upload`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new ApiError(err.detail || `HTTP ${res.status}: ${res.statusText}`, res.status, err);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/api/impute/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) {
+        let err;
+        try {
+          err = await res.json();
+        } catch {
+          err = { detail: res.statusText };
+        }
+        const msg = typeof err?.detail === 'object'
+          ? (err.detail.message || JSON.stringify(err.detail))
+          : (err?.detail || `HTTP ${res.status}: ${res.statusText}`);
+        throw new ApiError(msg, res.status, err);
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(`Unable to connect to backend service: ${err.message}`, 0, null);
     }
-    return await res.json();
+  },
+
+  /* -------------------------------------------------------------
+   * MODEL COMPARISON & BENCHMARKING LAB METHODS
+   * ----------------------------------------------------------- */
+  /** List registered models for comparison, optionally filtered by city */
+  async getComparisonModels(city = null) {
+    const query = city ? `?city=${encodeURIComponent(city)}` : '';
+    return request(`/api/comparison/models${query}`);
+  },
+
+  /** List available benchmarking datasets, optionally filtered by city */
+  async getComparisonDatasets(city = null) {
+    const query = city ? `?city=${encodeURIComponent(city)}` : '';
+    return request(`/api/comparison/datasets${query}`);
+  },
+
+  /** List geographic cities with available comparison models */
+  async getComparisonCities() {
+    return request('/api/comparison/cities');
+  },
+
+  /** Select active model for live production inference */
+  async selectActiveModel(modelId) {
+    return request('/api/models/select', {
+      method: 'POST',
+      body: JSON.stringify({ model_id: modelId })
+    });
+  },
+
+  /** Run scientific comparison experiment */
+  async runComparison({
+    dataset_id = 'delhi_test_benchmark',
+    city = 'Delhi',
+    model_ids = null,
+    strategy = 'random',
+    missing_rate = 0.30,
+    block_length = 4,
+    target_pollutant_outage = null,
+    seed = 42137,
+    num_windows = 5
+  }) {
+    return request('/api/comparison/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        dataset_id,
+        city,
+        model_ids,
+        strategy,
+        missing_rate: Number(missing_rate),
+        block_length: Number(block_length),
+        target_pollutant_outage,
+        seed: Number(seed),
+        num_windows: Number(num_windows)
+      })
+    });
+  },
+
+  /** Run comparison with uploaded user CSV */
+  async runComparisonUpload({
+    file,
+    city = 'Delhi',
+    model_ids = null,
+    strategy = 'random',
+    missing_rate = 0.30,
+    block_length = 4,
+    target_pollutant_outage = null,
+    seed = 42137,
+    num_windows = 5
+  }) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('city', city);
+      if (model_ids) formData.append('model_ids', JSON.stringify(model_ids));
+      formData.append('strategy', strategy);
+      formData.append('missing_rate', String(missing_rate));
+      formData.append('block_length', String(block_length));
+      if (target_pollutant_outage) formData.append('target_pollutant_outage', target_pollutant_outage);
+      formData.append('seed', String(seed));
+      formData.append('num_windows', String(num_windows));
+
+      const res = await fetch(`${API_BASE}/api/comparison/run-upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) {
+        let err;
+        try {
+          err = await res.json();
+        } catch {
+          err = { detail: res.statusText };
+        }
+        const msg = typeof err?.detail === 'object'
+          ? (err.detail.message || JSON.stringify(err.detail))
+          : (err?.detail || `HTTP ${res.status}: ${res.statusText}`);
+        throw new ApiError(msg, res.status, err);
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(`Unable to connect to backend service: ${err.message}`, 0, null);
+    }
+  },
+
+  /** Get historical benchmarking runs */
+  async getComparisonHistory() {
+    return request('/api/comparison/history');
+  },
+
+  /** Get specific historical experiment run */
+  async getComparisonExperiment(experimentId) {
+    return request(`/api/comparison/history/${encodeURIComponent(experimentId)}`);
+  },
+
+  /** Side-by-side comparison of two historical runs */
+  async compareTwoExperiments(id_a, id_b) {
+    return request('/api/comparison/compare-runs', {
+      method: 'POST',
+      body: JSON.stringify({ id_a, id_b })
+    });
+  },
+
+  /** Re-run an existing historical experiment with exact configuration and seed */
+  async reRunComparisonExperiment(experimentId) {
+    return request(`/api/comparison/re-run/${encodeURIComponent(experimentId)}`, {
+      method: 'POST'
+    });
+  },
+
+  /** Direct download URL for canonical export */
+  getComparisonExportUrl(experimentId, format = 'csv') {
+    return `${API_BASE}/api/comparison/export/${encodeURIComponent(experimentId)}?format=${format}`;
   }
 };
 
