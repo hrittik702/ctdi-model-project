@@ -1,26 +1,116 @@
-# SLM-Conditioned Diffusion for Air Pollution Imputation
+# Air Pollution Missing Data Imputation
 
-A context-aware generative framework for recovering missing air-pollution observations using a Small Language Model (SLM) and conditional diffusion.
+A research project focused on recovering missing air-quality observations using a proposed framework: **Context-Aware Generative Imputation of Air Pollution Using SLM-Conditioned Diffusion**.
 
-The project extends spatial-temporal deep-learning approaches for air-pollution data imputation by introducing semantic environmental context into the generative process. Environmental conditions such as season, meteorology, traffic intensity, industrial influence, and station characteristics are converted into compact semantic representations using an SLM. These representations condition a diffusion model that learns to generate plausible missing pollution observations while preserving temporal and spatial relationships.
+## Project Overview
 
-Unlike deterministic imputation methods that produce a single estimated value, the proposed framework can generate multiple conditional reconstructions, enabling uncertainty estimation through the resulting distribution of possible imputations.
+Missing observations in air pollution monitoring networks (due to sensor degradation, transmission dropouts, and maintenance outages) severely impede environmental modeling and public health decision-making. 
 
-## Core Components
+This research investigates whether semantic environmental context (meteorological conditions, seasonal dynamics, station topology, and surrounding influences) can guide generative imputation models to accurately reconstruct missing time-series observations under high missing rates and extended block outages.
 
-- **Data Preprocessing:** Construction of structured temporal samples from air-pollution and environmental data.
-- **Numerical Encoding:** Representation of observed pollution values and missingness masks.
-- **SLM Context Encoder:** Converts structured environmental conditions into semantic embeddings.
-- **Conditional Diffusion:** Generates missing pollution values through iterative denoising.
-- **Spatio-Temporal Denoiser:** Captures temporal dependencies and spatial relationships between monitoring stations.
-- **Context-Diffusion Alignment:** Injects semantic environmental context into the diffusion process.
-- **Uncertainty Estimation:** Generates multiple reconstructions to estimate prediction uncertainty.
-- **Consistency Constraints:** Evaluates temporal, spatial, and contextual consistency of generated values.
+> **Current Status**: The project is currently at the initial **Backend / Data-Pipeline Foundation** stage (Stage 1 completed). The machine learning models (Small Language Model context encoding and conditional diffusion) have **not** yet been implemented.
 
-## Research Objective
+---
 
-The primary objective is to investigate whether semantic environmental context can improve the reconstruction of missing air-pollution observations, particularly under high missingness and long missing blocks.
+## Research Development Roadmap
 
-The framework will be evaluated against classical statistical methods, machine-learning approaches, deep-learning imputers, and the existing VAE-based generative approach.
+The project is being developed across the following sequential phases:
 
-> **Note:** Experimental results will be added only after the proposed experiments are actually conducted.
+1. **Repository & Backend Reset** `[COMPLETED]`
+   - Cleaned legacy experimental artifacts and established modular backend package architecture.
+   - Preserved raw air-quality datasets, frontend application, and environment.
+   - Established minimal configuration and API entry point.
+2. **Data Preprocessing** `[NEXT]`
+   - Loading raw multi-station air quality data (e.g., UCI Beijing dataset).
+   - Data cleaning, validation, temporal alignment, and feature normalization.
+3. **Dataset Construction**
+   - Sliding window sequence generation (e.g., 24-hour temporal windows).
+   - Multi-station tensor formatting.
+4. **Missingness Simulation**
+   - Controlled simulation of Missing Completely at Random (MCAR), contiguous block outages, and sensor failure patterns.
+5. **Context Construction**
+   - Extraction and structuring of temporal, meteorological, and geospatial metadata.
+6. **SLM Context Encoding**
+   - Converting structured environmental context into dense semantic embeddings using a Small Language Model (SLM).
+7. **Conditional Diffusion**
+   - Generative diffusion modeling conditioned on the semantic environmental embeddings to impute missing observations.
+8. **Temporal / Spatial / Context Consistency**
+   - Enforcing physical plausibility, multi-pollutant correlations, and cross-station spatial relationships.
+9. **Uncertainty-Aware Imputation**
+   - Generating distributional imputation samples to quantify prediction confidence and uncertainty intervals.
+10. **Experimental Evaluation**
+    - Rigorous benchmarking against standard imputation baselines across varied missingness regimes using metrics such as MAE, RMSE, MRE, and CRPS.
+11. **API Integration**
+    - Exposing model inference, dataset exploration, and evaluation endpoints via FastAPI.
+12. **Frontend Integration**
+    - Connecting the existing web interface to the backend imputation pipeline.
+
+---
+
+## Project Structure
+
+```text
+ctdi-model-project/
+├── configs/
+│   └── config.yaml             # Core pipeline & dataset configuration
+├── data/
+│   ├── raw/                    # Raw air-quality datasets (e.g., Beijing PRSA)
+│   └── processed/              # Processed tensors & cache (placeholder)
+├── frontend/                   # Web interface (React + Tailwind CSS)
+├── src/
+│   ├── __init__.py
+│   ├── preprocessing/          # Data cleaning, normalization, alignment
+│   │   ├── __init__.py
+│   │   └── pipeline.py
+│   ├── dataset/                # Windowing & missingness generation
+│   │   ├── __init__.py
+│   │   ├── windowing.py
+│   │   └── missingness.py
+│   ├── context/                # Environmental context builder
+│   │   ├── __init__.py
+│   │   └── builder.py
+│   ├── models/                 # Model architectures (SLM & diffusion)
+│   │   └── __init__.py
+│   └── evaluation/             # Imputation metrics & benchmarks
+│       ├── __init__.py
+│       └── metrics.py
+├── tests/
+│   └── __init__.py
+├── api.py                      # FastAPI service entry point
+├── requirements.txt            # Python package dependencies
+├── README.md                   # Project documentation
+├── .gitignore
+└── .venv/                      # Python virtual environment
+```
+
+---
+
+## Setup & Quickstart
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ (for frontend)
+
+### Environment Setup
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install requirements
+pip install -r requirements.txt
+```
+
+### Running the API Backend
+```bash
+python api.py
+# Or with uvicorn:
+uvicorn api:app --host 127.0.0.1 --port 8000 --reload
+```
+Check health endpoint: `http://127.0.0.1:8000/api/health`
+
+### Frontend Application
+```bash
+cd frontend
+npm install
+npm run dev
+```

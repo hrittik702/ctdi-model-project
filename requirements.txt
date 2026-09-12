@@ -1,11 +1,16 @@
+# Core Machine Learning and Numerical Computing
 torch>=2.0.0
 numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.2.0
 scipy>=1.10.0
 matplotlib>=3.7.0
+
+# Configuration and Utilities
 pyyaml>=6.0
 tqdm>=4.65.0
+
+# Backend API
 fastapi>=0.100.0
 uvicorn>=0.22.0
 python-multipart>=0.0.6
