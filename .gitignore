@@ -20,7 +20,8 @@ frontend/node_modules/
 *node_modules
 
 # Checkpoints & Logs
-checkpoints/
+/checkpoints/
+!research/checkpoints/**
 *.pt
 *.pth
 *.log
