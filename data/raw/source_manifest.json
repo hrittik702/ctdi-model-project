@@ -1,0 +1,132 @@
+{
+  "manifest_generation_timestamp": "2026-09-13T03:32:02.838676+00:00",
+  "project": "CTDI Air Pollution Missing-Data Imputation Project",
+  "study_period": "2019-01-01 00:00 to 2021-12-31 23:00 (26,304 hours)",
+  "study_stations_count": 16,
+  "structural_grid_expectation": "16 stations \u00d7 26,304 hours = 420,864 rows",
+  "sources": [
+    {
+      "dataset_domain": "Air Quality",
+      "dataset_name": "Hong Kong EPD Hourly Air Quality Monitoring Records",
+      "source_url": "https://cd.epic.epd.gov.hk/EPICDI/air/station/",
+      "local_path": "data/raw/air_quality/epd_air_quality_2019_2021_hourly.csv",
+      "publisher": "Environmental Protection Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "csv",
+      "coverage_start": "2019-01-01 00:00",
+      "coverage_end": "2021-12-31 23:00",
+      "variables": [
+        "pm25",
+        "pm10",
+        "no2",
+        "o3",
+        "so2",
+        "nox",
+        "co"
+      ],
+      "unit": "\u03bcg/m\u00b3",
+      "timezone": "Asia/Hong_Kong (HKT, UTC+8)",
+      "file_size_bytes": 27136881,
+      "sha256": "f2b1b46a9c8e69e2f18077fac4c4d4f664cb24162523dc978219d82c225b57b2",
+      "status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_domain": "Meteorology",
+      "dataset_name": "Hong Kong 16-Station Hourly Surface Meteorological Reanalysis",
+      "source_url": "https://archive-api.open-meteo.com/v1/archive",
+      "local_path": "data/raw/meteorology/hourly_meteorology_16stations_2019_2021.csv",
+      "publisher": "ECMWF ERA5 / Open-Meteo Historical Archive API",
+      "file_type": "csv",
+      "coverage_start": "2019-01-01 00:00",
+      "coverage_end": "2021-12-31 23:00",
+      "variables": [
+        "temperature",
+        "relative_humidity",
+        "wind_speed",
+        "wind_direction",
+        "pressure",
+        "rainfall"
+      ],
+      "unit": "\u00b0C, %, m/s, degrees, hPa, mm",
+      "timezone": "Asia/Hong_Kong (HKT, UTC+8)",
+      "file_size_bytes": 25460811,
+      "sha256": "e2e7849675a6856286ff92c63334d2d6cae010d409446043c3a4b8a147fa47a3",
+      "status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_domain": "Meteorology Reference",
+      "dataset_name": "Hong Kong Observatory (HKO) Daily Benchmark Observations",
+      "source_url": "https://data.weather.gov.hk/weatherAPI/opendata/opendata.php",
+      "local_path": "data/raw/meteorology/hko_daily_reference/",
+      "publisher": "Hong Kong Observatory, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "csv directory",
+      "coverage_start": "2019-01-01",
+      "coverage_end": "2021-12-31",
+      "variables": [
+        "CLMTEMP",
+        "CLMMAXT",
+        "CLMMINT",
+        "CLMPRESS",
+        "CLMRAIN",
+        "CLMWIND"
+      ],
+      "status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_domain": "Traffic",
+      "dataset_name": "Hong Kong Annual Traffic Census (ATC) Master Archive",
+      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_TRAFFIC_DATA.zip",
+      "local_path": "data/raw/traffic/ATC_TRAFFIC_DATA.zip",
+      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "zip",
+      "coverage_start": "2018-01-01",
+      "coverage_end": "2024-12-31",
+      "variables": [
+        "AADT",
+        "Monthly Index",
+        "Weekday Index",
+        "Hourly Profile Fractions"
+      ],
+      "file_size_bytes": 33710902,
+      "sha256": "b2738720b17f47946cdebae2291bcb56eb0078a2603f412de13b328accfd84f7",
+      "status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_domain": "Traffic Spatial",
+      "dataset_name": "Annual Traffic Census Station Spatial Points",
+      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_STATION_PT.kmz",
+      "local_path": "data/raw/traffic/spatial/ATC_STATION_PT.kmz",
+      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "kmz",
+      "coverage_start": "Permanent",
+      "coverage_end": "Current",
+      "variables": [
+        "ATC_STATION_NO",
+        "Coordinates"
+      ],
+      "file_size_bytes": 67197,
+      "sha256": "a6ee2b2d0f21286bab5930925df557311a289654d86df40cfa1a972b83fa1ac0",
+      "status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_domain": "Station Metadata",
+      "dataset_name": "CTDI Hong Kong Air Quality Monitoring Stations Catalog",
+      "source_url": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html",
+      "local_path": "data/raw/station_metadata/air_quality_stations.csv",
+      "publisher": "Environmental Protection Department, HKSAR",
+      "file_type": "csv",
+      "coverage_start": "1990",
+      "coverage_end": "Current",
+      "variables": [
+        "station_id",
+        "station_code",
+        "station_name",
+        "latitude",
+        "longitude",
+        "sampling_height_m"
+      ],
+      "file_size_bytes": 1563,
+      "sha256": "30bb17250da7174bec73123570ee2bc2730faab2d5d126cb3141c180892186cb",
+      "status": "VERIFIED_VALID"
+    }
+  ]
+}

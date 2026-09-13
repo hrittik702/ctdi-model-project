@@ -1,0 +1,53 @@
+station_type,station_code,raw_name,latitude_dms,longitude_dms,latitude,longitude,elevation_m
+Manned Weather Station,HKO,Hong Kong Observatory(HKO)(01/01/1884),"22°18'07""","114°10'27""",22.301944,114.174167,32
+Manned Weather Station,HKA,Hong Kong International Airport(HKA)(01/06/1997),"22°18'34""","113°55'19""",22.309444,113.921944,6
+Automatic Weather Station,BR1,Beas River(BR1)(06/12/2012),"22°29'36""","114°06'18""",22.493333,114.105,11
+Automatic Weather Station,BHD,Bluff Head(BHD)(01/01/1995),"22°11'51""","114°12'43""",22.1975,114.211944,94
+Automatic Weather Station,CP1,Central Pier(CP1)(20/12/2005),"22°17'20""","114°09'21""",22.288889,114.155833,19
+Automatic Weather Station,CCH,Cheung Chau(CCH)(30/03/1992),"22°12'04""","114°01'36""",22.201111,114.026667,72
+Automatic Weather Station,CPH,Ching Pak House(Tsing Yi)(CPH)(01/07/1987),"22°20'53""","114°06'33""",22.348056,114.109167,122
+Automatic Weather Station,CWB,Clear Water Bay(CWB)(20/12/2018),"22°15'48""","114°17'59""",22.263333,114.299722,66
+Automatic Weather Station,GI,Green Island(GI)(11/09/1989),"22°17'06""","114°06'46""",22.285,114.112778,88
+Automatic Weather Station,HPV,Happy Valley(HPV)(01/12/2008),"22°16'14""","114°11'01""",22.270556,114.183611,5
+Automatic Weather Station,HKP,Hong Kong Park(HKP)(04/09/2007),"22°16'42""","114°09'44""",22.278333,114.162222,26
+Automatic Weather Station,SE,Kai Tak(SE)(04/09/1998),"22°18'35""","114°12'48""",22.309722,114.213333,3
+Automatic Weather Station,SE1,Kai Tak Runway Park*(SE1)(17/12/2014),"22°18'18""","114°13'1""",22.305,114.216944,4
+Automatic Weather Station,KFB,Kadoorie Farm and Botanic Garden(KFB)(01/12/2010),"22°25'58""","114°07'15""",22.432778,114.120833,307
+Automatic Weather Station,KAT,Kat O(KAT)(01/01/1993),"22°32'11""","114°18'07""",22.536389,114.301944,10
+Automatic Weather Station,KSC,Kau Sai Chau(KSC)(03/07/2008),"22°22'13""","114°18'45""",22.370278,114.3125,39
+Automatic Weather Station,KP,King's Park(KP)(01/07/1992),"22°18'43""","114°10'22""",22.311944,114.172778,65
+Automatic Weather Station,KLT,Kowloon City(KLT)(04/09/1998),"22°20'06""","114°11'05""",22.335,114.184722,92
+Automatic Weather Station,KTG,Kwun Tong(KTG)(21/10/2009),"22°19'07""","114°13'29""",22.318611,114.224722,90
+Automatic Weather Station,LAM,Lamma Island(LAM)(25/07/2011),"22°13'34""","114°06'31""",22.226111,114.108611,7
+Automatic Weather Station,LFS,Lau Fau Shan(LFS)(16/09/1985),"22°28'08""","113°59'01""",22.468889,113.983611,31
+Automatic Weather Station,NLS,Nei Lak Shan(NLS)(12/02/1998),"22°15'48""","113°54'40""",22.263333,113.911111,747
+Automatic Weather Station,TY1,New Tsing Yi Station(TY1)(23/08/2010),"22°20'39""","114°06'36""",22.344167,114.11,8
+Automatic Weather Station,NGP,Ngong Ping(NGP)(01/01/2002),"22°15'31""","113°54'46""",22.258611,113.912778,593
+Automatic Weather Station,TYW,Pak Tam Chung (Tsak Yue Wu)(TYW)(01/10/1995),"22°24'10""","114°19'23""",22.402778,114.323056,5
+Automatic Weather Station,PEN,Peng Chau(PEN)(01/06/2004),"22°17'28""","114°02'36""",22.291111,114.043333,34
+Automatic Weather Station,EPC,Ping Chau(EPC)(01/01/1993),"22°32'48""","114°25'42""",22.546667,114.428333,29
+Automatic Weather Station,SKG,Sai Kung(SKG)(03/03/1993),"22°22'32""","114°16'28""",22.375556,114.274444,4
+Automatic Weather Station,SLW,Sha Lo Wan(SLW)(25/02/1993),"22°17'28""","113°54'25""",22.291111,113.906944,61
+Automatic Weather Station,SHA,Sha Tin(SHA)(01/10/1984),"22°24'09""","114°12'36""",22.4025,114.21,6
+Automatic Weather Station,SSP,Sham Shui Po(SSP)(09/03/2010),"22°20'09""","114°08'13""",22.335833,114.136944,11
+Automatic Weather Station,SKW,Shau Kei Wan(SKW)(17/09/2007),"22°16'54""","114°14'10""",22.281667,114.236111,53
+Automatic Weather Station,SEK,Shek Kong(SEK)(04/11/1996),"22°26'10""","114°05'05""",22.436111,114.084722,16
+Automatic Weather Station,SSH,Sheung Shui(SSH)(09/07/2004),"22°30'07""","114°06'40""",22.501944,114.111111,10
+Automatic Weather Station,STY,Stanley(STY)(12/06/2009),"22°12'51""","114°13'07""",22.214167,114.218611,31
+Automatic Weather Station,TKL,Ta Kwu Ling(TKL)(14/10/1985),"22°31'43""","114°09'24""",22.528611,114.156667,15
+Automatic Weather Station,TLS,Tai Lung(TLS)(14/02/2020),"22°29'05""","114°07'03""",22.484722,114.1175,21
+Automatic Weather Station,PLC,Tai Mei Tuk(PLC)(01/01/1993),"22°28'31""","114°14'15""",22.475278,114.2375,51
+Automatic Weather Station,TMS,Tai Mo Shan(TMS)(20/12/1996),"22°24'38""","114°07'28""",22.410556,114.124444,955
+Automatic Weather Station,YCT,Tai Po(Yuen Chau Tsai Park)**(YCT)(01/04/2022),"22°26'54""","114°10'38""",22.448333,114.177222,6
+Automatic Weather Station,TAP,Tap Mun***(TAP)(15/09/1993),"22°28'17""","114°21'38""",22.471389,114.360556,15
+Automatic Weather Station,TC,Tate's Cairn(TC)(18/12/1997),"22°21'28""","114°13'04""",22.357778,114.217778,572
+Automatic Weather Station,VP1,The Peak(VP1)(17/02/2003),"22°15'51""","114°09'18""",22.264167,114.155,406
+Automatic Weather Station,JKB,Tseung Kwan O(JKB)(01/12/1991),"22°18'57""","114°15'20""",22.315833,114.255556,38
+Automatic Weather Station,TWN,Tsuen Wan(TWN)(25/04/2006),"22°23'01""","114°06'28""",22.383611,114.107778,142
+Automatic Weather Station,TW,Tsuen Wan Shing Mun Valley(TW)(07/12/2010),"22°22'32""","114°07'36""",22.375556,114.126667,35
+Automatic Weather Station,TU1,Tuen Mun Children and Juvenile Home(TU1)(01/01/2007),"22°23'09""","113°57'51""",22.385833,113.964167,28
+Automatic Weather Station,WGL,Waglan Island(WGL)(22/08/1989),"22°10'56""","114°18'12""",22.182222,114.303333,56
+Automatic Weather Station,WLP,Wetland Park(WLP)(10/11/2005),"22°28'00""","114°00'32""",22.466667,114.008889,4
+Automatic Weather Station,HKS,Wong Chuk Hang(HKS)(01/08/1989),"22°14'52""","114°10'25""",22.247778,114.173611,5
+Automatic Weather Station,WTS,Wong Tai Sin(WTS)(27/03/2009),"22°20'22""","114°12'19""",22.339444,114.205278,21
+Automatic Weather Station,YLP,Yuen Long Park(YLP)(20/03/2015),"22°26'27""","114°01'06""",22.440833,114.018333,8

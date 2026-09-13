@@ -1,0 +1,144 @@
+{
+  "manifest_generation_timestamp": "2026-09-13T02:43:10.372006+00:00",
+  "project": "CTDI Air Pollution Imputation Project",
+  "domain": "Traffic Data",
+  "target_study_period": "2019-01-01 00:00 through 2021-12-31 23:00 (26,304 hours)",
+  "sources": [
+    {
+      "dataset_name": "Traffic Speed Map (City Dashboard Version) - Link Info Metadata",
+      "source_url": "https://static.data.gov.hk/opendata/dataset/traffic-speed/traffic-speed-info.csv",
+      "local_path": "data/raw/traffic/traffic-speed-info.csv",
+      "publisher": "Digital Policy Office (DPO) / Transport Department, HKSAR",
+      "file_type": "csv",
+      "coverage_start": "2019-12-24",
+      "coverage_end": "Current",
+      "description": "Geographic coordinates (start/end nodes, lat/lon) for the 6 harbour crossing links in the City Dashboard Traffic Speed Map.",
+      "source_version": "Official DATA.GOV.HK release",
+      "target_study_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "file_size_bytes": 1804,
+      "sha256": "93ca6f2ec1176b038bc795e4956cb3cce99f7c79f1273a2d7766495c623d5090",
+      "download_timestamp": "2026-09-13T02:42:05.655242+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Traffic Speed Map (City Dashboard Version) - Data Specification",
+      "source_url": "https://static.data.gov.hk/opendata/dataset/traffic-speed/traffic-speed-citydashboard-dataspec.pdf",
+      "local_path": "data/raw/traffic/traffic-speed-citydashboard-dataspec.pdf",
+      "publisher": "Digital Policy Office (DPO) / Transport Department, HKSAR",
+      "file_type": "pdf",
+      "coverage_start": "2019",
+      "coverage_end": "Current",
+      "description": "Official technical data specification for City Dashboard Traffic Speed Map (defines traffic_speed in km/h and road_saturation_level).",
+      "source_version": "Official DATA.GOV.HK release",
+      "target_study_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "file_size_bytes": 56500,
+      "sha256": "84ac4117de551e35262ec813766ffdc449ced7618aac3d409c70b37dfcf3f4c4",
+      "download_timestamp": "2026-09-13T02:42:05.998492+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Traffic Speed Map (City Dashboard Version) - Earliest Archived Historical Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=https%3A%2F%2Fdashboard.data.gov.hk%2Fapi%2Ftraffic-speed%3Fformat%3Dcsv&time=20191224-0834",
+      "local_path": "data/raw/traffic/samples/historical_city_dashboard_20191224_0834.csv",
+      "publisher": "DATA.GOV.HK Historical Archive System",
+      "file_type": "csv",
+      "coverage_start": "2019-12-24 08:34 HKT",
+      "coverage_end": "2019-12-24 08:34 HKT",
+      "description": "The earliest historical snapshot recorded in DATA.GOV.HK historical archive for the City Dashboard Traffic Speed Map.",
+      "source_version": "20191224-0834 archive snapshot",
+      "target_study_years": [
+        "2019"
+      ],
+      "file_size_bytes": 342,
+      "sha256": "48a847d6c81b82ce58b50cb1a90778748c45814575f818811b056dbbe30bde24",
+      "download_timestamp": "2026-09-13T02:42:16.299697+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Traffic Speed Map (City Dashboard Version) - Study End Historical Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=https%3A%2F%2Fdashboard.data.gov.hk%2Fapi%2Ftraffic-speed%3Fformat%3Dcsv&time=20211231-2358",
+      "local_path": "data/raw/traffic/samples/historical_city_dashboard_20211231_2358.csv",
+      "publisher": "DATA.GOV.HK Historical Archive System",
+      "file_type": "csv",
+      "coverage_start": "2021-12-31 23:58 HKT",
+      "coverage_end": "2021-12-31 23:58 HKT",
+      "description": "Historical snapshot recorded at the conclusion of the 3-year study period (2021-12-31 23:58 HKT).",
+      "source_version": "20211231-2358 archive snapshot",
+      "target_study_years": [
+        "2021"
+      ],
+      "file_size_bytes": 342,
+      "sha256": "7f22be429d7bb952be7e5e19c0bc6b9f1909a381bfc3a4a48d872dce8b6ee960",
+      "download_timestamp": "2026-09-13T02:42:18.356982+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Hong Kong Traffic Flow Census (Master Archive)",
+      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_TRAFFIC_DATA.zip",
+      "local_path": "data/raw/traffic/ATC_TRAFFIC_DATA.zip",
+      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "zip",
+      "coverage_start": "2018-01-01",
+      "coverage_end": "2024-12-31",
+      "description": "Annual Traffic Census (ATC) data containing vehicle flow variations, AADT, and cordon/screenline reports.",
+      "source_version": "2026-02-04 release",
+      "target_study_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "file_size_bytes": 33710902,
+      "sha256": "b2738720b17f47946cdebae2291bcb56eb0078a2603f412de13b328accfd84f7",
+      "download_timestamp": "2026-09-12T09:26:44.493578+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Annual Traffic Census Station Spatial Points",
+      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_STATION_PT.kmz",
+      "local_path": "data/raw/traffic/spatial/ATC_STATION_PT.kmz",
+      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "kmz",
+      "coverage_start": "Historical / Permanent",
+      "coverage_end": "Current",
+      "description": "GIS point coordinates for 1,694 Annual Traffic Census counting stations across Hong Kong.",
+      "source_version": "2026-02-04 release",
+      "target_study_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "file_size_bytes": 67197,
+      "sha256": "a6ee2b2d0f21286bab5930925df557311a289654d86df40cfa1a972b83fa1ac0",
+      "download_timestamp": "2026-09-12T09:26:45.182814+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    },
+    {
+      "dataset_name": "Annual Traffic Census Vehicle Classification Detector Info",
+      "source_url": "https://static.data.gov.hk/td/traffic-atc-veh-class/info/traffic_prop_vehicle_class_info.csv",
+      "local_path": "data/raw/traffic/traffic_prop_vehicle_class_info.csv",
+      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
+      "file_type": "csv",
+      "coverage_start": "2019-01-01",
+      "coverage_end": "Current",
+      "description": "Station metadata and geographic coordinates for 76 vehicle classification counting detectors.",
+      "source_version": "September 2022 dataset metadata release",
+      "target_study_years": [
+        "2019",
+        "2020",
+        "2021"
+      ],
+      "file_size_bytes": 9550,
+      "sha256": "aa07ac5b597e17be2abd6198e06eca7f05818e9cf2dc99f327ff472300c7fb1f",
+      "download_timestamp": "2026-09-12T09:26:45.262038+00:00",
+      "integrity_status": "VERIFIED_VALID"
+    }
+  ]
+}

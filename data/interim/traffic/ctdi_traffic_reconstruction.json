@@ -1,0 +1,194 @@
+{
+  "report_metadata": {
+    "generated_at": "2026-09-13T03:03:53.271566+00:00",
+    "project": "CTDI Air Pollution Imputation Project",
+    "document": "CTDI 13-Channel Dataset Reconstruction Audit",
+    "paper_reference": "Yangwen Yu et al., IEEE Transactions on Big Data, 2025. DOI: 10.1109/TBDATA.2025.3533882"
+  },
+  "paper_evidence": {
+    "table_i_citation": "Page 2448, Table I: HONG KONG DATASET COLLECTED FROM 2019-01-01 TO 2021-12-31",
+    "section_iii_a": "Page 2445: Data Pre-Processing Component and IDW formulation (Equation 1)",
+    "section_iv_a": "Page 2447: Datasets description (HKEPD [80], HKO [81], HK Traffic Speed Map [82])",
+    "section_v_c": "Page 2451: Test for Different Datasets (Dataset AU: 5 pollutants + 6 meteorology + 2 traffic = 13 channels; Dataset A: 5 pollutants)",
+    "footnote_1": "Page 2447: Air pollution data from two new air pollution monitoring stations in Hong Kong are not included for data consistency."
+  },
+  "source_evidence": {
+    "air_quality_source": {
+      "paper_citation": "Hong Kong Environmental Protection Agency (HKEPD) Database [80]",
+      "official_url": "https://cd.epic.epd.gov.hk/EPICDI/air/station/",
+      "nodes": 16,
+      "update_frequency": "1 hour",
+      "verified_in_project": true
+    },
+    "meteorology_source": {
+      "paper_citation": "Hong Kong Observatory Open Database [81]",
+      "official_url": "https://www.hko.gov.hk/en/abouthko/opendata_intro.htm",
+      "nodes": 47,
+      "update_frequency": "10 min",
+      "verified_in_project": true
+    },
+    "traffic_source": {
+      "paper_citation": "Hong Kong Traffic Speed Map (City Dashboard Version) Database [82]",
+      "cited_url": "https://data.gov.hk/en-data/dataset/hk-ogcio-da_div_02-citydashboard-traffic-speed",
+      "parent_source_url": "http://resource.data.one.gov.hk/td/speedmap.xml",
+      "parent_source_id": "hk-td-sm_1-traffic-speed-map",
+      "table_i_nodes": 607,
+      "table_i_update_frequency": "5min",
+      "empirical_link_count": 607,
+      "resolution": "CTDI authors cited the City Dashboard portal entry, but ingested the 607-road parent Traffic Speed Map system."
+    }
+  },
+  "variable_evidence": {
+    "traffic_variables": {
+      "channel_12": {
+        "table_i_name": "Traffic speed",
+        "unit": "km/h",
+        "system_field": "TRAFFIC_SPEED",
+        "data_type": "integer / numeric",
+        "evidence_status": "EXPLICITLY_USED"
+      },
+      "channel_13": {
+        "table_i_name": "Traffic congestion",
+        "unit": "N/A",
+        "system_field": "ROAD_SATURATION_LEVEL",
+        "data_type": "categorical ordinal (TRAFFIC GOOD, TRAFFIC AVERAGE, TRAFFIC BAD)",
+        "evidence_status": "EXPLICITLY_USED"
+      }
+    },
+    "meteorology_variables": {
+      "channel_6": {
+        "name": "Pressure",
+        "unit": "hPa",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_7": {
+        "name": "Relative humidity",
+        "unit": "%",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_8": {
+        "name": "Temperature",
+        "unit": "\u00b0C",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_9": {
+        "name": "Visibility",
+        "unit": "km",
+        "status": "EXPLICITLY_USED",
+        "note": "Current pipeline previously assumed rainfall"
+      },
+      "channel_10": {
+        "name": "Wind direction",
+        "unit": "N/A",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_11": {
+        "name": "Wind speed",
+        "unit": "km/h",
+        "status": "EXPLICITLY_USED"
+      }
+    },
+    "pollutant_variables": {
+      "channel_1": {
+        "name": "PM2.5",
+        "unit": "ug/m3",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_2": {
+        "name": "PM10",
+        "unit": "ug/m3",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_3": {
+        "name": "NO2",
+        "unit": "ug/m3",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_4": {
+        "name": "SO2",
+        "unit": "ug/m3",
+        "status": "EXPLICITLY_USED"
+      },
+      "channel_5": {
+        "name": "O3",
+        "unit": "ug/m3",
+        "status": "EXPLICITLY_USED"
+      }
+    }
+  },
+  "volume_investigation": {
+    "traffic_volume_used_in_ctdi": false,
+    "evidence": "Zero occurrences of traffic volume in Table I and throughout the entire CTDI paper text. Traffic Speed Map system does not measure vehicle counts.",
+    "verdict": "The assumption that Channel 13 is traffic_volume is definitively refuted."
+  },
+  "spatial_evidence": {
+    "method": "Inverse Distance Weighting (IDW)",
+    "weighting_function": "w_ij = 1 / d(i,j)^p with p = 2",
+    "zero_distance_rule": "u'_j = u_i when d(i,j) = 0",
+    "source_nodes_traffic": 607,
+    "target_nodes": 16,
+    "distance_metric": "Euclidean / Haversine distance between link centroid and air station"
+  },
+  "temporal_evidence": {
+    "study_period": "2019-01-01 00:00 to 2021-12-31 23:00 (26,304 hours)",
+    "city_dashboard_archive": {
+      "2019": {
+        "available_hours": 183,
+        "missing_hours": 8577,
+        "completeness_pct": 2.1
+      },
+      "2020": {
+        "available_hours": 8784,
+        "missing_hours": 0,
+        "completeness_pct": 100.0
+      },
+      "2021": {
+        "available_hours": 8760,
+        "missing_hours": 0,
+        "completeness_pct": 100.0
+      },
+      "overall_completeness_pct": 67.4
+    },
+    "parent_speedmap_archive": {
+      "2019": {
+        "available_hours": 8760,
+        "missing_hours": 0,
+        "completeness_pct": 100.0
+      },
+      "2020": {
+        "available_hours": 8784,
+        "missing_hours": 0,
+        "completeness_pct": 100.0
+      },
+      "2021": {
+        "available_hours": 8760,
+        "missing_hours": 0,
+        "completeness_pct": 100.0
+      },
+      "overall_completeness_pct": 100.0,
+      "total_archived_versions": 774686
+    }
+  },
+  "channel_definition": [
+    "pm25",
+    "pm10",
+    "no2",
+    "so2",
+    "o3",
+    "pressure",
+    "relative_humidity",
+    "temperature",
+    "visibility",
+    "wind_direction",
+    "wind_speed",
+    "traffic_speed",
+    "traffic_congestion"
+  ],
+  "confidence": {
+    "channel_identity_confidence": "HIGH (13 channels explicitly enumerated in Table I)",
+    "traffic_variables_confidence": "HIGH (Traffic speed and Traffic congestion explicitly enumerated in Table I)",
+    "source_reconstruction_confidence": "HIGH (Parent speedmap matches 607 nodes, 5min cadence, and XML fields)",
+    "raw_traffic_data_readiness": "BATCH_INGESTION_REQUIRED (774,686 parent archive versions indexed; batch downloader required to assemble local 26,304-hour CSV)"
+  },
+  "final_status": "CTDI_13_CHANNELS_ALIGNED_BUT_SOURCE_DIFFERENCE"
+}

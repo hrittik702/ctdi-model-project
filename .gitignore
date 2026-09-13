@@ -8,8 +8,8 @@ venv/
 env/
 
 # Data
-data/
-data/**
+# data/
+# data/**
 *.zip
 
 # Vite & Node

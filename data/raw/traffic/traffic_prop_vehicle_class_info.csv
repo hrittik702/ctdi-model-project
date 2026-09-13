@@ -1,0 +1,77 @@
+﻿Device_ID,District,Road_EN,Road_TC,Road_SC,Easting,Northing,Latitude,Longitude,Direction,Rotation
+TCS01101-1,Wan Chai,Wong Nai Chung Gap Flyover,黃泥涌峽天橋,黄泥涌峡天桥,836609,814749,22.27158293,114.180183,North West,320
+TCS01101-2,Wan Chai,Wong Nai Chung Gap Flyover,黃泥涌峽天橋,黄泥涌峡天桥,836609,814749,22.27158293,114.180183,North West,320
+TCS01102,Kowloon City,Princess Margaret Road,公主道,公主道,836248,819247,22.31220271,114.1766802,North West,350
+TCS01103,Sha Tin,Lion Rock Tunnel Road,獅子山隧道公路,狮子山隧道公路,836167,824542,22.36001961,114.1758938,North East,40
+TCS01202,Kowloon City,Princess Margaret Road,公主道,公主道,836276,819369,22.31330444,114.176952,South West,190
+TCS01203-1,Sha Tin,Lion Rock Tunnel,獅子山隧道,狮子山隧道,835903,824338,22.35817734,114.1733307,South West,220
+TCS01203-2,Sha Tin,Lion Rock Tunnel,獅子山隧道,狮子山隧道,835903,824338,22.35817734,114.1733307,South West,220
+TCS02102,Kwun Tong,Kwun Tong Bypass,觀塘繞道,观塘绕道,839824,819769,22.316913,114.2113882,West,270
+TCS02103,Wong Tai Sin,Tate's Cairn Tunnel,大老山隧道,大老山隧道,839051,822434,22.34098093,114.2038902,North East,40
+TCS02202,Kwun Tong,Kwun Tong Bypass,觀塘繞道,观塘绕道,839364,820068,22.31961404,114.2069241,South East,150
+TCS02203-2,Wong Tai Sin,Tate's Cairn Tunnel,大老山隧道（旁）,大老山隧道（旁）,839044,822352,22.34024044,114.2038221,South West,220
+TCS03101-1,Central & Western,Connaught Road West Flyover,干諾道西天橋,干诺道西天桥,832352,816606,22.28834842,114.1388742,North East,60
+TCS03101-2,Central & Western,Connaught Road West,干諾道西,干诺道西,832408,816672,22.28894457,114.1394174,North East,40
+TCS03101-3,Central & Western,Connaught Road West Flyover,干諾道西天橋,干诺道西天桥,833052,816629,22.28855757,114.1456668,West,270
+TCS03101-4,Central & Western,Connaught Road West,干諾道西,干诺道西,832766,816646,22.28871053,114.1428915,West,270
+TCS03102,Yau Tsim Mong,West Kowloon Highway,西九龍公路,西九龙公路,834586,819665,22.31597668,114.1605493,North West,350
+TCS03201,Central & Western,Western Harbour Crossing,西區海底隧道,西区海底隧道,832798,816708,22.2892705,114.1432019,South West,220
+TCS03202,Yau Tsim Mong,West Kowloon Highway,西九龍公路,西九龙公路,834567,819714,22.31641917,114.1603649,South East,135
+TCS03203,Yuen Long,Tsing Long Highway,靑朗公路,青朗公路,824386,830275,22.41175041,114.061472,South West,220
+TCS04101,Central & Western,Connaught Road CentralFlyover,干諾道中天橋,干诺道中天桥,833689,816510,22.28748399,114.1518483,South East,100
+TCS04102,Eastern,Island Eastern Corridor,東區走廊,东区走廊,842429,815545,22.27876033,114.2366555,South East,130
+TCS04201,Central & Western,Connaught Road West Flyover,干諾道西天橋,干诺道西天桥,833489,816568,22.28800746,114.1499075,South East,100
+TCS04202-1,Eastern,Island Eastern Corridor,東區走廊,东区走廊,842241,815833,22.28136181,114.2348324,North West,310
+TCS04202-2,Eastern,Island Eastern Corridor,東區走廊,东区走廊,842260,815787,22.28094634,114.2350166,North West,310
+TCS05101-1,Kowloon City,Kai Tak Tunnel,啓德隧道,启德隧道,837650,820210,22.32089862,114.1902882,South West,185
+TCS05101-2,Kowloon City,Kai Tak Tunnel,啓德隧道,启德隧道,837676,820209,22.32088957,114.1905405,South,180
+TCS05102,Kowloon City,East Kowloon Corridor,東九龍走廊,东九龙走廊,837196,819183,22.3116245,114.185881,South West,225
+TCS05103,Kowloon City,Chatharn Road North,漆咸道北,漆咸道北,836844,818811,22.30826527,114.1824646,South West,225
+TCS05104-1,Yau Tsim Mong,West Kowloon Corridor West,西九龍走廊西,西九龙走廊西,835177,819709,22.31637451,114.1662854,North,0
+TCS05105,Kwai Tsing,Kwai Chung Road,葵涌道,葵涌道,831262,822725,22.34339627,114.1288216,North West,275
+TCS05202,Kowloon City,East Kowloon Corridor,東九龍走廊,东九龙走廊,837182,819160,22.3114168,114.1857451,North East,45
+TCS05203,Kowloon City,Chatharn Road North,漆咸道北,漆咸道北,837030,818954,22.30955657,114.1842698,North East,45
+TCS05204-1,Yau Tsim Mong,West Kowloon Corridor,西九龍走廊,西九龙走廊,835219,819587,22.3152728,114.1666931,South,180
+TCS05204-2,Yau Tsim Mong,West Kowloon Corridor,西九龍走廊,西九龙走廊,835241,819516,22.31463164,114.1669067,South,180
+TCS05205,Kwai Tsing,Kwai Chung Road,葵涌道,葵涌道,831175,822772,22.34402799,114.1274332,South East,95
+TCS07101,Sai Kung,Tseung Kwan O Road,將軍澳道,将军澳道,844046,820259,22.32132408,114.2523684,West,270
+TCS07102-1,Kwun Tong,Kwun Tong Road,觀塘道,观塘道,839777,821190,22.32974556,114.2109351,North West,300
+TCS07102-2,Kwun Tong,Kwun Tong Road (Adjacent),觀塘道（旁）,观塘道（旁）,839757,821187,22.32971851,114.210741,North West,300
+TCS07201,Kwun Tong,Tseung Kwan O Road,將軍澳道,将军澳道,842677,819484,22.31433102,114.2390777,North East,50
+TCS07202-1,Kwun Tong,Kwun Tong Road,觀塘道,觀塘道,839689,821288,22.33063074,114.2100811,South East,120
+TCS07203,Kowloon City,Lung Cheung Road,龍翔道,龙翔道,836220,822838,22.34463154,114.1764084,South East,110
+TCS02101-1,Eastern,Eastern Harbour Crossing,東區海底隧道,东区海底隧道,840045,816806,22.29015483,114.2135262,South West,140
+TCS02101-2,Eastern,Eastern Harbour Crossing,東區海底隧道,东区海底隧道,840127,816643,22.28868266,114.2143215,South West,210
+TCS02201-1,Eastern,Eastern Harbour Crossing,東區海底隧道,东区海底隧道,839944,816608,22.28836699,114.2125456,South East,120
+TCS02201-2,Eastern,Eastern Harbour Crossing,東區海底隧道,东区海底隧道,840395,816708,22.28926903,114.2169223,South East,120
+TCS03103,Yuen Long,Tsing Long Highway,靑朗公路,青朗公路,824322,830204,22.4111088,114.060851,North East,40
+NCWBR20001,Kwun Tong,New Clear Water Bay Road,新清水灣道,新清水湾道,839974,821551,22.33300519,114.2128482,North West,315
+TKR20001,Tai Po,Ting Kok Road,汀角路,汀角路,837597,835860,22.46222621,114.1897868,West,270
+WNCGR10001,Wan Chai,Wong Nai Chung Gap Road,黃泥涌峽道,黄泥涌峡道,837459,813742,22.26248868,114.1884295,North West,310
+WNCGR20001,Wan Chai,Wong Nai Chung Gap Road,黃泥涌峽道,黄泥涌峡道,837495,813721,22.26229901,114.1887787,South East,130
+PFLR20001,Central and Western,Pok Fu Lam Road,薄扶林道,薄扶林道,831608,815760,22.28070666,114.131657,South,200
+IEC10002,Wan Chai,Gloucestor Road,告士打道,告士打道,837284,816140,22.28414428,114.1867331,East,90
+CPR20001,Yeun Long,San Tin Road,新田公路,新田公路,823374,835362,22.45768097,114.0516019,North,300
+CWBR20001,Sai Kung,Clear Water Bay Road,清水灣道,清水湾道,841981,821673,22.33410142,114.2323304,South East,130
+CPRLT20001,Yeun Long,Castle Peak Rd-Lam Tei,青山公路藍地段,青山公路蓝地段,816223,831001,22.41823047,113.9821811,South West,210
+CPRLT10001,Yeun Long,Castle Peak Rd-Lam Tei,青山公路藍地段,青山公路蓝地段,816182,830920,22.41749852,113.9817839,North East,120
+TPSH10001,Sha Tin,Tai Po Road-Sha Tin Heights,大埔公路沙田嶺段,大埔公路沙田岭段,833780,822748,22.34381699,114.1527217,East,80
+TPSH20001,Sha Tin,Tai Po Road-Sha Tin Heights,大埔公路沙田嶺段,大埔公路沙田岭段,833811,822736,22.34370867,114.1530227,West,260
+IEC20002-2,Wan Chai,Gloucestor Road,告士打道,告士打道,837517,816190,22.28459566,114.1889941,East,90
+ALPR90002,Yeun Long,San Tin Highway,新田公路,新田公路,824075,838122,22.48261003,114.0583913,South,180
+PFLR10001,Central and Western,Pok Fu Lam Road,薄扶林道,薄扶林道,831549,815609,22.27934287,114.1310849,North,20
+CWBR10001,Sai Kung,Clear Water Bay Road,清水灣道,清水湾道,841936,821666,22.33403835,114.2318935,North West,310
+TCS02203-1,Wong Tai Sin,Tate's Cairn Tunnel,大老山隧道,大老山隧道,839044,822352,22.34024,114.2038,South West,220
+TCS05104-2,Yau Tsim Mong,West Kowloon Corridor West,西九龍走廊西,西九龙走廊西,835190,819711,22.31639,114.1664,North,0
+TCS05201,Kowloon City,East Kowloon Corridor,東九龍走廊,东九龙走廊,837587,820055,22.3195,114.1897,North East,45
+TCS07202-2,Kwun Tong,Kwun Tong Road (Adjacent),觀塘道（旁）,观塘道（旁）,839680,821282,22.33058,114.21,South East,120
+ALPR90005,Tsuen Wan,Tuen Mun Road,屯門公路,屯门公路,824760,825310,22.36692,114.0651,North West,315
+ALPR90005-2,Tsuen Wan,Tuen Mun Road,屯門公路,屯门公路,824760,825310,22.36692,114.0651,North West,315
+CPR10001,Yuen Long,Castle Peak Rd-Tam Mi,青山公路潭尾段,青山公路潭尾段,823357,835304,22.45716,114.0514,North,30
+IEC10002-2,Wan Chai,Gloucestor Road,告士打道,告士打道,837284,816140,22.28414,114.1867,East,90
+JCR10001,North,Jockey Club Road,馬會道,马会道,833116,838861,22.48932,114.1462,South East,135
+JCR20001,North,Jockey Club Road,馬會道,马会道,833121,833818,22.44378,114.1463,North West,315
+NCWBR10001,Kwun Tong,New Clear Water Bay Road,新清水灣道,新清水湾道,839949,821587,22.33333,114.2126,South East,135
+TKR10001,Tai Po,Ting Kok Road,汀角路,汀角路,837504,835859,22.46222,114.1889,East,90
+TPR10001,Sha Tin,Tai Po Road - Ma Liu Shui,大埔公路馬料水段,大埔公路马料水段,839035,830904,22.41747,114.2037,South East,135
+TPR20001,Sha Tin,Tai Po Road - Ma Liu Shui,大埔公路馬料水段,大埔公路马料水段,839087,830838,22.41687,114.2043,North West,310
