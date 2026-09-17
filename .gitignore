@@ -31,3 +31,6 @@ frontend/node_modules/
 .idea/
 .obsidian/
 scripts/
+data/interim/
+data/processed/
+data/canonical/
