@@ -17,7 +17,7 @@ This project investigates **SLM-Conditioned Diffusion**: introducing a Small Lan
 
 | Research Component | Current Status | Notes & Evidence |
 | :--- | :---: | :--- |
-| **Literature & CTDI Analysis** | **`Verified`** | Table I, Section III-A (IDW), and Section V-C of Yu et al. (IEEE TBD 2025) audited in [`research/literature/ctdi_paper_analysis.md`](research/literature/ctdi_paper_analysis.md). |
+| **Literature & CTDI Analysis** | **`Verified`** | Table I, Section III-A (IDW), and Section V-C of Yu et al. (IEEE TBD 2025) audited in [`research/literature/CTDI Paper Exhaustive Analysis.md`](research/Literature/CTDI%20Paper%20Exhaustive%20Analysis.md). |
 | **Air-Quality Dataset** | **`Verified`** | 3-year continuous EPD records (420,864 rows, 16 stations, 0 negative values) validated in [`data/raw/air_quality/`](data/raw/air_quality/). |
 | **Meteorology Dataset** | **`Partially Verified`** | Interim ERA5 reanalysis dataset loaded (420,864 rows); pending acquisition of HKO AWS visibility to replace rainfall. |
 | **Traffic Dataset** | **`Blocked`** | Parent 1st Gen Speedmap verified across 607 links (774k snapshots); batch historical XML ingestion pending. |
@@ -74,7 +74,7 @@ Benchmarked directly against the Hong Kong experimental setting published in Yu 
 - **Meteorology**: Reanalysis table complete; source-fidelity update pending to ingest HKO AWS visibility in place of rainfall.
 - **Traffic**: Parent 1st Gen Traffic Speed Map verified across 607 road links (774k archived XML snapshots); batch historical ingestion is pending. Synthetic traffic generation is strictly prohibited by pipeline safety assertions.
 
-→ Detailed dataset documentation: [`research/dataset/dataset_definition.md`](research/dataset/dataset_definition.md)
+→ Detailed dataset documentation: [`research/dataset/CTDIDataset Specifications.md`](research/Dataset/CTDIDataset%20Specifications.md)
 
 ---
 
@@ -84,7 +84,7 @@ Benchmarked directly against the Hong Kong experimental setting published in Yu 
 .
 ├── src/            # Core package implementation
 │   ├── context/    # Environmental context builder for SLM conditioning
-│   ├── dataset/    # Sliding window segmentation and missingness simulation
+│   ├── Dataset/    # Sliding window segmentation and missingness simulation
 │   ├── evaluation/ # Imputation metrics (MAE, RMSE, MAPE, CRPS, PICP)
 │   ├── models/     # Model architectures (SLM encoder and diffusion denoiser)
 │   └── preprocessing/ # Ingestion, temporal grid alignment, and spatial IDW
@@ -93,7 +93,7 @@ Benchmarked directly against the Hong Kong experimental setting published in Yu 
 ├── tests/          # Unit tests and tensor assertion suites
 ├── data/           # Raw archives, interim tables, and canonical tensors (gitignored)
 ├── research/       # Modular research knowledge base and evidence records
-├── reports/        # Archived investigation reports and historical logs
+├── Reports/        # Archived investigation reports and historical logs
 ├── api.py          # FastAPI service entry point
 ├── requirements.txt # Python package dependencies
 └── README.md       # Public repository entry point
@@ -128,7 +128,7 @@ python scripts/verify_raw_datasets.py
 python -c "from src.preprocessing.alignment import run_standalone_check; run_standalone_check()"
 ```
 
-→ Preprocessing and pipeline execution guide: [`research/preprocessing/`](research/preprocessing/)
+→ Preprocessing and pipeline execution guide: [`research/Preprocessing/`](research/Preprocessing/)
 
 ---
 
@@ -141,14 +141,14 @@ research/
 ├── MASTER_RESEARCH_DOCUMENT.md
 ├── research_status.md
 ├── research_timeline.md
-├── literature/
-├── dataset/
-├── preprocessing/
-├── architecture/
-├── experiments/
-├── findings/
-├── decisions/
-├── reports/
+├── Literature/
+├── Dataset/
+├── Preprocessing/
+├── Architecture/
+├── Experiments/
+├── Findings/
+├── Decisions/
+├── Reports/
 └── checkpoints/
 ```
 
@@ -157,14 +157,14 @@ research/
 | **Master Research Document** | Consolidated research thesis and scientific knowledge base: [`research/MASTER_RESEARCH_DOCUMENT.md`](research/MASTER_RESEARCH_DOCUMENT.md) |
 | **Status Dashboard** | Live operational readiness and component blocker tracking: [`research/research_status.md`](research/research_status.md) |
 | **Research Timeline** | Chronological record of milestones and paradigm shifts: [`research/research_timeline.md`](research/research_timeline.md) |
-| **Dataset Specifications** | Tensor formulation, 13 channels, source fidelity, and station inventory: [`research/dataset/`](research/dataset/) |
-| **Preprocessing Pipeline** | Spatial IDW ($p=2$), cleaning rules, and zero-leakage normalization: [`research/preprocessing/`](research/preprocessing/) |
-| **Model Architecture** | SLM context builder, diffusion denoiser, and loss formulations: [`research/architecture/`](research/architecture/) |
-| **Experimental Protocols** | Missingness benchmark scenarios (MCAR/block/outage) and baseline designs: [`research/experiments/`](research/experiments/) |
-| **Scientific Findings** | Empirically confirmed findings and documented negative results (dead ends): [`research/findings/`](research/findings/) |
-| **Decision Records (ADRs)** | Formal methodological and architectural decision logs: [`research/decisions/`](research/decisions/) |
-| **Reports Archive** | Verbatim table reproductions and historical audits: [`research/reports/`](research/reports/) |
-| **Daily Checkpoints** | Dated daily research logs and session freezes: [`research/checkpoints/`](research/checkpoints/) |
+| **Dataset Specifications** | Tensor formulation, 13 channels, source fidelity, and station inventory: [`research/Dataset/`](research/Dataset/) |
+| **Preprocessing Pipeline** | Spatial IDW ($p=2$), cleaning rules, and zero-leakage normalization: [`research/Preprocessing/`](research/Preprocessing/) |
+| **Model Architecture** | SLM context builder, diffusion denoiser, and loss formulations: [`research/Architecture/`](research/Architecture/) |
+| **Experimental Protocols** | Missingness benchmark scenarios (MCAR/block/outage) and baseline designs: [`research/Experiments/`](research/Experiments/) |
+| **Scientific Findings** | Empirically confirmed findings and documented negative results (dead ends): [`research/Findings/`](research/Findings/) |
+| **Decision Records (ADRs)** | Formal methodological and architectural decision logs: [`research/Decisions/`](research/Decisions/) |
+| **Reports Archive** | Verbatim table reproductions and historical audits: [`research/Reports/`](research/Reports/) |
+| **Daily Checkpoints** | Dated daily research logs and session freezes: [`research/Checkpoints/`](research/Checkpoints/) |
 
 ---
 

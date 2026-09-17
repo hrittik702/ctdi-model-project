@@ -203,6 +203,56 @@ def build_provenance_metadata(
                     "data/interim/traffic/clean_traffic_speedmap_snapshots.csv",
                     "data/interim/traffic/traffic_source_cleaning_report.json"
                 ]
+            },
+            {
+                "domain": "Traffic (Complete 3-Year Historical Archive)",
+                "source_file": "DATA.GOV.HK Historical Archive (36 monthly zip archives, 201901–202112)",
+                "source_organization": "Transport Department, The Government of the Hong Kong SAR (HKTD)",
+                "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=http%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fspeedmap.xml&time=YYYYMM01",
+                "original_columns": [
+                    "LINK_ID", "REGION", "ROAD_TYPE", "ROAD_SATURATION_LEVEL", "TRAFFIC_SPEED", "CAPTURE_DATE"
+                ],
+                "standardized_columns": [
+                    "timestamp", "link_id", "traffic_speed", "traffic_congestion", "region", "road_type"
+                ],
+                "original_units": {
+                    "TRAFFIC_SPEED": "km/h", "ROAD_SATURATION_LEVEL": "categorical string"
+                },
+                "standardized_units": {
+                    "traffic_speed": "km/h",
+                    "traffic_congestion": "categorical string (GOOD, AVERAGE, BAD)"
+                },
+                "transformation_applied": [
+                    "Parallel monthly stream extraction from DATA.GOV.HK historical archives",
+                    "Streaming ElementTree XML parsing of 774,686 snapshot files",
+                    "Fast regex/lxml timestamp parsing with Asia/Hong_Kong timezone alignment",
+                    "Numeric speed parsing and physical validation ([0, 111] km/h)",
+                    "Saturation category cleaning and normalization",
+                    "Link ID string standardization (632 unique links in union, 590 common core)",
+                    "Monthly partition serialization to Snappy-compressed Parquet (36 files)",
+                    "Unified dataset symlink creation without spatial IDW or temporal aggregation"
+                ],
+                "transformation_reason": (
+                    "Extract the complete 3-year historical traffic archive into standardized link-level "
+                    "monthly partitions to serve as the ground truth input for Phase 2 spatial IDW interpolation."
+                ),
+                "total_snapshots_processed": 774686,
+                "row_count_before": 466829497,
+                "row_count_after": 466829497,
+                "missing_values_before": {
+                    "traffic_speed": 0, "traffic_congestion": 0, "link_id": 0
+                },
+                "missing_values_after": {
+                    "traffic_speed": 0, "traffic_congestion": 0, "link_id": 0
+                },
+                "processing_date": now_iso[:10],
+                "script_or_notebook_used": "src/preprocessing/extract_complete_traffic.py / src/preprocessing/validate_complete_traffic.py",
+                "output_files": [
+                    "data/interim/traffic/clean_traffic_speedmap_complete.parquet",
+                    "data/interim/traffic/monthly/traffic_speedmap_YYYYMM.parquet",
+                    "data/interim/traffic/traffic_complete_extraction_report.json",
+                    "data/interim/traffic/traffic_failed_extractions.csv"
+                ]
             }
         ]
     }

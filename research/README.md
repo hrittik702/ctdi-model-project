@@ -1,146 +1,199 @@
-# Research Documentation & Checkpoint Repository
+# Research Knowledge Base & Documentation Hub
 
 **Project**: Context-Aware Generative Imputation of Air Pollution Using SLM-Conditioned Diffusion  
 **Core Benchmark**: Yu et al., *"CTDI: CNN-Transformer-Based Spatial-Temporal Missing Air Pollution Data Imputation"*, **IEEE Transactions on Big Data**, vol. 11, no. 5, pp. 2442–2455, Sept.–Oct. 2025.  
 **Target Domain**: Hong Kong SAR (16 stations × 26,304 hours × 13 channels; 2019-01-01 00:00 to 2021-12-31 23:00)  
-**Current Date**: 13 September 2026  
-**Current Project Status**: Work intentionally paused for today; documentation, audit, and checkpoint freeze.
+**Current Milestone**: Phase 2 Complete (Spatio-Temporal Alignment & 13-Channel Cartesian Grid Verified)  
+**Epistemic Standard**: Curated Knowledge Base where **One Topic → One Primary Canonical Note → Complete Curated Information**.
 
 ---
 
-## 1. Start Here
+## 1. Quick Start: Where to Begin
 
-If you are a researcher, engineer, or collaborator joining or resuming this project, review documents in the following order:
+If you are joining or resuming this project, follow this curated entry sequence:
 
-1. **[Master Research Document](MASTER_RESEARCH_DOCUMENT.md)**: The single living master document containing the complete, consolidated scientific understanding, dataset definition, architecture, literature foundation, findings, and current stopping point.
-2. **[Research Status Dashboard](research_status.md)**: High-level table tracking the verified status, blockers, and remaining work for all project components.
-3. **[Research Timeline](research_timeline.md)**: Chronological evolution of scientific milestones and decisions.
-4. **[Latest Daily Checkpoint](checkpoints/2026-09-13.md)**: The exact work, findings, and next starting point from the most recent session (2026-09-13).
-5. **[Confirmed Findings](findings/confirmed_findings.md)** & **[Negative Findings](findings/negative_findings.md)**: What was empirically proven true, and critical dead ends that must not be repeated.
-6. **[Methodological Decisions](decisions/README.md)**: Formal decision records (ADRs) explaining key scientific and architectural choices.
+1. **[Master Research Document](MASTER_RESEARCH_DOCUMENT.md)**: The comprehensive thesis document uniting dataset design, literature foundation, diffusion architecture, and empirical findings.
+2. **[Research Status Dashboard](research_status.md)**: High-level operational readiness, active blockers, and progress across all phases.
+3. **[Research Timeline](research_timeline.md)**: Chronological history of scientific discoveries, data audits, and architectural shifts.
+4. **[Latest Daily Checkpoints](Checkpoints/README.md)**: Immutable daily session logs ([2026-09-17 Phase 2](Checkpoints/2026-09-17_phase_2.md), [2026-09-17 Phase 1.1](Checkpoints/2026-09-17_phase_1_1.md), [2026-09-13](Checkpoints/2026-09-13.md)).
+5. **[Confirmed Findings](Findings/Confirmed%20Research%20Findings.md)** & **[Negative Findings](Findings/Negative%20Findings%20&%20Dead%20Ends.md)**: What was empirically proven true, and critical dead ends that must not be repeated.
+6. **[Methodological Decisions](Decisions/README.md)**: Formal decision records (ADRs) explaining key scientific and architectural choices.
 
 ---
 
-## 2. Directory Architecture
+## 2. Topic Navigation Map (One Topic → One Primary Note)
 
-The `research/` directory is structured modularly to ensure complete traceability, auditability, and reproducibility:
+To eliminate information duplication and fragmentation, the research knowledge base is organized around **15 Core Research Topics**. Every topic is anchored by **one primary canonical note** that contains complete, self-contained knowledge. Supporting empirical investigation reports and historical logs are hyperlinked as secondary evidence.
+
+| # | Research Topic | Primary Canonical Document | Key Focus & Scope | Supporting Evidence & Reports | Historical Checkpoints |
+| :-: | :--- | :--- | :--- | :--- | :--- |
+| **1** | **CTDI Benchmark & Paper Specification** | **[CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md)** | Verbatim Table I, 13 channels, 607 road links, 47 AWS stations, side-by-side figures | [ctdi table I reconstruction.md](Reports/ctdi%20table%20I%20reconstruction.md)<br>[ctdi traffic variable verification.md](Reports/ctdi%20traffic%20variable%20verification.md)<br>[ctdi channel reconstruction.md](Reports/ctdi%20channel%20reconstruction.md) | [2026-09-13.md](Checkpoints/2026-09-13.md) |
+| **2** | **Reconstructed Hong Kong Dataset & Provenance** | **[Dataset Provenance & Specifications.md](Dataset/Dataset%20Provenance%20&%20Specifications.md)** | End-to-end chain of custody, 16 stations, ERA5 surface meteorology, TD traffic extraction | [Phase 1 - Source-Specific Cleaning Report.md](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md)<br>[Raw Data Availability & Verification.md](Reports/Raw%20Data%20Availability%20&%20Verification.md)<br>[Raw Data Integrity Manifest.md](Dataset/Raw%20Data%20Integrity%20Manifest.md) | [2026-09-13.md](Checkpoints/2026-09-13.md)<br>[2026-09-17_phase_1_1.md](Checkpoints/2026-09-17_phase_1_1.md) |
+| **3** | **CTDI vs. Our Reconstruction Divergence** | **[CTDI Consistency & Divergence Matrix](Dataset/CTDI%20Dataset%20Consistency%20Matrix.md)** | Variable-by-variable comparison, visibility vs rainfall rationale, traffic speed & congestion | [Visibility Data Recovery & Provenance Report.md](Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md)<br>[ctdi source fidelity report.md](Reports/ctdi%20source%20fidelity%20report.md) | [2026-09-13.md](Checkpoints/2026-09-13.md)<br>[Dataset Decisions.md](Decisions/Dataset%20Decisions.md) |
+| **4** | **Air Quality Monitoring Network** | **[Station Inventory & Spatial Network.md](Dataset/Station%20Inventory%20&%20Spatial%20Network.md)** | 16 EPD monitoring stations (13 ambient, 3 roadside), GPS coordinates, sensor heights | [Station Inventory & Spatial Network.md](Dataset/Station%20Inventory%20&%20Spatial%20Network.md)<br>[Cleaning, Translation & Validation Rules.md](Preprocessing/Cleaning,%20Translation%20&%20Validation%20Rules.md) | [2026-09-13.md](Checkpoints/2026-09-13.md) |
+| **5** | **Temporal Coverage & Calendar Accounting** | **[Temporal Coverage & Calendar Accounting.md](Dataset/Temporal%20Coverage%20&%20Calendar%20Accounting.md)** | 3-year continuous timeline (2019–2021), 2020 leap year accounting, 26,304 hourly timestamps | [Raw Data Availability & Verification.md](Reports/Raw%20Data%20Availability%20&%20Verification.md)<br>[Temporal Alignment & Grid Assembly.md](Preprocessing/Temporal%20Alignment%20&%20Grid%20Assembly.md) | [2026-09-13.md](Checkpoints/2026-09-13.md) |
+| **6** | **Missingness Architecture & Empirical Distribution** | **[Missingness Architecture & Empirical Distribution.md](Dataset/Missingness%20Architecture%20&%20Empirical%20Distribution.md)** | Natural missingness (55,876 missing entries; 2.6553%), diurnal calibration spikes, Figures 6–9 | [CTDI Missingness Pattern Analysis.md](Reports/CTDI%20Missingness%20Pattern%20Analysis.md)<br>[figures/](Figures/) | [2026-09-17.md](Checkpoints/2026-09-17.md) |
+| **7** | **Meteorological Reconstruction & Visibility** | **[Visibility Data Recovery & Provenance Report.md](Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md)** | HKO 10-min visibility irrecoverability audit, physical justification for ERA5 rainfall substitution | [Data Source Inventory & Fidelity Audit.md](Dataset/Data%20Source%20Inventory%20&%20Fidelity%20Audit.md)<br>[Dataset Decisions.md](Decisions/Dataset%20Decisions.md) | [2026-09-13.md](Checkpoints/2026-09-13.md) |
+| **8** | **Traffic Dataset Extraction & Verification** | **[ctdi traffic variable verification.md](Reports/ctdi%20traffic%20variable%20verification.md)** | Transport Department parent SpeedMap XML (607 links, 774k snapshots) vs rejected ATC/Dashboard | [Phase 1 - Source-Specific Cleaning Report.md](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md)<br>[checkpoints/2026-09-17_phase_1_1.md](Checkpoints/2026-09-17_phase_1_1.md) | [2026-09-13.md](Checkpoints/2026-09-13.md)<br>[2026-09-17_phase_1_1.md](Checkpoints/2026-09-17_phase_1_1.md) |
+| **9** | **Spatial Alignment & Network Geometry** | **[Spatial Alignment & Network Geometry.md](Dataset/Spatial%20Alignment%20&%20Network%20Geometry.md)** | 16×16 Haversine distance matrix, Inverse Distance Weighting ($p=2$), link-to-station assignment | [Phase 2 - Spatio-Temporal Alignment Report.md](Reports/Phase%202%20-%20Spatio-Temporal%20Alignment%20Report.md)<br>[Spatial Alignment Implementation.md](Preprocessing/Spatial%20Alignment%20Implementation.md) | [2026-09-13.md](Checkpoints/2026-09-13.md) |
+| **10** | **Spatio-Temporal Alignment (Phase 2)** | **[Phase 2 - Spatio-Temporal Alignment Report.md](Reports/Phase%202%20-%20Spatio-Temporal%20Alignment%20Report.md)** | Construction of the unified Cartesian grid $\mathcal{S} 	imes \mathcal{T} = 420,864$ observations across 13 channels | [Phase 1 - Source-Specific Cleaning Report.md](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md)<br>[Temporal Alignment & Grid Assembly.md](Preprocessing/Temporal%20Alignment%20&%20Grid%20Assembly.md) | [2026-09-17_phase_2.md](Checkpoints/2026-09-17_phase_2.md) |
+| **11** | **Data Preprocessing Engineering** | **[Data Processing - Hong Kong.md](Reports/Data%20Processing%20-%20Hong%20Kong.md)** | Monolithic 454-line end-to-end data processing guide from raw archives to tensor structures | [preprocessing/README.md](Preprocessing/README.md)<br>[Phase 1 - Source-Specific Cleaning Report.md](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md) | [2026-09-17_phase_1_1.md](Checkpoints/2026-09-17_phase_1_1.md)<br>[2026-09-17_phase_2.md](Checkpoints/2026-09-17_phase_2.md) |
+| **12** | **Generative Model Architecture** | **[System Architecture.md](Architecture/System%20Architecture.md)** | End-to-end architecture: SLM context encoder, conditional diffusion backbone, temporal/spatial prior | [SLM Context Encoder.md](Architecture/SLM%20Context%20Encoder.md)<br>[Conditional Diffusion Model.md](Architecture/Conditional%20Diffusion%20Model.md)<br>[Temporal Denoising Model.md](Architecture/Temporal%20Denoising%20Model.md) | [MASTER_RESEARCH_DOCUMENT.md](MASTER_RESEARCH_DOCUMENT.md) |
+| **13** | **Experimental Protocols & Benchmarks** | **[Experimental Training Protocol.md](Experiments/Experimental%20Training%20Protocol.md)** | Train/Val/Test splits (2019-2020 train, 2021 test), MCAR & block missingness masks, baselines | [Baseline Imputation Models.md](Experiments/Baseline%20Imputation%20Models.md)<br>[Missingness Scenarios & Benchmark Masks.md](Experiments/Missingness%20Scenarios%20&%20Benchmark%20Masks.md)<br>[Evaluation Metrics.md](Experiments/Evaluation%20Metrics.md) | [Ablation Study Plan.md](Experiments/Ablation%20Study%20Plan.md) |
+| **14** | **Methodological Decisions (ADRs)** | **[decisions/README.md](Decisions/README.md)** | Master Architectural and Methodological Decision Register tracking status of all scientific choices | [Dataset Decisions.md](Decisions/Dataset%20Decisions.md)<br>[Architecture Decisions.md](Decisions/Architecture%20Decisions.md)<br>[Preprocessing Decisions.md](Decisions/Preprocessing%20Decisions.md) | Checkpoints |
+| **15** | **Scientific Findings & Limitations** | **[Confirmed Research Findings.md](Findings/Confirmed%20Research%20Findings.md)** | Empirically verified findings with exact citations, known physical boundaries, and negative findings | [Negative Findings & Dead Ends.md](Findings/Negative%20Findings%20&%20Dead%20Ends.md)<br>[Living Unresolved Questions.md](Findings/Living%20Unresolved%20Questions.md)<br>[Research Boundaries & Limitations.md](Findings/Research%20Boundaries%20&%20Limitations.md) | Checkpoints |
+
+---
+
+## 3. Fast Navigation: The 15 Core Questions
+
+Need an immediate answer? Open **exactly one document** listed below:
+
+| # | Question | Single Document to Open | Section / Key Finding |
+| :-: | :--- | :--- | :--- |
+| **1** | **What exactly did CTDI use as its dataset?** | [CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md) | §1–4: Summary Table, 16 AQ stations, 47 HKO stations, 607 roads |
+| **2** | **What are CTDI's 13 channels?** | [CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md) | §4: 13 Channels Decomposition Table (5 AQ, 6 Met, 2 Traffic) |
+| **3** | **What did CTDI use for traffic?** | [CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md) | §3: 607 road links from Transport Department `speedmap.xml` |
+| **4** | **What did CTDI use for meteorology?** | [CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md) | §2: 47 HKO automatic weather stations (10-min), including visibility |
+| **5** | **What is known about CTDI visibility?** | [Dataset Provenance & Specifications.md](Dataset/Dataset%20Provenance%20&%20Specifications.md) | §4: Irrecoverability audit & ERA5 rainfall substitution rationale |
+| **6** | **What data did we actually recover?** | [Dataset Provenance & Specifications.md](Dataset/Dataset%20Provenance%20&%20Specifications.md) | §2–5: 16 AQ stations, ERA5 surface met, 36-mo SpeedMap XML |
+| **7** | **What are the differences between CTDI and our reconstruction?** | [CTDIDataset Specifications.md](Dataset/CTDIDataset%20Specifications.md) | §5: Explicit Comparative Divergence Table |
+| **8** | **What are our 16 stations?** | [Station Inventory & Spatial Network.md](Dataset/Station%20Inventory%20&%20Spatial%20Network.md) | §1–2: 13 ambient + 3 roadside stations, lat/lon, heights |
+| **9** | **What is our temporal coverage?** | [Temporal Coverage & Calendar Accounting.md](Dataset/Temporal%20Coverage%20&%20Calendar%20Accounting.md) | §1: 2019-01-01 to 2021-12-31 (1,096 days, 26,304 continuous hours) |
+| **10** | **What is our natural missingness?** | [Missingness Architecture & Empirical Distribution.md](Dataset/Missingness%20Architecture%20&%20Empirical%20Distribution.md) | §2: 55,876 entries (2.6553%), diurnal peaks at 01:00, 20% parity |
+| **11** | **What preprocessing has been completed?** | [Data Processing - Hong Kong.md](Reports/Data%20Processing%20-%20Hong%20Kong.md) | §1: Full end-to-end data pipeline from raw to tensors |
+| **12** | **What traffic processing has been completed?** | [Phase 1 - Source-Specific Cleaning Report.md](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md) | §3: 36 monthly partitions, 774,686 snapshots, 466M records |
+| **13** | **What decisions have been made?** | [decisions/README.md](Decisions/README.md) | Comprehensive ADR Register with status badges |
+| **14** | **Why are we using rainfall instead of visibility?** | [Dataset Provenance & Specifications.md](Dataset/Dataset%20Provenance%20&%20Specifications.md) | §4: Physical justification & meteorological wet-deposition coupling |
+| **15** | **What is the current project status?** | [research_status.md](research_status.md) | Operational status, Phase 2 completion, and next starting point |
+
+---
+
+## 4. Curated Directory Architecture
+
+The `research/` directory is organized into 10 intentional categories. All files feature human-readable titles:
 
 ```text
 research/
-│
-├── README.md                               # This file: navigation and documentation protocol
 ├── MASTER_RESEARCH_DOCUMENT.md             # Living comprehensive thesis/research specification
+├── Obsidian Figure Template.md             # Standard Obsidian template for multi-figure visual layouts
+├── README.md                               # This file: navigation, topic maps, and documentation protocol
 ├── research_status.md                      # High-level operational status dashboard
 ├── research_timeline.md                    # Chronological record of milestones and shifts
 │
-├── decisions/                              # Formal Architectural and Methodological Decision Records
-│   ├── README.md                           # Index of decisions and decision framework
-│   ├── dataset_decisions.md                # 13 channels, zero synthetic data, train-only normalization
-│   ├── architecture_decisions.md           # SLM conditioning, context vector z_C, diffusion backbone
-│   ├── preprocessing_decisions.md          # Spatial IDW (p=2), coordinate anchoring, missingness
-│   └── experimental_decisions.md           # Missingness scenarios, evaluation metrics, baselines
+├── Architecture/                           # Deep generative and language model design
+│   ├── README.md                           # Architecture index and component interaction map
+│   ├── Conditional Diffusion Model.md      # DDPM backbone, noise schedules, reverse diffusion
+│   ├── Conditioning Mechanism.md           # Cross-attention / AdaLN integration of SLM context
+│   ├── Loss Functions & Objectives.md      # Denoising MSE, context consistency, physics regularizers
+│   ├── SLM Context Encoder.md              # Atmospheric prompt generation and language model encoding
+│   ├── Spatial Model Prior.md              # GCN / spatial attention over 16-station distance graph
+│   ├── System Architecture.md              # End-to-end architecture unifying SLM, spatial, and temporal layers
+│   └── Temporal Denoising Model.md         # Transformer / temporal attention denoising architecture
 │
-├── literature/                             # Literature reviews and theoretical foundation
-│   ├── README.md                           # Overview of literature corpus
-│   ├── ctdi_paper_analysis.md              # Exhaustive breakdown of Yu et al. (IEEE TBD 2025)
-│   ├── slm_conditioned_diffusion_research.md # Small Language Model conditioning for generative models
-│   └── related_methods.md                  # CSDI, SAITS, BRITS, PriSTI, NAOMI, VAE baselines
+├── Checkpoints/                            # Immutable chronological daily research logs
+│   ├── README.md                           # Checkpoint rules, protocol, and daily template
+│   ├── 2026-09-13.md                       # Initial benchmark audit, Table I discovery, traffic audit
+│   ├── 2026-09-14.md                       # Phase 1 planning and data verification
+│   ├── 2026-09-17.md                       # Empirical missingness pattern analysis replication
+│   ├── 2026-09-17_phase_1_1.md             # Phase 1.1 Complete Traffic Data Extraction (774k snapshots)
+│   └── 2026-09-17_phase_2.md               # Phase 2 Spatio-Temporal Alignment & 13-Channel Dataset
 │
-├── dataset/                                # Target and raw dataset specifications
-│   ├── README.md                           # Dataset documentation index
-│   ├── dataset_definition.md               # Canonical tensor [16, 26304, 13] formulation
-│   ├── source_inventory.md                 # EPD, HKO, TD source fidelity and access endpoints
-│   ├── station_inventory.md                # 16 included stations, 2 excluded stations (Southern, North)
-│   ├── channel_definition.md               # Exact 13 channels (5 pollutants, 6 weather, 2 traffic)
-│   ├── temporal_coverage.md                # 3 full calendar years, 2020 leap year, 26,304 hours
-│   ├── spatial_alignment.md                # IDW spatial interpolation (w_ij = 1/d_ij^2)
-│   ├── missingness_analysis.md             # Natural missingness (~2.5%) vs simulated evaluation masks
-│   └── provenance.md                       # Cryptographic hashes, file sizes, and reproducibility logs
+├── Dataset/                                # Dataset specifications, ground truth, and provenance
+│   ├── README.md                           # Dataset documentation index and topic map
+│   ├── CTDIDataset Specifications.md       # PRIMARY: CTDI paper benchmark, Table I, 13 channels, figures
+│   ├── Dataset Provenance & Specifications.md # PRIMARY: Reconstructed HK dataset, custody chain, SHA-256
+│   ├── Missingness Architecture & Empirical Distribution.md # PRIMARY: Theory and empirical analysis
+│   ├── Station Inventory & Spatial Network.md # PRIMARY: 16 monitoring stations, GPS coords, metadata
+│   ├── Temporal Coverage & Calendar Accounting.md # PRIMARY: 26,304 hours, leap year, grid continuity
+│   ├── Spatial Alignment & Network Geometry.md # PRIMARY: 16x16 distance matrix, IDW spatial mapping
+│   ├── Canonical Dataset Definition.md     # Mathematical tensor formulation [16, 26304, 13]
+│   ├── CTDI 13-Channel Specification.md    # Detailed specification of the 13 feature channels
+│   ├── CTDI Dataset Consistency Matrix.md  # Detailed feature-by-feature divergence comparison
+│   ├── Data Source Inventory & Fidelity Audit.md # Source-by-source availability, endpoints, licenses
+│   ├── Raw Data Integrity Manifest.md      # File listings, row counts, and checksum verification
+│   ├── air - missing by hour year.png      # CTDI Paper Fig 6 reference screenshot
+│   ├── air - pollutant by missing.png      # CTDI Paper Fig 8 reference screenshot
+│   ├── air - pollution hour vs missing.png # CTDI Paper Fig 7 reference screenshot
+│   └── air - station vs missing.png        # CTDI Paper Fig 9 reference screenshot
 │
-├── preprocessing/                          # Implementation details of the preprocessing pipeline
-│   ├── README.md                           # Preprocessing pipeline guide
-│   ├── ingestion.md                        # Raw data parsing and schema harmonization
-│   ├── cleaning_and_validation.md          # Header standardization, 24h convention, NaN sanitization
-│   ├── temporal_alignment.md               # Cartesian grid generation and chronological sorting
-│   ├── spatial_alignment.md                # Spatial IDW mapping of meteorology and traffic to stations
-│   ├── feature_engineering.md              # Cyclical time encodings (hour, day-of-week, month)
-│   ├── normalization.md                    # Zero-data-leakage scaling (fit on Train split ONLY)
-│   └── data_quality_assurance.md           # Verification playbook and numerical assertion suites
+├── Decisions/                              # Formal Architectural and Methodological Decision Records
+│   ├── README.md                           # Master ADR register and decision matrix
+│   ├── Architecture Decisions.md           # SLM conditioning, AdaLN, diffusion backbone choices
+│   ├── Dataset Decisions.md                # 13 channels, zero synthetic data, rainfall substitution
+│   ├── Experimental Decisions.md           # Missingness scenarios, evaluation metrics, baselines
+│   └── Preprocessing Decisions.md          # Spatial IDW (p=2), coordinate anchoring, zero leakage
 │
-├── architecture/                           # Deep generative and language model design
-│   ├── README.md                           # Architecture index
-│   ├── system_architecture.md              # End-to-end SLM-Conditioned Diffusion pipeline
-│   ├── context_encoder.md                  # Synoptic atmospheric prompt generation & SLM encoding
-│   ├── diffusion_model.md                  # Conditional denoising diffusion probabilistic model (DDPM)
-│   ├── temporal_model.md                   # Temporal attention / Transformer denoising layers
-│   ├── spatial_model.md                    # Spatial graph / GCN / CNN spatial dependency layers
-│   ├── conditioning_mechanism.md           # Cross-attention / adaptive layer norm (AdaLN) conditioning
-│   └── loss_functions.md                   # Denoising MSE, context consistency, physics regularizers
+├── Experiments/                            # Experimental protocols, evaluations, and benchmarks
+│   ├── README.md                           # Experiments overview and testing roadmap
+│   ├── Ablation Study Plan.md              # Systematic ablation matrix (SLM prompt, loss terms)
+│   ├── Baseline Imputation Models.md       # Traditional, deep autoregressive, and generative baselines
+│   ├── Cross-Dataset Evaluation.md         # Generalization evaluation protocol on external benchmarks
+│   ├── Evaluation Metrics.md               # MAE, RMSE, MAPE, CRPS, Prediction Interval Coverage
+│   ├── Experimental Training Protocol.md   # Train/val/test splits, optimization schedule, random seeds
+│   └── Missingness Scenarios & Benchmark Masks.md # MCAR, block temporal, and spatial outage masks
 │
-├── experiments/                            # Experimental protocols, evaluations, and benchmarks
-│   ├── README.md                           # Experiments overview
-│   ├── experimental_protocol.md            # Train/val/test splits, random seeds, training schedules
-│   ├── baselines.md                        # Mean, Linear/Spline, KNN, GRU/LSTM, BRITS, VAE, CSDI, CTDI
-│   ├── missingness_scenarios.md            # MCAR, Continuous temporal block, Spatial station outages
-│   ├── evaluation_metrics.md               # MAE, RMSE, MAPE, CRPS, Prediction Interval Coverage (PICP)
-│   ├── ablation_plan.md                    # Ablation matrix: SLM impact, loss components, noise schedules
-│   └── cross_dataset_evaluation.md         # External validation (e.g., Beijing / Air-Quality benchmarks)
+├── Figures/                                # High-resolution programmatically generated figures
+│   ├── fig_06_missing_by_hour_year.png     # Empirical missingness by hour across 2019-2021
+│   ├── fig_07_missing_proportion_by_hour_pie.png # Diurnal missingness distribution (Hour 1 peak)
+│   ├── fig_08_missing_proportion_by_pollutant_pie.png # Pollutant missingness parity (~20% each)
+│   └── fig_09_missing_proportion_by_station_pie.png # Station missingness distribution across 16 stations
 │
-├── findings/                               # Evidence-backed research results and boundaries
-│   ├── README.md                           # Index of scientific findings
-│   ├── confirmed_findings.md               # Empirically verified findings with direct citations
-│   ├── negative_findings.md                # Tested approaches that failed or dead ends to avoid
-│   ├── unresolved_questions.md             # Living open questions with next investigative steps
-│   └── research_limitations.md             # Physical, computational, and archival boundary limitations
+├── Findings/                               # Evidence-backed research results and boundaries
+│   ├── README.md                           # Index of scientific findings and evidence classification
+│   ├── Confirmed Research Findings.md      # Empirically verified findings with exact citations
+│   ├── Living Unresolved Questions.md      # Active open research questions and investigation steps
+│   ├── Negative Findings & Dead Ends.md    # Formally documented approaches that failed and why
+│   └── Research Boundaries & Limitations.md # Physical, computational, and archival boundary constraints
 │
-├── checkpoints/                            # Immutable chronological daily research logs
-│   ├── README.md                           # Checkpoint rules and format specifications
-│   ├── 2026-09-13.md                       # Today's checkpoint: Table I discovery, traffic audit, freeze
-│   └── ...                                 # Future dated checkpoints (YYYY-MM-DD.md)
+├── Literature/                             # Literature reviews and theoretical foundation
+│   ├── README.md                           # Overview of literature corpus and taxonomies
+│   ├── CTDI Paper Exhaustive Analysis.md   # Line-by-line critical breakdown of Yu et al. (IEEE TBD 2025)
+│   ├── Related Imputation Methods.md       # Survey of CSDI, SAITS, BRITS, PriSTI, NAOMI, VAE models
+│   └── SLM-Conditioned Diffusion Research.md # Small Language Model conditioning in physical domains
 │
-└── reports/                                # Raw investigation reports, execution logs, and reproductions
-    ├── README.md                           # Reports catalog
-    ├── ctdi_table_i_reconstruction.md      # Exact reproduction and analytical breakdown of CTDI Table I
-    ├── ctdi_traffic_variable_verification.md # Candidate variable evidence matrix & 607-link proof
-    ├── ctdi_channel_reconstruction.md      # 13-channel specification & divergence resolution
-    ├── Alignment - PY.md                   # Alignment pipeline verification log & traffic safety halt
-    ├── Phase 1.md                          # Phase 1 raw verification report (Air, Met, ATC)
-    ├── Phase 2.md                          # Phase 2 spatial alignment & canonical tensor plan
-    ├── CTDI Dataset Description.md         # Comprehensive background dataset documentation
-    ├── Data Processing - Hong Kong.md      # 454-line complete data processing reference guide
-    └── Data Preprocessing/                 # 10-part modular data engineering guides (00 to 09)
+├── Preprocessing/                          # Implementation details of the preprocessing pipeline
+│   ├── README.md                           # Preprocessing pipeline guide and execution order
+│   ├── Cleaning, Translation & Validation Rules.md # Header standardization, bilingual sanitization
+│   ├── Data Quality Assurance Playbook.md  # Numerical assertion suites and sanity test protocols
+│   ├── Feature Engineering & Encodings.md  # Cyclical time encodings (sin/cos hour, day, month)
+│   ├── Normalization & Zero-Leakage Protocol.md # MinMax scaling fit strictly on Train split (2019-2020)
+│   ├── Raw Data Ingestion Protocol.md      # Parsing schemas and raw archive extraction methods
+│   ├── Spatial Alignment Implementation.md # Nearest neighbor and IDW spatial mapping algorithms
+│   └── Temporal Alignment & Grid Assembly.md # Cartesian grid generation and chronological sorting
+│
+└── Reports/                                # Empirical investigation reports & engineering handbooks
+    ├── README.md                           # Index of reports and empirical analyses
+    ├── CTDI Missingness Pattern Analysis.md # Detailed empirical analysis replicating Figures 6–9
+    ├── Data Processing - Hong Kong.md      # 454-line comprehensive data engineering handbook
+    ├── Phase 1 - Source-Specific Cleaning Report.md # Source-specific cleaning & Phase 1.1 traffic extraction
+    ├── Phase 2 - Spatio-Temporal Alignment Report.md # Phase 2 completion report: 420k row Cartesian grid
+    ├── Raw Data Availability & Verification.md # Initial raw download availability and physical checks
+    ├── Research Information Curation Report.md # Comprehensive knowledge base curation & audit report
+    ├── Visibility Data Recovery & Provenance Report.md # HKO AWS visibility irrecoverability audit
+    ├── ctdi channel reconstruction.md      # 13-channel specification and code divergence analysis
+    ├── ctdi source fidelity report.md      # Source data fidelity compared against published citations
+    ├── ctdi table I reconstruction.md      # Exact reproduction and analytical breakdown of CTDI Table I
+    └── ctdi traffic variable verification.md # Candidate traffic variable evidence matrix & 607-link proof
 ```
 
 ---
 
-## 3. Documentation Philosophy & Evidence Discipline
+## 5. Documentation Philosophy & Evidence Discipline
 
-To maintain research rigor, every document adheres to the following principles:
+To guarantee scientific rigor, every research document strictly adheres to four foundational rules:
 
-1. **Strict Evidence Labeling**: Every statement of fact must carry an explicit epistemic status:
+1. **Explicit Epistemic Status**: Every assertion is tagged with an epistemic label:
    - `[VERIFIED]`: Directly proven by paper text, official dataset, or empirical test.
    - `[OBSERVED]`: Measured empirically from raw files or execution output.
    - `[IMPLEMENTED]`: Code exists, executes, and produces validated output.
    - `[PROPOSED]`: Planned methodology not yet implemented.
-   - `[ASSUMPTION]`: Working hypothesis required for progress, pending external confirmation.
+   - `[ASSUMPTION]`: Working hypothesis required for progress, pending confirmation.
    - `[FAILED]`: Tested and proven unviable or incorrect.
    - `[BLOCKED]`: Cannot proceed due to missing external data or unresolved prerequisite.
    - `[SUPERSEDED]`: Previously held assumption overturned by newer evidence.
-2. **Zero Fabrication / Zero Silent Changes**: No synthetic data may ever be injected into real benchmark channels. All imputations, scalings, and transformations must be logged with input, output, and physical rationale.
-3. **Preservation of Failures**: Negative findings and dead ends are primary research results. Never delete or conceal an approach that failed.
-4. **Separation of Living Truth vs. Historical Log**:
-   - `MASTER_RESEARCH_DOCUMENT.md` records current consolidated knowledge.
-   - `checkpoints/YYYY-MM-DD.md` records historical daily sessions and is immutable once written.
-
----
-
-## 4. Automatic Documentation Protocol
-
-**MANDATORY RULE**: Documentation must be updated **before** any research or implementation task is marked complete.
-
-Whenever a meaningful event occurs:
-- **Success** (dataset verified, parser implemented, assertion passed): Update the relevant module, update `research_status.md`, record in the daily checkpoint, and update the master document if scientific understanding shifts.
-- **Failure** (schema mismatch, missing archive, validation error): Document in `findings/negative_findings.md`, note why it failed, whether it can be retried, and record in the daily checkpoint.
-- **Discovery** (corrected channel, newly discovered paper table): Update `MASTER_RESEARCH_DOCUMENT.md`, `research_timeline.md`, and relevant module docs.
-- **Decision** (source selected, channel altered, model layer chosen): Create or update a record in `decisions/`.
-- **Blocker** (missing archive, hardware bottleneck): Update `research_status.md` and `findings/unresolved_questions.md`.
+2. **Zero Fabrication & Immutability**: No synthetic data may ever be injected into real benchmark channels. All transformations are mathematically transparent, deterministic, and logged.
+3. **Preservation of Failures**: Negative findings and dead ends are primary research assets. They are preserved in `findings/Negative Findings & Dead Ends.md` so that flawed hypotheses are never repeated.
+4. **Separation of Living Truth vs. Historical Logs**:
+   - Primary topic notes in `Dataset/`, `Architecture/`, and `MASTER_RESEARCH_DOCUMENT.md` record current consolidated knowledge.
+   - `Checkpoints/` and execution logs in `Reports/` remain immutable chronological records of each session.

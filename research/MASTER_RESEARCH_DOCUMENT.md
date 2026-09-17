@@ -20,7 +20,7 @@
   3. Encode these textual narratives into dense semantic condition vectors $\mathbf{z}_C$ using a lightweight Small Language Model (e.g., Phi-3-Mini / Gemma-2B / Llama-3.2-1B).
   4. Train a conditional Denoising Diffusion Probabilistic Model (DDPM) equipped with spatio-temporal attention layers to denoise masked pollutant observations guided by $\mathbf{z}_C$.
   5. Generate ensemble posterior samples to yield calibrated prediction intervals, uncertainty metrics (CRPS), and physically consistent pollutant reconstructions.
-- **Current Development Status**: **`CTDI_ALIGNED_RECONSTRUCTION_WITH_DOCUMENTED_DIFFERENCES`**. Comprehensive consistency resolution and visibility recovery audit completed. Air quality is verified as an `EXACT SOURCE MATCH` ($420,864$ rows, $55,876$ missing items matching paper's $55,875$ with $99.99995\%$ fidelity). Traffic is verified as a `SOURCE-SYSTEM MATCH` (parent 1st Gen Speedmap, 607 baseline links, 315,648 expected 5-min intervals). Retrospective public 10-minute HKO AWS data and visibility proved `[IRRECOVERABLE]` from open archives (paper authors received offline data from Dr. Yang Han at HKU; HKO API `LTMV` only returns real-time snapshot without historical queries). 100% cryptographic immutability of existing raw data verified (678 files). Documented in `ctdi_paper_dataset_specification.md`, `visibility_data_recovery_report.md`, and `raw_data_integrity_manifest.md`. Ready for CTDI-aligned Preprocessing.
+- **Current Development Status**: **`CTDI_ALIGNED_RECONSTRUCTION_WITH_DOCUMENTED_DIFFERENCES`**. Comprehensive consistency resolution and visibility recovery audit completed. Air quality is verified as an `EXACT SOURCE MATCH` ($420,864$ rows, $55,876$ missing items matching paper's $55,875$ with $99.99995\%$ fidelity). Traffic is verified as a `SOURCE-SYSTEM MATCH` (parent 1st Gen Speedmap, 607 baseline links, 315,648 expected 5-min intervals). Retrospective public 10-minute HKO AWS data and visibility proved `[IRRECOVERABLE]` from open archives (paper authors received offline data from Dr. Yang Han at HKU; HKO API `LTMV` only returns real-time snapshot without historical queries). 100% cryptographic immutability of existing raw data verified (678 files). Documented in [`CTDIDataset Specifications.md`](Dataset/CTDIDataset%20Specifications.md), [`Visibility Data Recovery & Provenance Report.md`](Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md), and [`Raw Data Integrity Manifest.md`](Dataset/Raw%20Data%20Integrity%20Manifest.md). Ready for CTDI-aligned Preprocessing.
 
 ---
 
@@ -154,7 +154,7 @@ Every channel is assigned a strict status classification based on current projec
 
 ## 6. Data Sources
 
-> **Authoritative Specification**: For the complete, field-by-field acquisition history, official URLs, download parameters, raw file hashes, and empirical findings with Figures 6–9, see the comprehensive [Dataset Provenance Specification](file:///home/mocha/Desktop/ctdi-model-project/research/dataset/provenance.md).
+> **Authoritative Specification**: For the complete, field-by-field acquisition history, official URLs, download parameters, raw file hashes, and empirical findings with Figures 6–9, see the comprehensive [Dataset Provenance Specification](Dataset/Dataset%20Provenance%20&%20Specifications.md).
 
 To preserve research integrity, data sources are categorized into four mutually exclusive categories:
 - `ACTUAL SOURCE`: The exact physical system from which data was obtained.
@@ -239,32 +239,32 @@ To preserve research integrity, data sources are categorized into four mutually 
   - Confirmed 16 air stations, 47 weather stations, 607 road links.
   - Confirmed Channel 9 is **Visibility ($\text{km}$)**, NOT rainfall.
   - Confirmed Channel 13 is **Traffic Congestion ($\text{N/A}$)**, NOT traffic volume.
-  - Published formal reports: `ctdi_table_i_reconstruction.md`, `ctdi_traffic_variable_verification.md`, and `ctdi_channel_reconstruction.md`.
+  - Published formal reports: [`ctdi table I reconstruction.md`](Reports/ctdi%20table%20I%20reconstruction.md), [`ctdi traffic variable verification.md`](Reports/ctdi%20traffic%20variable%20verification.md), and [`ctdi channel reconstruction.md`](Reports/ctdi%20channel%20reconstruction.md).
 - **2026-09-13 22:20**: Completed full CTDI Raw Data Availability & Verification:
   - Downloaded official 1st Gen Traffic Speed Map schema `speedmap.xsd`.
   - Acquired and verified multi-year raw XML snapshots (2019, 2020, 2021) in `data/raw/traffic/samples/`, proving 607 link coverage and speed/saturation distributions.
   - Performed empirical audit of HKO Open Database [81] and DATA.GOV.HK archives, proving absence of retrospective 10-minute AWS open data and documenting the ERA5 reanalysis source difference.
   - Compiled master cryptographic source manifest (`data/raw/source_manifest.json`) and raw validation report (`data/interim/raw_data_validation_report.json`).
-  - Published human-readable report `research/reports/raw_data_availability_and_verification.md`.
+  - Published human-readable report [`Raw Data Availability & Verification.md`](Reports/Raw%20Data%20Availability%20&%20Verification.md).
   - Declared project milestone: **`CTDI_RAW_DATA_READY_WITH_WARNINGS`** (`[SUPERSEDED]`).
 - **2026-09-13 (Final Visibility Recovery & Dataset Consistency Session)**:
   - Full text of published CTDI paper extracted directly from `research/CTDI_CNN-Transformer-Based_Spatial-Temporal_Missing_Air_Pollution_Data_Imputation.pdf`.
-  - Authored authoritative specification `research/dataset/ctdi_paper_dataset_specification.md` with exact page, section, and table citations.
+  - Authored authoritative specification [`CTDIDataset Specifications.md`](Dataset/CTDIDataset%20Specifications.md) with exact page, section, and table citations.
   - Multi-tier investigation into Visibility: HKO API `LTMV` live probe confirmed real-time only (4–8 stations, no historical date parameters); DATA.GOV.HK confirmed only single-station airport daily count exists; paper Acknowledgment (Page 2454) proved CTDI authors received an offline dataset from Dr. Yang Han at HKU.
-  - Formally classified CTDI Visibility as **`[IRRECOVERABLE FROM PUBLIC/AVAILABLE SOURCES]`** in `research/reports/visibility_data_recovery_report.md`.
+  - Formally classified CTDI Visibility as **`[IRRECOVERABLE FROM PUBLIC/AVAILABLE SOURCES]`** in [`Visibility Data Recovery & Provenance Report.md`](Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md).
   - Re-audited Traffic: 315,648 expected 5-min intervals, 607 baseline links, 583 common core links across multi-year snapshots.
-  - Verified 100% cryptographic raw-data immutability across all 678 files (`research/dataset/raw_data_integrity_manifest.md`).
+  - Verified 100% cryptographic raw-data immutability across all 678 files ([`Raw Data Integrity Manifest.md`](Dataset/Raw%20Data%20Integrity%20Manifest.md)).
   - Finalized milestone: **`CTDI_ALIGNED_RECONSTRUCTION_WITH_DOCUMENTED_DIFFERENCES`**.
 - **2026-09-13 (CTDI-Style Missingness Pattern Analysis & Figures 6–10 Reproduction)**:
   - Created, fully executed, and validated publication-grade Jupyter Notebook: `notebooks/01_ctdi_style_missingness_analysis.ipynb` (28 cells, zero errors).
-  - Re-created CTDI Figures 6–10 in high resolution (300 DPI) under `research/figures/`:
+  - Re-created CTDI Figures 6–10 in high resolution (300 DPI) under `research/Figures/`:
     - `fig_06_missing_by_hour_year.png`: Diurnal missingness curves by year (2019, 2020, 2021).
     - `fig_07_missing_proportion_by_hour.png`: Hourly missingness proportion bar chart with 4.17% uniform baseline.
     - `fig_08_missing_proportion_by_pollutant.png`: Criteria pollutant breakdown with 20.0% uniform baseline.
     - `fig_09_missing_proportion_by_station.png`: Station breakdown across all 16 monitoring stations with roadside categorization.
     - `fig_10_real_missingness_masks.png`: 2×2 Heatmap matrix of real 24-hour observation masks sampled across target missingness tiers (~2.5%, ~5.0%, ~12.5%, ~23.3%).
   - Verified mathematical conservation: $\sum \text{Fig 6} = \sum \text{Fig 7} = \sum \text{Fig 8} = \sum \text{Fig 9} = \mathbf{55,876}$ total missing pollutant entries across $2,104,320$ measurements ($2.6553\%$).
-  - Published comprehensive research report: `research/reports/ctdi_missingness_pattern_analysis.md`.
+  - Published comprehensive research report: [`CTDI Missingness Pattern Analysis.md`](Reports/CTDI%20Missingness%20Pattern%20Analysis.md).
   - Confirmed empirical findings: missingness concentrates heavily in 5 hours ($47.17\%$ of total missingness at Hours 0, 3, 10–12 HKT) due to midnight zero/span calibration and midday maintenance; criteria pollutants maintain near-perfect parity ($19.07\%\text{--}20.85\%$); real masks exhibit structured block and synchronous dropouts.
 - **2026-09-17 (Phase 1: Source-Specific Data Cleaning & Standardization Complete)**:
   - Executed Phase 1 source-specific cleaning and standardization independently across Air Quality, Meteorology, and Traffic domains without premature multimodal merging, spatial IDW, or tensor construction.
@@ -273,7 +273,7 @@ To preserve research integrity, data sources are categorized into four mutually 
   - Standardized Meteorology (ERA5 surface reanalysis): 420,864 rows, 0 missing, 0 duplicates. Verified physical plausibility bounds. Maintained `rainfall` strictly as rainfall (never renamed to visibility). Serialized to `data/interim/meteorology/clean_meteorology.parquet` and `.csv`.
   - Standardized Traffic (1st Gen Speedmap snapshots): parsed XML snapshots, extracted link IDs, verified speeds ($[3, 109]\text{ km/h}$), preserved raw saturation categories, and established documented continuous ordinal mapping (`GOOD`=0.0, `AVERAGE`=0.5, `BAD`=1.0) without spatial IDW. Serialized to `data/interim/traffic/clean_traffic_speedmap_snapshots.parquet` and `.csv`.
   - Created, executed, and validated reproducible 16-section Jupyter Notebook: `notebooks/02_source_specific_cleaning.ipynb`.
-  - Published comprehensive research report: `research/reports/source_specific_cleaning_report.md`.
+  - Published comprehensive research report: [`Phase 1 - Source-Specific Cleaning Report.md`](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md).
 
 ### 7.1 Phase 1 Methodology: Source-Specific Standardization
 
@@ -481,35 +481,35 @@ To isolate the scientific contributions of our proposed architecture, the follow
 ### Finding 1: CTDI Table I Explicitly Reconstructs a 13-Channel Multimodal Space
 - **Evidence**: Verbatim Table I on Page 2448 of Yu et al. (IEEE TBD 2025) lists: 5 criteria pollutants, 6 meteorological variables, and 2 traffic variables.
 - **Date**: 2026-09-13
-- **Source**: Published IEEE Transactions paper (`ctdi_table_i_reconstruction.md`).
+- **Source**: Published IEEE Transactions paper ([`ctdi table I reconstruction.md`](Reports/ctdi%20table%20I%20reconstruction.md)).
 - **Confidence**: **`HIGH`**
 - **Implication**: Imputation models must be structured around $C = 13$ feature channels.
 
 ### Finding 2: CTDI Traffic Variables Are Speed and Congestion (NOT Volume)
 - **Evidence**: Table I explicitly names `Traffic speed` ($\text{km/h}$) and `Traffic congestion` ($\text{N/A}$). The term "traffic volume" appears zero times in Table I and zero times in the paper text regarding experimental features.
 - **Date**: 2026-09-13
-- **Source**: Paper analysis (`ctdi_traffic_variable_verification.md`).
+- **Source**: Paper analysis ([`ctdi traffic variable verification.md`](Reports/ctdi%20traffic%20variable%20verification.md)).
 - **Confidence**: **`HIGH`**
 - **Implication**: Any prior code or documentation relying on Annual Traffic Census (ATC) volume counts is empirically refuted.
 
 ### Finding 3: CTDI Traffic System Uses 607 Road Links
 - **Evidence**: Table I explicitly documents `Number of Data Nodes = 607 roads`. An empirical snapshot from `2019-01-01 00:00 HKT` of the parent Transport Department 1st Generation Traffic Speed Map (`speedmap.xml`) contains exactly $607$ unique road links.
 - **Date**: 2026-09-13
-- **Source**: XML archive inspection (`ctdi_traffic_variable_verification.md`).
+- **Source**: XML archive inspection ([`ctdi traffic variable verification.md`](Reports/ctdi%20traffic%20variable%20verification.md)).
 - **Confidence**: **`HIGH`**
 - **Implication**: The City Dashboard version (which has only 6 links) is merely a subset portal entry; the actual study utilized the full 607-link parent system.
 
 ### Finding 4: CTDI Meteorological Channel 4 is Visibility (NOT Rainfall)
 - **Evidence**: Table I explicitly lists `Visibility` ($\text{km}$) alongside Pressure, Relative Humidity, Temperature, Wind Direction, and Wind Speed.
 - **Date**: 2026-09-13
-- **Source**: Paper analysis (`ctdi_table_i_reconstruction.md`).
+- **Source**: Paper analysis ([`ctdi table I reconstruction.md`](Reports/ctdi%20table%20I%20reconstruction.md)).
 - **Confidence**: **`HIGH`**
 - **Implication**: Prior informal project substitution of `rainfall` must be corrected or explicitly designated as an interim divergence.
 
 ### Finding 5: Air Quality Station Count and Exclusion Rationale
 - **Evidence**: EPD network expanded from 16 to 18 stations on July 10, 2020 with the commissioning of Southern (#84) and North (#85).
 - **Date**: 2026-09-12
-- **Source**: EPD historical station metadata (`reports/CTDI Dataset Description.md`).
+- **Source**: EPD historical station metadata ([`Station Inventory & Spatial Network.md`](Dataset/Station%20Inventory%20&%20Spatial%20Network.md)).
 - **Confidence**: **`HIGH`**
 - **Implication**: Southern and North must be excluded to maintain strict temporal continuity across 2019–2021 ($26,304$ continuous hours).
 
@@ -615,11 +615,11 @@ Documenting failed paths and invalid assumptions prevents future researchers fro
 
 ## 19. Research Timeline
 
-- **2026-09-10**: [Repository Initialization & Tooling Setup](checkpoints/README.md)
-- **2026-09-11**: [Keras & Graph Convolution Preliminary Experiments](checkpoints/README.md)
-- **2026-09-12**: [Phase 1 Raw Dataset Acquisition & Verification](checkpoints/README.md)
-- **2026-09-13**: [CTDI Table I Reconstruction, Traffic Audit & Checkpoint Freeze](checkpoints/2026-09-13.md)
-- **2026-09-14**: [CTDI Empirical Missingness Analysis (Figs. 6–10) & 1-Hour Temporal Offset Resolution](checkpoints/2026-09-14.md)
+- **2026-09-10**: [Repository Initialization & Tooling Setup](Checkpoints/README.md)
+- **2026-09-11**: [Keras & Graph Convolution Preliminary Experiments](Checkpoints/README.md)
+- **2026-09-12**: [Phase 1 Raw Dataset Acquisition & Verification](Checkpoints/README.md)
+- **2026-09-13**: [CTDI Table I Reconstruction, Traffic Audit & Checkpoint Freeze](Checkpoints/2026-09-13.md)
+- **2026-09-14**: [CTDI Empirical Missingness Analysis (Figs. 6–10) & 1-Hour Temporal Offset Resolution](Checkpoints/2026-09-14.md)
 
 ---
 
@@ -644,7 +644,7 @@ Completed Today:        1. Created and fully executed Jupyter Notebook notebooks
                            • Hour 0 (Midnight): Nocturnal baseline lull (~1,298 items, 2.3%)
                         6. Formulated multimodal alignment rule: air quality interval [t, t+1h) pairs with
                            meteorology and traffic conditions at interval end (t + 1h).
-                        7. Updated ctdi_missingness_pattern_analysis.md, MASTER_RESEARCH_DOCUMENT.md,
+                        7. Updated CTDI Missingness Pattern Analysis.md, MASTER_RESEARCH_DOCUMENT.md,
                            research_status.md, and research_timeline.md.
 Verified Today:         • Figures 6, 7, 8, 9, 10 match CTDI empirical characteristics bit-for-bit.
                         • Zero label collisions in Figure 7 24-hour pie chart (boxed callouts & pointer arrows).
@@ -663,7 +663,7 @@ Files Changed Today:    • notebooks/01_ctdi_style_missingness_analysis.ipynb (
                         • scripts/generate_missingness_notebook.py (Created & Updated)
                         • scripts/generate_pie_charts.py (Created & Updated)
                         • research/figures/*.png (Generated / Updated)
-                        • research/reports/ctdi_missingness_pattern_analysis.md (Updated)
+                        • research/reports/CTDI Missingness Pattern Analysis.md (Updated)
                         • research/MASTER_RESEARCH_DOCUMENT.md (Updated)
                         • research/research_status.md (Updated)
                         • research/research_timeline.md (Updated)
