@@ -1,0 +1,1305 @@
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+2443
+
+CTDI: CNN-Transformer-Based Spatial-Temporal
+Missing Air Pollution Data Imputation
+Yangwen Yu , Victor O. K. Li , Fellow, IEEE, Jacqueline C. K. Lam , Kelvin Chan, and Qi Zhang
+
+Abstract—Accurate and comprehensive air pollution data
+is essential for understanding and addressing environmental
+challenges. Missing data can impair accurate analysis and decisionmaking. This study presents a novel approach, named CNNTransformer-based Spatial-Temporal Data Imputation (CTDI), for
+imputing missing air pollution data. Data pre-processing incorporates observed air pollution data and related urban data to
+produce 24-hour period tensors as input samples. 1-by-1 CNN
+layers capture the interaction between different types of input
+data. Deep learning transformer architecture is employed in a
+spatial-temporal (S-T) transformer module to capture long-range
+dependencies and extract complex relationships in both spatial and
+temporal dimensions. Hong Kong air pollution data is statistically
+analyzed and used to evaluate CTDI in its recovery of generated
+and actual patterns of missing data. Experimental results show that
+CTDI consistently outperforms existing imputation methods across
+all evaluated scenarios, including cases with higher rates of missing
+data, thereby demonstrating its robustness and effectiveness in enhancing air quality monitoring. Additionally, ablation experiments
+reveal that each component significantly contributes to the model’s
+performance, with the temporal transformer proving particularly
+crucial under varying rates of missing data.
+Index Terms—Air pollution, deep learning, transformer, missing
+data, data imputation, data recovery, spatial-temporal.
+
+I. INTRODUCTION
+IR pollution significantly impacts human health and the
+environment, especially in urban areas with high levels
+of pollutants like particulate matter and nitrogen dioxide [1].
+These pollutants contribute to serious health issues, particularly
+affecting vulnerable groups such as children and the elderly [2],
+leading to millions of premature deaths annually, as estimated
+by the WHO [3]. Addressing this critical issue requires global
+initiatives focused on stricter emissions standards, clean energy
+promotion, and sustainable transportation [4], [5]. High-quality
+
+A
+
+Received 7 March 2024; revised 13 January 2025; accepted 20 January 2025.
+Date of publication 27 January 2025; date of current version 4 September 2025.
+This work was supported by the Theme-based Research Scheme of the Research
+Grants Council of Hong Kong SAR Government under Grant T41-709/17-N.
+Recommended for acceptance by P. D’Urso. (Victor O. K. Li and Jacqueline C.
+K. Lam contributed equally to this work.) (Corresponding authors: Victor O. K.
+Li; Jacqueline C. K. Lam.)
+The authors are with the Department of Electrical and Electronic Engineering,
+The University of Hong Kong, Pokfulam, Hong Kong (e-mail: ywyu@eee.
+hku.hk; vli@eee.hku.hk; jcklam@eee.hku.hk; cjr273@hku.hk; zq666@
+connect.hku.hk).
+This article has supplementary downloadable material available at
+https://doi.org/10.1109/TBDATA.2025.3533882, provided by the authors.
+Digital Object Identifier 10.1109/TBDATA.2025.3533882
+
+air quality data is essential for policymakers to identify pollution
+hotspots [6] and inform targeted strategies [7], [8], and it also
+enables individuals to make informed health choices [9], [10].
+However, obtaining accurate and timely urban air quality data
+poses challenges [11]. Monitoring stations often suffer from
+missing data due to equipment malfunctions, sensor failures,
+power outages, and other issues [12], [13]. Additionally, the high
+costs of deploying and maintaining monitoring stations limit
+their coverage in urban areas [14]. To better assess city-wide air
+pollution, incorporating mobile sensors [15], [16] or developing
+fine-grained pollution estimation systems [17] is necessary. Yet,
+low-cost mobile sensors often lack precision, making accurate
+data estimation even more crucial. Inappropriate recovery of
+missing data can lead to biased analyses and ineffective interventions, highlighting the need for innovative recovery methods [18].
+Recent advancements in machine learning [12], [19], [20]
+and artificial intelligence [21], [22] present promising solutions
+for accurately recovering missing air pollution data. The transformer architecture [23], initially designed for natural language
+processing [24], [25], has proven effective in various fields, including computer vision [26] and time series analysis [27]. This
+architecture utilizes a Self-Attention mechanism [28], enabling
+it to focus on relevant input portions and capture long-range
+dependencies, while also supporting parallelization for handling
+large datasets [29].
+In this study, we propose a Transformer-based data imputation
+approach for recovering missing air pollution data in urban
+settings. Our evaluation of this method using real-world data
+from Hong Kong reveals significant improvements in modeling
+spatial-temporal (S-T) correlated air pollution. The main contributions of this work are summarized as follows:
+1) Innovative CNN-Transformer Architecture: We propose
+a groundbreaking approach for recovering air pollution
+data, termed CNN-Transformer-based Spatial-Temporal
+Data Imputation (CTDI). This novel architecture synergistically integrates Convolutional Neural Networks (CNNs)
+and Transformer models, enabling the effective capture
+of intricate interactions between diverse data types while
+automatically extracting spatial-temporal (S-T) features.
+This dual capability enhances the model’s performance in
+accurately reconstructing missing data.
+2) Advanced Data Pre-processing Techniques: The new data
+pre-processing strategy includes 1) the use of Inverse Distance Weighting (IDW) for spatial interpolation, allowing
+
+2332-7790 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence and similar technologies.
+Personal use is permitted, but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2444
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+for the integration of local urban data—such as meteorological conditions, wind speed, and traffic information—
+into the air pollution recovery model, and 2) the application of sliding windows (SW) for temporal segmentation,
+which divides the data into 24-hour period tensors with a
+1-hour sliding stride to enhance the input volume.
+3) Multi-Data Type Recovery: Unlike conventional data imputation methods that are limited to handling a single
+type of data, CTDI can simultaneously recover multiple
+types of S-T air pollution data. This is achieved through
+the incorporation of 1-by-1 CNN layers that capture interactions between different data types. By preserving
+the relationships between different pollutants, rather than
+discarding or overlooking this information, the recovery
+performance of the model is improved.
+4) Pioneering S-T Transformer Module: The S-T transformer
+module is a key innovation in our approach, consisting
+of both spatial and temporal transformers to extract relevant features in both dimensions. This represents the
+first application of transformer architecture specifically
+for the recovery of missing air pollution data, marking a
+significant advancement in the field.
+5) Real-World Dataset Analysis: We conduct a comprehensive analysis of missing data from a real-world air pollution dataset in Hong Kong, offering valuable insights
+into the nature and patterns of data losses. This empirical
+evaluation not only demonstrates the effectiveness of our
+model but also provides a robust foundation for further
+exploration and refinement of air quality data recovery
+techniques.
+The organization of this paper is as follows. Section II reviews
+existing data imputation approaches and motivates the use of
+the transformer architecture in the recovery of air pollution
+data. In Section III, the proposed CTDI model is introduced in
+detail. Section IV follows with a statistical analysis of real-world
+missing air pollution data in Hong Kong, an examination of the
+performance of CTDI, and a discussion of the results. Finally, the
+paper concludes in Section V and offers suggestions for future
+research directions.
+II. RELATED WORK
+Existing data imputation approaches can be broadly classified into three categories: 1) Statistical imputation [30], [31],
+2) Machine learning-based imputation [32], [33], [34], and
+3) Deep learning-based imputation [35], [36], [37].
+Statistical imputation methods primarily use statistical techniques to estimate missing values based on the observed data. A
+well-known approach within this category is Multiple Imputation [38], [39]. Instead of filling in missing values with a single
+estimate (such as the mean), multiple imputation creates several
+different plausible datasets by imputing the missing values multiple times [40]. In contrast, shallow machine learning-based
+imputation leverages traditional machine learning algorithms,
+such as decision trees or k-nearest neighbors, to predict and fill
+in missing values [32]. These methods typically use patterns
+
+in the available data to infer the missing entries, optimizing
+for accuracy and efficiency. While they can be effective, they
+often rely on well-defined feature relationships and may struggle
+with highly complex datasets compared to their deep-learning
+counterparts.
+A. Deep Learning Based Approaches to S-T Data Imputation
+Deep learning has been fruitfully applied across various
+fields [41], [42] and offers several advantages over statistical and shallow machine learning techniques [43]. First, deep
+learning algorithms automatically learn features from raw data,
+minimizing the need for manual feature engineering common
+in statistical imputation. Second, they capture intricate patterns, allowing for better handling of nonlinear relationships
+and high-dimensional feature spaces than traditional methods. Third, deep learning models exhibit excellent scalability, robustness, and transferability. Traditional deep learning
+based S-T data imputation approaches can be categorized
+into three types: 1) Convolutional Neural Network (CNN)based models [44], [45], 2) Recurrent Neural Network (RNN)based models [46], [47], and 3) CNN-RNN Hybrid models
+[48], [49].
+Convolutional Neural Networks (CNNs) are classical deep
+learning models, initially designed for processing and analyzing visual data, such as images and videos [50], [51], [52],
+[53]. Typical CNN-based data imputation methods include
+Autoencoder-based Multiple Imputation using Denoising Autoencoders (MIDA) [35] and Graph-based Imputation Neural
+Networks (GINN) [44]. MIDA imputes missing values by training a CNN-based autoencoder to learn the underlying patterns of
+complete data and then uses this knowledge to generate plausible
+imputations. GINN utilizes graph convolutional neural networks
+to capture the complex relationships between nodes and imputes missing values based on the surrounding graph structure.
+However, CNN-based methods struggle with long-range dependencies in spatial-temporal (S-T) data and are computationally
+intensive, limiting their practicality for imputing S-T correlated
+data.
+Recurrent Neural Networks (RNNs) are designed for processing sequential data, such as time series [54], text [55], and
+speech [56]. They maintain a hidden state as memory, allowing
+them to capture temporal dependencies and contextual information. Long Short-Term Memory (LSTM) networks [57], [58]
+address the vanishing gradient problem, enabling the modeling
+of long-term dependencies. Gated Recurrent Units (GRUs) [59]
+simplify LSTMs with similar gating mechanisms. Despite their
+effectiveness, RNNs have limitations with S-T data [60], [61]:
+1) they struggle to capture spatial dependencies, 2) they process
+data in a sequential manner, which limits their ability to utilize
+parallel processing, and 3) they face memory constraints that
+hinder the retention of long-term dependencies.
+CNN-RNN hybrid models combine the strengths of CNNs
+and RNNs for handling S-T data [62], [63]. CNNs excel at
+extracting spatial features, while RNNs capture temporal dependencies. However, hybrid models are more complex, with
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+2445
+
+a larger number of parameters that increase the computational
+intensity and training time [64].
+B. Transformer
+The transformer deep learning architecture was proposed by
+Vaswani et al. in the 2017 paper ”Attention Is All You Need”
+[65]. It is able to capture long-range dependencies and achieve
+state-of-the-art results in tasks such as machine translation,
+text generation, sentiment analysis, and more [24], [26], [66].
+Unlike traditional sequential models, such as recurrent neural
+networks (RNNs) or convolutional neural networks (CNNs),
+the transformer relies on a Self-Attention mechanism [67] to
+process input sequences. The Self-Attention mechanism allows
+the model to weigh the importance of different positions within
+the input sequence, enabling it to focus on relevant information
+and disregard irrelevant or redundant parts. This gives the transformer its power and flexibility and, by resolving the issues of
+vanishing and exploding gradients associated with RNNs, also
+greatly improves the modelling of long-range dependencies.
+Furthermore, transformer models can be trained in parallel,
+making them much quicker to train than sequential models.
+This parallelization results from the Self-Attention mechanism’s
+ability to process input sequences in parallel, eliminating the
+sequential bottleneck present in traditional models. Additionally, Multi-Head Attention [68] allows the transformer model
+to jointly attend to information from different representation
+subspaces at different positions. This enhanced expressivity
+helps the model extract more subtle and complex feature patterns
+in the data.
+The transformer architecture has been widely adopted and
+extended since its introduction. Variants such as BERT (Bidirectional Encoder Representations from Transformers) [69], GPT
+(Generative Pre-trained Transformer) [70], and T5 (Text-to-Text
+Transfer Transformer) [71] have achieved remarkable results on
+a wide range of NLP tasks. The Transformer’s impact extends
+beyond NLP, as researchers have also applied it to computer
+vision, speech recognition, and other domains. Regarding S-T
+data studies, Mingxing Xu et al. have successfully combined
+GCN and Transformer structure to forecast traffic flow [72].
+Weibin Zhang et al. have incorporated Self-Attention into a
+Generative Adversarial Network (GAN) to repair missing data
+for traffic flow [73]. Qiaolin Zeng et al. have combined a data
+decomposition strategy with transformer network to predict
+the PM2.5 time-series [74]. Given the exceptional performance
+demonstrated by the transformer in these studies, we have compelling evidence to support its efficacy as a potent solution for
+addressing missing air pollution data.
+III. METHODOLOGY
+In this study, we propose CTDI (CNN-Transformer-based
+Data Imputation), which is a deep learning framework that
+combines CNN and transformer architectures to recover missing
+air pollution measurements. This is shown schematically in
+Fig. 1. CTDI consists of three components: a data pre-processing
+component, a 1 × 1 convolutional component, and an S-T
+Transformer module. The remainder of this section describes
+
+Fig. 1.
+
+Overall framework of CTDI.
+
+the design of each component in detail followed by the loss
+function.
+A. Data Pre-Processing Component
+Certain urban factors, such as wind speed and traffic information, may not be in the immediate vicinity of the air quality
+stations yet still affect air pollution. To incorporate these features
+into the CTDI framework, the data pre-processing component
+employs a spatial interpolation mechanism to map these features
+to each air pollution monitoring station. Specifically, Inverse
+Distance Weighting (IDW) is used with a squared weighting
+function [75]. The formula is as follows:
+ N
+i=1 wij ui
+
+d(i, j) = 0
+N
+,
+(1)
+uj =
+i=1 wij
+d(i, j) = 0
+ui
+where ui denotes the raw urban data at the i location, and uj
+denotes the mapped urban data at the j location at which an
+1
+air quality monitoring station is situated. wij = d(i,j)
+p is the
+inverse distance weight of the data and p = 2. By assigning
+higher weights to nearby locations and lower weights to more
+distant locations, the squared weighting function increases the
+effect of urban features closer to a particular monitoring station.
+After spatial interpolation, the dataset available for imputation
+contains air pollution data and mapped urban data. This can be
+regarded as a large 3-dimensional tensor. Let X raw ∈ Rs×t×c
+denote this raw data tensor, where s denotes spatial features (i.e.
+individual monitoring stations); t denotes the temporal features
+(i.e. time of measurement); and c represents the number of data
+categories, and is comprised of c = c1 + c2 , i.e., c1 kinds of air
+pollutants and Ac2 kinds of urban factors.
+The raw data tensor is then sliced into multiple 24-hour
+tensor samples, which will form the inputs for data recovery by
+the model. This temporal segmentation is done using a sliding
+window technique similar to that used in RNN-based prediction
+models [76], in which a data point is predicted based on a finite
+set of previous data points within the dataset. As depicted in
+Fig. 2, a sliding window of fixed size 24 in the time dimension is
+used to extract the 24-hour tensor X ∈ Rs×td ×c , where td = 24
+(i.e., one 24-hour period). A sliding stride of 1 h then moves the
+window in 1-hour increments to generate new 24-hour tensors.
+Utilizing sliding windows along the time axis increases the
+number of 24-hour tensor samples, which increases the size of
+the training dataset. As stability and potentially also the accuracy
+of deep learning methods improve as the size of the training
+dataset increases [37], this improves the performance of CTDI.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2446
+
+Fig. 2.
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+Fig. 3.
+
+1-by-1 CNN Layer before Transformer module.
+
+Fig. 4.
+
+1-by-1 CNN Layer after Transformer module.
+
+Fig. 5.
+
+S-T Transformer Module.
+
+Sliding window for temporal segmentation.
+
+Additionally, some entries in the 24-hour data tensor X
+are erased to imitate missing air pollution data. This is done
+using a mask. Let M ∈ Rs×td ×c be the binary mask tensor,
+corresponding to the distribution of the missing entries in the
+24-hour tensor sample. The formal definition of M is as follows:
+
+1 X(i, j, k) is observed
+M (i, j, k) =
+,
+(2)
+0 X(i, j, k) is missing
+where (i, j, k) represents the index of individual entry in X or
+M .As our focus is on recovering missing air pollution data,
+the missing entries are restricted to air pollution features. Let
+ denote entry-wise multiplication. Then X  M is a 24-hour
+tensor sample that is incomplete (in the sense that it is missing
+air pollution data) and has had each missing data entry assigned
+as 0.
+B. 1-By-1 CNN Layers
+After data pre-processing, a single 1-by-1 CNN layer is introduced before and after the transformer module to capture
+interactions between different data types. 1-by-1 convolutions,
+also known as point-wise convolutions, make the model richer
+by enabling non-linear feature transformations and control the
+size of the tensor by adjusting the number of channels [77], [78].
+In the tensor X ∈ Rs×td ×c , different types of data (such
+as PM2.5 measurements and temperature) are each allocated
+to a specific channel within the tensor. The utilization of 1x1
+convolutions followed by the application of non-linear activation
+functions, such as ReLU (Rectified Linear Unit), after the 1x1
+convolutions allow the model to learn complex interactions
+between input features. Importantly, this includes interactions
+between different types of data since information from different
+channels is combined, so the model is able to better attend to relevant features and to generate more expressive representations.
+This non-linear feature transformation significantly enhances
+the network’s modelling flexibility.
+As shown in Fig. 3, by utilizing f 1-by-1 convolution filters of
+size 1 × 1 × c, the number of channels in the incomplete 24-hour
+data tensor is transformed from c to f . After the transformer
+module, c 1-by-1 convolution filters are employed to construct
+an output data tensor with the same dimensions as the input
+24-hour data tensor X ∈ Rs×td ×c , as depicted in Fig. 4. As
+
+1-by-1 CNN layers conserve the spatial and temporal shape of
+the input tensor, positional relationships are preserved.
+C. S-T Transformer Module
+The S-T transformer module aims to capture the spatial and
+temporal relationships of the input tensor X in ∈ Rs×td ×f generated by the 1x1 CNN layer. As shown in Fig. 5, this module
+consists of two Transformer units, namely one spatial transformer and one temporal transformer. Each transformer module
+is comprised of the following components: 1) one Positional
+Embedding layer, which assigns unique embeddings to each position in the input sequence. 2) one Multi-Head Attention layer,
+which processes multiple Self-Attention calculations (scaled
+dot-product attention) in parallel to extract features from the
+input sequence. 3) two Add & Norm layers, in which the Add
+step comprises a residual connection to address the vanishing
+gradient problem and the Norm step comprises layer normalization. 4) one Feed Forward layer, which is a position-wise
+transformation to enhance the feature extraction by introducing
+non-linearity.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+We now describe how an input sequence is processed. The
+input data tensor X in ∈ Rs×td ×f can be regarded as a set
+of time-series data from s stations and denoted as X in =
+{x1 , x2 , . . ., xs }, where xi ∈ Rtd ×f represents a 24-hour period
+of data from the ith station. The spatial transformer transforms
+this station based sequence into Y = {y1 , y2 , . . ., ys }, where
+yi ∈ Rtd ×f and Y ∈ Rs×td ×f . Next, Y ∈ Rs×td ×f is transposed to Y T ∈ Rtd ×s×f , where the sequence Y T can be denoted as Y T = {y 1 , y 2 , . . ., y td } and y j ∈ Rs×f represents the
+air quality-related data for all s stations in the jth hour of a given
+24-hour period. The temporal transformer then outputs Z =
+{z 1 , z 2 , . . ., z td }, where z j ∈ Rs×f and Z ∈ Rtd ×s×f . Finally,
+the output data tensor Z is transposed to give X out ∈ Rs×td ×f ,
+i.e., X out = Z T .
+In the original transformer model, Vaswani et al. [65] apply
+positional encoding to represent the order of the sequence in the
+positional embedding layer and utilize Multi-Head Attention to
+capture different types of dependencies and to attend to relevant
+information across various positions of the input sequence simultaneously. The proposed CTDI follows Vaswani et al. in the
+configuration of positional encoding and Multi-Head Attention
+in spatial and temporal transformers. The specific configurations
+are detailed in Appendix A, available online.
+Additionally, each component of the CTDI model, described
+in Sections III-B and III-C, has been thoroughly analyzed in the
+ablation study detailed in Appendix B, available online. This
+comprehensive examination reveals the distinct contributions
+and impacts of each component on the overall performance
+of the proposed model, providing critical insights into their
+significance and effectiveness.
+
+2447
+
+Loss, is introduced:
+Lre (X, M ) = M  ((X − C(M  X)))22
+
+
+= M  (X − X )22 ,
+
+(5)
+(6)
+
+where M ensures all the observed entries are assigned to 1.
+Equation (5) represents the differences between the real observed values and the reconstructed values. By minimizing this
+term, the accuracy of individual observations in the reconstructed 24-hour data tensor can be preserved. Similar to the
+accumulated loss used in [79], the Reconstruction Loss can improve the accuracy of the reconstructed matrix and convergence
+speed. However, in practice, the loss function Lre is much larger
+than Lim , so to avoid Lre dominating the direction of the loss
+function’s gradient descent, a scaling factor is used to adjust the
+relative size of these two loss terms. Through trial and error, the
+CTDI model was calibrated to α = 1000 and β = 1.
+L(X, M ) = αLim (X, M ) + βLre (X, M )
+
+(7)
+
+By minimizing L(X, M ), the CTDI model can be trained for
+accurate missing data recovery.
+IV. EXPERIMENTAL SET-UP
+To evaluate the recovery performance of the proposed CTDI
+model, a series of simulations were conducted. This section
+begins by introducing the dataset used and analyzing its patterns
+of missing data. Next, performance metrics for the proposed
+model and comparison baselines are presented. Finally, simulation results for different cases of missing data are evaluated and
+discussed.
+
+D. Loss Function
+We now turn to discuss the loss function of this model. As defined in previous sections, X ∈ Rs×td ×c represents the ground
+truth 24-hour data tensor. M ∈ Rs×td ×c is the corresponding
+binary mask tensor, in which the observed entry is assigned 1
+and the missing entry is 0. Let C(·) denote the mathematical
+formulation of our CTDI network. Given an incomplete matrix
+M  X as the input, the network generates an estimated 24hour data tensor X  ∈ Rs×td ×c in the form of C(M  X)).
+To improve the accuracy of the air pollution data recovery,
+a coupled loss function is incorporated into the CTDI model.
+The first term is the Imputation Loss, Lim , which captures the
+difference between the ground truth and the estimated values of
+the missing entries in the 24-hour data tensor. Mathematically,
+this is expressed in (3) below:
+Lim (X, M ) = (1 − M )  (X − C(M  X))22
+= (1 − M )  (X − X  )22 ,
+
+(3)
+(4)
+
+where (1 − M ) makes the missing entries equal to 1 and  · 22
+represents the square of the euclidean distance of the missing entries in the tensor. However, Lim reflects the average imputation
+error of all missing entries but not the entry-wise imputation
+precision, which also affects the validity of the reconstructed
+matrix. Accordingly, a further loss term, Lre Reconstruction
+
+A. Datasets
+The dataset used was obtained from three online Hong Kong
+databases, namely the Hong Kong Environmental Protection
+Agency (HKEPD) Database [80], Hong Kong Observatory Open
+Database [81], and Hong Kong Traffic Speed Map (City Dashboard Version) Database [82]. As shown in Table I, the dataset
+contains: 1) five types of air pollutants, 2) six types of meteorology data, and 3) two types of traffic data. The number of data
+nodes1 and frequency of data update are also shown. The data
+retrieved was from 2019-01-01 to 2021-12-31. To standardize
+the frequency of each type of data to one hour (for consistency
+with the air pollution data), data updated more than once per
+hour was averaged over the hour.
+After spatial interpolation, the size of the original data tensor s × t × c = 16 × 26304 × 13. The original dataset hence
+consists of 5,471,232 items in total. Next, we used a random
+80/10/10 split of the raw dataset as the training set, the validation
+set, and the test set. The raw data in each set was then divided into
+multiple 24-hour period data tensor samples, using a temporal
+sliding window to augment the data.
+
+1 Air pollution data from two new air pollution monitoring stations in Hong
+Kong are not included for data consistency.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2448
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+TABLE I
+HONG KONG DATASET COLLECTED FROM 2019-01-01 TO 2021-12-31
+
+Fig. 6.
+
+HK hourly missing air pollution data in different years.
+
+Fig. 7.
+
+Proportion of hourly missing data in the total missing data.
+
+Fig. 8.
+
+Proportion of different pollutants in the total missing data.
+
+B. Missing Data Patterns Analysis and Design
+A detailed statistical analysis was first conducted to characterize the missing air pollution data. The air pollution measurements cover 5 types of air pollutants from 16 Hong Kong
+monitoring stations. There are 55,875 missing data items,
+which corresponds to an arithmetic mean missing data rate of
+2.46%. However, the rates of missing data within any given
+24-hour period are diverse and the highest rate of missing data
+exceeds 50%.
+Fig. 6 displays the distribution of missing data by hour in
+different years. There is some variation in amplitude, notably
+between 2:00 am and 5:00 am, but the shape of the hourly
+missing data curves is broadly similar across the different years.
+Missing data is particularly pronounced at 1:00 am, 4:00 am,
+and 12:00 pm. Additionally, there is more missing data in the
+early morning and around noon than in other periods. Fig. 7
+shows the proportion of missing data by hour in the total air
+pollution dataset. One potential reason for this non-uniform
+distribution may be scheduled downtime for maintenance and
+inspection. Additionally, it may be more difficult to resolve
+unscheduled interruptions (for example device faults, network
+problems, communication interruptions, and power failures) in
+a timely manner at certain hours.
+As depicted in Fig. 8, the proportion of missing data by
+air pollutant is much more uniformly distributed. Looking at
+
+missing data rates for each pollutant through time, NO2 , O3 , and
+SO2 have similarly shaped distributions that occur at the same
+times, as do PM2.5 and PM10 . We hypothesize that this may
+be caused by a single device measuring different air pollutants,
+so a problem with the device affects the measurements of all
+those pollutants simultaneously. Fig. 9 shows the proportion of
+missing data at different monitoring stations and lies between
+missing data by hour and by air pollutant in terms of uniformity.
+Following the above investigation, data masks to simulate
+missing data were created. In the first four cases, the entries
+that were erased were randomly chosen, subject to case-specific
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+2449
+
+opposed to discontinuous or sporadic).2 Case 5 comprises four
+masks sampled from actual data. Mask 1, with a missing data
+rate of 2.29%, was randomly chosen from the most common
+interval (2–4%). Mask 2, with a missing data rate of 5.47%,
+was randomly chosen from the second most common interval
+(4–6%). Mask 3 and Mask 4, with respective missing data rates
+of 12.08% and 23.13%, were randomly chosen from the two
+intervals with the most severe missing data.
+C. Simulation Configuration
+
+Fig. 9.
+data.
+
+Proportion of missing data from different stations in the total missing
+
+Fig. 10. Four missing data mask patterns with different missing rates sampled
+from real-life daily missing data from 2016 to 2018.
+
+constraints. Multiple masks were generated for each missing
+data rate.
+We began by investigating the general performance of the
+model across a range of missing data rates:
+Case 1: Low missing data rates of 2%, 4%, 6%, 8%, and 10%
+within any given 24-hour period.
+Case 2: High missing data rates of 20%, 30%, 40%, 50%, and
+60% within any given 24-hour period.
+Next, we proceeded to examine the performance of the model
+in recovering missing data calibrated to our real-world dataset:
+Case 3: Missing data rate of 2.46% across the total dataset
+(i.e. same average missing data rate as real-world total dataset).
+Additionally, the proportions of missing data by hour, pollutant,
+and monitoring station were controlled to be as characterized in
+the pie charts.
+Case 4: Missing data rate of 24.60% within any given 24-hour
+period. Additionally, the proportions of missing data by hour,
+pollutant, and monitoring different station were controlled to be
+as characterized in the pie charts.
+Lastly, we tested the effectiveness of the model in practice
+by using it to recover missing data for masks that reproduced
+actual missing data patterns from the real-world dataset. Fig. 10
+shows the frequency of different proportions of missing data
+within a 24-hour period. Further examination showed that the
+majority of missing items across all patterns are consecutive (as
+
+The proposed CTDI model was evaluated against existing data
+imputation approaches (see Section II). Nine baseline models
+were utilized, including 1) Mean Imputation and Multivariate
+Imputation by Chained Equations (MICE), two traditional statistical imputation approaches [83], [84]; 2) K-nearest neighbors (KNN) and Miss Random Forest (MissForest), which are
+machine learning-based imputation methods; 3) MIDA, LSTM,
+and GINN, which represent deep learning-based imputation
+techniques; and 4) two advanced methods that we previously
+proposed, namely, Optimization-based Singular Value Thresholding (SVT) [12], specifically designed for short-term data
+interpolation, and the state-of-the-art GCN-based S-T missing
+pattern identification and recovery (GCN-ST-MDIR, simplified
+in this paper as GSTR) method [11], which adaptively assigns the
+Long-Short Term Context Encoder (LSCE) [37] and Improved
+Long-Short Term Context Encoder (ILSCE) [13] to recover
+different missing data patterns. The batch size and learning rate
+for the deep learning-based baseline models and CTDI were set
+to 32 and 0.002, respectively. The max epoch for CTDI was set to
+100. The optimal epoch of the training process is reached when
+the validation error takes its optimal value within the maximum
+epoch.
+To evaluate the recovery accuracy of the proposed method,
+mean absolute percentage error (MAPE) was used as the performance metric. MAPE [17] is a classical statistical metric
+to assess the accuracy of forecasting or prediction models and
+is widely used in various fields, such as economics, finance,
+and supply chain management. For the missing data recovery
+task, MAPE measured the average percentage deviation between
+recovered and actual values as follows:
+
+n 
+1   X m (i, j, k) − X m (i, j, k) 
+MAPE =
+ × 100% (8)
+
+n
+X m (i, j, k)
+i=1
+
+where X m (i, j, k) is the missing data entry, of which the binary
+mask value is equal to 0, i.e., M m (i, j, k) = 0. X m (i, j, k)
+represents its corresponding recovered value generated by CTDI
+model. n is the total number of missing air pollution data in the
+incomplete 24-hour tensor X  M .
+2 Consecutive missing data contains four kinds of missing data: (1) Temporal
+consecutive: the data are lost for a period of time; (2) Spatial consecutive: the
+data are lost in different stations simultaneously; (3) Pollutants consecutive:
+the data of different pollutants are lost simultaneously at the same station in
+the same period; (4) Mixed consecutive: the most commonly missing case which
+mixes the first three categories of consecutive missing together. At the same time,
+sporadic loss represents occasional data loss, which is different from the above
+consecutive loss.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2450
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+TABLE II
+DATA RECOVERY COMPARISON FOR CASE 1
+
+TABLE III
+DATA RECOVERY COMPARISON FOR CASE 2
+
+V. EXPERIMENTAL RESULTS AND DISCUSSIONS
+A. CTDI Performance in Case 1 and Case 2
+We first compare the data recovery performance of CTDI
+against the nine baseline models across a range of missing data
+rates for Case 1, comprising scenarios with low rates of missing
+data, and Case 2, comprising scenarios with high rates of missing
+data.
+As illustrated in Tables II and III, recovery errors for all imputation methods increase as the missing data rates rise. Compared
+with traditional statistical and shallow machine learning-based
+imputation methods, deep learning-based methods are both more
+accurate and deteriorate by less as missing data increases. Significant performance differences among the various imputation
+methods can be seen at different missing data rates.
+Specifically, Mean Imputation performs the worst in both
+Cases, showing a substantial increase in MAPE values as the
+missing rate rises, reaching 60.79% at a 60% missing rate. MICE
+shows slightly better performance at lower missing rates but
+similarly struggles at higher rates. KNN and MissForest exhibit
+slightly better results but are limited by strict data distribution assumptions, which hinder their effectiveness in spatial-temporal
+data recovery. Among deep learning methods, MIDA and LSTM
+show some improvement but still fall short compared to GINN.
+The GINN model benefits from graph construction, allowing it
+to consider the relevance of different data nodes, significantly
+enhancing recovery accuracy. SVT performs well in low-rate
+missing data interpolation but does not stand out at higher
+missing rates. GSTR demonstrates good adaptability in handling
+spatial-temporal missing patterns, showing marked improvement over traditional methods, especially at higher missing rates.
+The combination of graph-based modelling and adaptive context
+encoding strategies contributes to GSTR’s superior performance
+in data recovery compared to GINN, MIDA, and LSTM.
+Our CTDI model consistently outperforms all other methods
+across both cases. In Case 1, CTDI achieves a MAPE of only
+14.06% at a 10% missing rate, while in Case 2, it reaches
+a MAPE of 18.57% at a 60% missing rate. The exceptional
+
+performance of CTDI can be attributed to its transformer architecture, which effectively captures sequential dependencies
+and spatial-temporal relationships, resulting in superior data
+recovery capabilities. The ability to focus on specific parts of the
+input data through the attention mechanism allows Transformers
+to capture complex relationships and interactions that may be
+missed by CNNs, which focus on local features, or by GCNs,
+which depend on graph structures. Meanwhile, unlike sequential
+computations of LSTM and GSTR, CTDI leverages parallel
+computation, significantly enhancing optimization efficiency,
+particularly in scenarios with high missing data.
+B. CTDI Performance in Case 3-5
+Case 3 and Case 4 calibrate the generated missing data masks
+to the data actually missing from the real-world air pollution
+dataset observed in Hong Kong. Both cases control the proportion of missing data by hour of day, pollutant, and monitoring
+station to be the same as the observed dataset. Case 3 additionally
+constrains the rate of missing data rate to be 2.46% across the
+total dataset, which corresponds to the overall missing data rate
+in the full observed 3-year air pollution dataset, while Case 4
+constrains the rate of missing data to be 24.60% within any given
+24-hour period to test performance under much more severe data
+loss.
+Table IV presents the recovery performance of the CTDI
+and baseline models. Again, CTDI significantly outperforms the
+other models. Tables V and VI break down the recovery error of
+CTDI in Case 3 and Case 4. Table V presents the recovery error
+of CTDI by air pollutants. It can be seen that the recovery of
+SO2 and O3 data is more difficult than that of NO2 , PM2.5 , and
+PM10 , since the recovery errors are higher despite the proportion
+of missing data by pollutant being nearly uniform. This may be
+due to varying feature correlations between different types of
+data. The 1-by-1 CNN layer captures interactions between air
+pollution data and urban data, comprised of traffic conditions
+and meteorological data. Traffic conditions may be particularly
+relevant for NO2 , PM2.5 , and PM10 as vehicular emissions and
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+2451
+
+TABLE IV
+DATA RECOVERY COMPARISON FOR CASE 3 AND CASE4
+
+TABLE V
+CTDI ACCURACY OF RECOVERING DIFFERENT AIR POLLUTANTS
+FOR CASE 3 AND CASE4
+
+tire/road wear are key sources of NOx and urban particulate
+matter. Meteorological conditions may be more important for
+O3 and SO2 , since O3 is typically formed by photochemical reactions between NOx and volatile organic compounds (VOCs)
+in the presence of sunlight and SO2 is typically generated by the
+burning of fossil fuels (including by power stations and ships).
+Table VI presents the recovery performance of CTDI by hour
+of day. The five hours with the highest MAPE are shown in
+bold. The recovery accuracy of CTDI decreases as the number
+of missing entries increases, hence for our real-world dataset in
+which there is more missing data in the early morning and noon
+periods, it is more difficult to impute the data that is missing in
+these periods than other times of the day.
+Case 5 evaluates the data recovery performance of CTDI for
+four masks that each replicate different real-world missing air
+pollution patterns. The results are shown in Table VII. As in
+Cases 1–4, the proposed CTDI method consistently outperforms
+all other baseline approaches. The out-performance of CTDI
+with real-world data loss and the consistency of CTDI’s outperformance across multiple different scenarios strongly suggest
+that CTDI can be usefully deployed in the real-world and improve the recovery accuracy of missing air pollution data.
+C. Test for Different Datasets
+The selection of datasets for missing data imputation has
+been shown in previous work [11], [37] to be important for
+the performance of deep learning models. In this section, we
+evaluate the performance of the proposed CTDI method using
+two different datasets. The first dataset, as previously described,
+comprises five types of air pollutants, six types of meteorology
+data, and two types of traffic data. For convenience, we will refer
+to this dataset as “AU” for air pollution data and urban data. The
+second dataset includes only the five types of air pollutants and
+will be referred to as dataset “A”.
+Table VIII presents the performance of CTDI for the two
+datasets. The performance of CTDI for the “AU” dataset and
+the “A” dataset are similar, but data recovery for the “A” dataset
+is generally being slightly better than for the “AU” dataset. Although data on traffic and other urban factors may be important
+for forecasting air pollution, the results indicate that a dataset
+comprised of only air pollution measurements is sufficient for
+
+CTDI to recover missing data in this Hong Kong case study.
+We believe that the information contained in multiple types of
+observed air pollutants before, during, and after the timestamp
+are enough to reconstruct the loss [11] because: 1) The observed
+air pollution measurements (including observations from nearby
+monitoring stations) already incorporate the impact of urban
+factors. 2) In the Hong Kong dataset, the urban factors occur
+at locations different to those of the air pollution monitoring
+stations. While spatial interpolation was employed to align the
+urban factors with the air pollution measurements from the
+monitoring stations, the resulting accuracy of the urban data
+for each station is insufficient to add new information to that
+already contained in the air pollution data.
+However, incorporating urban data does have a positive effect
+by expanding the tensor size of the 24-hour period input data.
+Similar to the idea of batch size [85], this enlarged input size
+facilitates faster convergence of the proposed CTDI model. As a
+result, for each missing data mask, the optimal number of epochs
+for CTDI to converge is fewer for the “AU” dataset than for the
+“A” dataset.
+D. Discussion of CTDI Performance
+The experimental results in Sections V-A–V-C lead to the
+following conclusions: 1) The proposed CTDI approach outperforms all the baseline models – including statistical imputations, shallow machine learning-based imputations, traditional
+deep learning-based imputations, and our previously proposed
+state-of-the-art approaches – regardless of the pattern of missing
+data (whether generated or taken from the real-world); 2) The
+recovery accuracy of CTDI decreases as the rate of missing
+data increases. All data recovery models are adversely affected
+by fewer observations from which to recover the missing data,
+since the information content is reduced. Additionally, a higher
+rate of missing data tends to reflect a higher proportion of
+consecutively missing data and previous work has shown that
+recovery of consecutively missing data is more difficult than that
+of sporadic missing data [13], [37]. The relative outperformance
+of CTDI as missing data rates increase and recovery becomes
+more challenging also suggests that CTDI improves on existing
+methods.
+We attribute CTDI’s superior performance to its transformer
+architecture, especially the Self-Attention mechanism. To explore this, Figs. 11–14 show the internal correlations of the
+air pollution data, calculated by aggregating and averaging the
+raw air pollution measurements into one 24-hour period and
+then using the Pearson correlation coefficient [86] to calculate
+the similarities between the averaged data. The value of this
+correlation coefficient is in the range of [0, 1] and a larger
+coefficient value indicates a higher correlation.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2452
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+TABLE VI
+CTDI ACCURACY FOR RECOVERING MISSING DATA AT DIFFERENT TIMES FOR CASE 3 AND CASE4
+
+TABLE VII
+DATA RECOVERY COMPARISON FOR CASE 5
+
+TABLE VIII
+DATA RECOVERY COMPARISON BETWEEN AU AND A
+
+Fig. 12. Data correlation from different stations in the average daily air
+pollution data.
+
+Fig. 11.
+
+Hourly data correlation in the average daily air pollution data.
+
+Fig. 11 presents the correlation between air pollutant levels
+for different hours of the day. The correlations between commuting hours in the morning and afternoon and the correlations
+between early morning sleeping hours are extremely high (high
+
+Fig. 13.
+
+HK air pollution data monitoring stations.
+
+correlations are shown in red). Since the Self-Attention mechanism weighs the importance of all the positions within the
+input sequence and allows the model to update its weightings
+based on all relevant positions, irrespective of the distance
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+Fig. 14. Data correlation from different pollutants in the average daily air
+pollution data.
+
+between the target position and those positions relevant to it,
+the Transformer-based CTDI model is able to better capture
+the temporal relationships present in time-series air qualityrelated data than CNN, which convolutes only on local neighbors, and RNN, which finds it difficult to capture long-term
+dependencies.
+Similarly, Fig. 12 shows the correlation between different
+monitoring stations. The geographic locations of these stations
+are illustrated in Fig. 13. Monitoring stations that are located
+close to each other (such as Mong Kok and Sham Shui Po)
+have high correlations. Additionally, monitoring stations that are
+situated relatively far apart may still have high correlations, for
+example, city centers (such as Causeway Bay, Central, and Mong
+Kok), and lower activity areas (such as Sha Tin, Tap Mun, and
+Yuen Long); we hypothesize this is because their environments
+share similar characteristics, such as usage (shaping human
+activity and, in turn, pollution generation) and physical characteristics, such as street canyons and building density (shaping
+pollution propagation and concentration/dispersion). Through
+its attention mechanism, the Transformer-based CTDI model
+is able to capture spatial relationships in the inputs between
+adjacent and non-adjacent stations much more effectively than
+CNN, GCN, and RNN.
+Finally, Fig. 14 shows the correlation between the different
+air pollutants. The 1-by-1 CNN layer allows the CTDI model to
+capture the relationships between different types of data features
+and hence improve accuracy by using information from other
+pollutants to recover the missing data of a particular pollutant.
+The combination of these features enables CTDI to consistently
+outperform other approaches, regardless of the particular pattern
+of missing data to be recovered.
+VI. CONCLUSION AND FUTURE WORK
+This study proposes a CNN-Transformer-based data imputation model named CTDI for the recovery of missing air pollution
+data. The model consists of three components. First, within
+the data pre-processing component, IDW is utilized to spatially
+interpolate air pollution data and related urban factors. A sliding
+window strategy is then employed to temporal segment the
+
+2453
+
+data; this augments the dataset to provide the model with more
+24-hour period data tensors from which to learn.
+Second, a 1-by-1 convolution layer is employed after the
+data pre-processing component. This layer transforms of the
+depth of the 24-hour period data tensor and enables the model
+to capture the relationship and interactions between different
+types of data features. At the same time, this 1×1 CNN layer
+preserves the height and width of the data, ensuring the retention
+of the inherent spatial and temporal relationships between data
+entries situated in the S-T positions within the 24-hour period
+data tensor.
+Third, the S-T Transformer module is specifically designed to
+capture the spatial and temporal relationships within the 24-hour
+period data tensor. The module achieves this effectively by
+transposing the input tensor into spatial and temporal sequences
+and then utilizing the powerful feature extraction capability of
+the Multi-Head Attention architecture. Additionally, the loss
+function of CTDI penalizes both entry-wise imputation error
+and overall average error to maximize the recovery of the reconstructed matrix.
+Finally, we have also investigated the statistical characteristics of a Hong Kong air pollution dataset collected over 3
+years. We found that the missing data rate across the full-time
+period is 2.46% and that the missing data is non-uniformly
+distributed. In particular, there is pronounced periodicity, with
+most missing data entries occurring in the early morning and
+noon periods. According to the investigation results, we then
+used a variety of patterns of missing data to evaluate CTDI.
+Simulation results show that CTDI outperforms baselines (including statistical imputation, shallow machine learning-based
+methods, conventional deep learning techniques, and two advanced recovery approaches we previously proposed.) in all
+scenarios. In addition, experiments on different datasets indicated that the air pollution observations alone are sufficient
+for the recovery of air pollution measurements in the case of
+Hong Kong. Furthermore, our ablation experiments indicate
+that each component makes a significant contribution to overall
+performance of CTDI, particularly highlighting the importance
+of the temporal transformer in scenarios with varying rates of
+missing data.
+One direction of future research is to investigate the applicability and performance of CTDI in recovering air pollution data
+in other cities. In cities where meteorology data and traffic data
+are measured at the same sites as pollution monitoring stations,
+incorporating these urban factors may play a more significant
+role in the imputation of air pollutants than in the Hong Kong
+case.
+In addition to air pollution data collected from air quality
+monitoring stations, the proposed CTDI model can also be
+directly applied to impute measurements from mobile air pollution sensors. The data from these sensors also exhibit complex spatial-temporal correlations and possess internal feature
+relevance, making them suitable for CTDI-based imputation.
+Moreover, we believe this could potentially be extended to other
+systems with similar characteristics, such as power systems and
+traffic flow, further expanding the applicability and usefulness
+of the CTDI model.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2454
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+ACKNOWLEDGMENT
+The authors gratefully acknowledge the Environmental Protection Department of the Hong Kong SAR Government, for
+providing valuable online open data source. The authors would
+also like to thank Dr. Yang Han, Department of Electrical and
+Electronic Engineering, the University of Hong Kong (HKU),
+for providing the urban dataset he has downloaded. All errors
+rest entirely on the authors.
+REFERENCES
+[1] S. Liu et al., “Association between exposure to ambient particulate matter
+and chronic obstructive pulmonary disease: Results from a cross-sectional
+study in China,” Thorax, vol. 72, no. 9, pp. 788–795, 2017.
+[2] J. M. Balbus and C. Malina, “Identifying vulnerable subpopulations for
+climate change health effects in the United States,” J. Occup. Environ.
+Med., vol. 51, no. 1, pp. 33–37, 2009.
+[3] “WHO Health Topic: Air pollution,” Accessed: Mar. 01, 2023. [Online].
+Available: https://www.who.int/health-topics/air-pollution
+[4] I. Yuksel and K. Kaygusuz, “Renewable energy sources for clean and
+sustainable energy policies in Turkey,” Renewable Sustain. Energy Rev.,
+vol. 15, no. 8, pp. 4132–4144, 2011.
+[5] Y. Han, V. O. K. Li, J. C. K. Lam, and M. Pollitt, “How blue is the sky? estimating air qualities in Beijing during the blue sky day period (2008–2012)
+by Bayesian multi-task LSTM,” Environ. Sci. Policy, vol. 116, pp. 69–77,
+2021.
+[6] C. K. Gately, L. R. Hutyra, S. Peterson, and I. S. Wing, “Urban emissions
+hotspots: Quantifying vehicle congestion and air pollution using mobile
+phone GPS data,” Environ. Pollut., vol. 229, pp. 496–504, 2017.
+[7] X. Xie et al., “A review of urban air pollution monitoring and exposure
+assessment methods,” ISPRS Int. J. Geo- Inf., vol. 6, no. 12, 2017,
+Art. no. 389.
+[8] Y. Ma, M. Richards, M. Ghanem, Y. Guo, and J. Hassard, “Air pollution
+monitoring and mining based on sensor grid in London,” Sensors, vol. 8,
+no. 6, pp. 3601–3623, 2008.
+[9] M. Brauer et al., “Ambient air pollution exposure estimation for the global
+burden of disease 2013,” Environ. Sci. Technol., vol. 50, no. 1, pp. 79–88,
+2016.
+[10] B. Zou, J. G. Wilson, F. B. Zhan, and Y. Zeng, “Air pollution exposure assessment methods utilized in epidemiological studies,” J. Environ. Monit.,
+vol. 11, no. 3, pp. 475–490, 2009.
+[11] Y. Yu, V. O. K. Li, J. C. K. Lam, and K. Chan, “GCN-ST-MDIR: Graph
+convolutional network-based spatial-temporal missing air pollution data
+pattern identification and recovery,” IEEE Trans. Big Data, vol. 9, no. 5,
+pp. 1347–1364, Oct. 2023.
+[12] Y. Yu, J. J. Q. Yu, V. O. K. Li, and J. C. K. Lam, “Low-rank singular value
+thresholding for recovering missing air quality data,” in Proc. IEEE Int.
+Conf. Big Data, 2017, pp. 508–513.
+[13] Y. Yu, V. O. K. Li, and J. C. K. Lam, “Hierarchical recovery of missing
+air pollution data via improved long-short term context encoder network,”
+IEEE Trans. Big Data, vol. 9, no. 1, pp. 93–105, Feb. 2023.
+[14] C. Sun, V. O. K. Li, J. C. K. Lam, and I. Leslie, “Optimal citizen-centric
+sensor placement for air quality monitoring: A case study of city of
+Cambridge, the United Kingdom,” IEEE Access, vol. 7, pp. 47390–47400,
+2019.
+[15] A. Boubrima, W. Bechkit, and H. Rivano, “Optimal WSN deployment
+models for air pollution monitoring,” IEEE Trans. Wireless Commun.,
+vol. 16, no. 5, pp. 2723–2735, May 2017.
+[16] Y. Han, S. Song, Y. Yu, J. C. K. Lam, and V. O. K. Li, “UNI-CAL: A
+universal AI-driven model for air pollutant sensor calibration with domainspecific knowledge inputs,” IEEE Access, vol. 12, pp. 126531–126544,
+2024.
+[17] Q. Zhang, Y. Han, V. O. K. Li, and J. C. Lam, “Deep-air: A hybrid
+CNN-LSTM framework for fine-grained air pollution estimation and
+forecast in metropolitan cities,” IEEE Access, vol. 10, pp. 55818–55841,
+2022.
+[18] L. M. Rivera-Muñoz, J. D. Gallego-Villada, A. F. Giraldo-Forero, and J. D.
+Martinez-Vargas, “Missing data estimation in a low-cost sensor network
+for measuring air quality: A case study in Aburrá Valley,” Water, Air, Soil
+Pollut., vol. 232, pp. 1–15, 2021.
+
+[19] J. M. Jerez et al., “Missing data imputation using statistical and machine
+learning methods in a real breast cancer problem,” Artif. Intell. Med.,
+vol. 50, no. 2, pp. 105–115, 2010.
+[20] Y. Yu, J. J. Q. Yu, V. O. K. Li, and J. C. K. Lam, “A novel Interpolation-SVT
+approach for recovering missing low-rank air quality data,” IEEE Access,
+vol. 8, pp. 74291–74305, 2020.
+[21] X. Chai, H. Gu, F. Li, H. Duan, X. Hu, and K. Lin, “Deep learning for
+irregularly and regularly missing data reconstruction,” Sci. Rep., vol. 10,
+no. 1, 2020, Art. no. 3302.
+[22] V. O. K. Li, J. C. K. Lam, and J. Cui, ”AI for social good: AI and Big
+Data approaches for environmental decision-making,” Environ. Sci. Policy,
+vol. 125, pp. 241–246, 2021.
+[23] K. Han, A. Xiao, E. Wu, J. Guo, C. Xu, and Y. Wang, “Transformer in transformer,” in Proc. Adv. Neural Inf. Process. Syst., 2021,
+pp. 15908–15919.
+[24] T. Wolf et al., “Transformers: State-of-the-art natural language processing,” in Proc. Conf. Empirical Methods Natural Lang. Process.: Syst.
+Demonstrations, 2020, pp. 38–45.
+[25] L. Dong, S. Xu, and B. Xu, “Speech-transformer: A no-recurrence
+sequence-to-sequence model for speech recognition,” in Proc. IEEE Int.
+Conf. Acoust., Speech Signal Process., 2018, pp. 5884–5888.
+[26] K. Han et al., “A survey on vision transformer,” IEEE Trans. Pattern Anal.
+Mach. Intell., vol. 45, no. 1, pp. 87–110, Jan. 2023.
+[27] H. Zhou et al., “Informer: Beyond efficient transformer for long sequence time-series forecasting,” in Proc. AAAI Conf. Artif. Intell., 2021,
+pp. 11106–11115.
+[28] S. Karita et al., “A comparative study on transformer vs RNN in speech
+applications,” in Proc. IEEE Autom. Speech Recognit. Understanding
+Workshop, 2019, pp. 449–456.
+[29] Y. Li et al., “Improved end-to-end speech emotion recognition using self
+attention mechanism and multitask learning,” in Proc. Interspeech, 2019,
+pp. 2803–2807.
+[30] M. G. Kenward and J. Carpenter, “Multiple imputation: Current perspectives,” Statist. Methods Med. Res., vol. 16, no. 3, pp. 199–218, 2007.
+[31] P. A. Patrician, “Multiple imputation for missing data,” Res. Nurs. Health,
+vol. 25, no. 1, pp. 76–84, 2002.
+[32] S. Zhang, “Nearest neighbor selection for iteratively kNN imputation,” J.
+Syst. Softw., vol. 85, no. 11, pp. 2541–2552, 2012.
+[33] D. J. Stekhoven and P. Bühlmann, “MissForest—non-parametric missing
+value imputation for mixed-type data,” Bioinformatics, vol. 28, no. 1,
+pp. 112–118, 2012.
+[34] J. Y. Zhu, Y. Zheng, X. Yi, and V. O. K. Li, “A Gaussian Bayesian model
+to identify spatio-temporal causalities for air pollution based on urban
+Big Data,” in Proc. IEEE Conf. Comput. Commun. Workshops, 2016,
+pp. 3–8.
+[35] L. Gondara and K. Wang, “MIDA: Multiple imputation using denoising
+autoencoders,” in Proc. Pacific-Asia Conf. Knowl. Discov. Data Mining,
+Melbourne, Australia, 2018, pp. 260–272.
+[36] L. Gondara and K. Wang, “Recovering loss to followup information using
+denoising autoencoders,” in Proc. IEEE Int. Conf. Big Data, Boston, USA,
+2017, pp. 1936–1945.
+[37] Y. Yu, V. O. K. Li, and J. C. K. Lam, “Missing air pollution data recovery
+based on long-short term context encoder,” IEEE Trans. Big Data, vol. 8,
+no. 3, pp. 711–722, Jun. 2022.
+[38] D. B. Rubin, Multiple Imputation for Nonresponse in Surveys. Hoboken,
+NJ, USA: Wiley, 2004 .
+[39] N. Schenker, “Multiple imputation for interval estimation from surveys with ignorable nonresponse,” Ph.D. dissertation, The University of
+Chicago, 1985.
+[40] R. J. Little and D. B. Rubin, Statistical Analysis With Missing Data.
+Hoboken, NJ, USA: Wiley, 2019.
+[41] D. Pathak, P. Krahenbuhl, J. Donahue, T. Darrell, and A. A. Efros, “Context
+encoders: Feature learning by inpainting,” in Proc. IEEE Conf. Comput.
+Vis. Pattern Recognit., Las Vegas, USA, 2016, pp. 2536–2544.
+[42] J. Long, E. Shelhamer, and T. Darrell, “Fully convolutional networks
+for semantic segmentation,” in Proc. IEEE Conf. Comput. Vis. Pattern
+Recognit., Boston, USA, 2015, pp. 3431–3440.
+[43] V. O. K. Li, J. C. K. Lam, Y. Han, and K. Chow, “A Big Data and artificial
+intelligence framework for smart and personalized air pollution monitoring
+and health management in Hong Kong,” Environ. Sci. Policy, vol. 124,
+pp. 441–450, 2021.
+[44] I. Spinelli, S. Scardapane, and A. Uncini, “Missing data imputation
+with adversarially-trained graph convolutional networks,” Neural Netw.,
+vol. 129, pp. 249–260, 2020.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+YU et al.: CTDI: CNN-TRANSFORMER-BASED SPATIAL-TEMPORAL MISSING AIR POLLUTION DATA IMPUTATION
+
+[45] G. Murugan, V. Moyal, P. Nandankar, O. Pandithurai, and E. S. J. Pimo,
+“A novel CNN method for the accurate spatial data recovery from digital
+images,” in Mater. Today: Proc., vol. 80, pp. 1706–1712, 2023.
+[46] Y.-J. Kim and M. Chi, “Temporal belief memory: Imputing missing data
+during RNN training,” in Proc. 27th Int. Joint Conf. Artif. Intell., 2018,
+pp. 2326–2332.
+[47] J. Ma, J. C. Cheng, F. Jiang, W. Chen, M. Wang, and C. Zhai, “A bidirectional missing data imputation scheme based on LSTM and transfer
+learning for building energy data,” Energy Buildings, vol. 216, Jun. 2020,
+Art. no. 109941.
+[48] Y. Eum and E.-H. Yoo, “Imputation of missing time-activity data with longterm gaps: A multi-scale residual CNN-LSTM network model,” Comput.,
+Environ. Urban Syst., vol. 95, 2022, Art. no. 101823.
+[49] S. N. Hussain, A. Abd Aziz, M. J. Hossen, N. A. Ab Aziz, G. R.
+Murthy, and F. B. Mustakim, “A novel framework based on CNNLSTM neural network for prediction of missing values in electricity
+consumption time-series datasets,” J. Inf. Process. Syst., vol. 18, no. 1,
+pp. 115–129, 2022.
+[50] Z. Li, F. Liu, W. Yang, S. Peng, and J. Zhou, ”A survey of convolutional neural networks: analysis, applications, and prospects,” IEEE
+Trans. Neural Netw. Learn. Syst., vol. 33, no. 12, pp. 6999–7019,
+Dec. 2022.
+[51] W. Rawat and Z. Wang, “Deep convolutional neural networks for image
+classification: A comprehensive review,” Neural Comput., vol. 29, no. 9,
+pp. 2352–2449, 2017.
+[52] A. Dhillon and G. K. Verma, “Convolutional neural network: A review of
+models, methodologies and applications to object detection,” Prog. Artif.
+Intell., vol. 9, no. 2, pp. 85–112, 2020.
+[53] F. Milletari, N. Navab, and S.-A. Ahmadi, “V-Net: Fully convolutional
+neural networks for volumetric medical image segmentation,” in Proc.
+IEEE 4th Int. Conf. 3D Vis., 2016, pp. 565–571.
+[54] S. Siami-Namini, N. Tavakoli, and A. S. Namin, “A comparison of ARIMA
+and LSTM in forecasting time series,” in Proc. 17th IEEE Int. Conf. Mach.
+Learn. Appl., 2018, pp. 1394–1401.
+[55] Y. Zhang, Q. Liu, and L. Song, “Sentence-state LSTM for text representation,” 2018, arXiv: 1805.02474.
+[56] A. Graves, N. Jaitly, and A.-R. Mohamed, “Hybrid speech recognition
+with deep bidirectional LSTM,” in Proc. IEEE Workshop Autom. Speech
+Recognit. Understanding., 2013, pp. 273–278.
+[57] Y. Yu, X. Si, C. Hu, and J. Zhang, “A review of recurrent neural networks:
+LSTM cells and network architectures,” Neural Comput., vol. 31, no. 7,
+pp. 1235–1270, 2019.
+[58] Y. Han, J. C. K. Lam, V. O. K. Li, and D. Reiner, “A Bayesian LSTM
+model to evaluate the effects of air pollution control regulations in Beijing,
+China,” Environ. Sci. Policy, vol. 115, pp. 26–34, 2021.
+[59] R. Dey and F. M. Salem, “Gate-variants of gated recurrent unit (GRU)
+neural networks,” in Proc. IEEE 60th Int. Midwest Symp. Circuits Systems.,
+2017, pp. 1597–1600.
+[60] R. Fu, Z. Zhang, and L. Li, “Using LSTM and GRU neural network
+methods for traffic flow prediction,” in Proc. 31st Youth Academic Annu.
+Conf. Chin. Assoc. Automat., 2016, pp. 324–328.
+[61] V. O. K. Li, J. C. K. Lam, Y. Chen, and J. Gu, “Deep learning model to
+estimate air pollution using M-BP to fill in missing proxy urban data,” in
+Proc. IEEE Glob. Commun. Conf., 2017, pp. 1–6.
+[62] C.-J. Huang and P.-H. Kuo, “A deep CNN-LSTM model for particulate
+matter (PM2.5 ) forecasting in smart cities,” Sensors, vol. 18, no. 7, 2018,
+Art. no. 2220.
+[63] I. E. Livieris, E. Pintelas, and P. Pintelas, “A CNN–LSTM model for gold
+price time-series forecasting,” Neural Comput. Appl., vol. 32, pp. 17351–
+17360, 2020.
+[64] R. Yan, J. Liao, J. Yang, W. Sun, M. Nong, and F. Li, “Multi-hour and multisite air quality index forecasting in Beijing using CNN, LSTM, CNNLSTM, and spatiotemporal clustering,” Expert Syst. Appl., vol. 169, 2021,
+Art. no. 114513.
+[65] A. Vaswani et al., “Attention is all you need,” in Proc. Adv. Neural Info.
+Process. Syst., 2017, pp. 6000–6010.
+[66] C. Subakan, M. Ravanelli, S. Cornell, M. Bronzi, and J. Zhong, “Attention
+is all you need in speech separation,” in Proc. IEEE Int. Conf. Acoust.,
+Speech Signal Process., 2021, pp. 21–25.
+[67] P. Shaw, J. Uszkoreit, and A. Vaswani, “Self-attention with relative position representations,” 2018, arXiv: 1803.02155.
+[68] E. Voita, D. Talbot, F. Moiseev, R. Sennrich, and I. Titov, “Analyzing
+multi-head self-attention: Specialized heads do the heavy lifting, the rest
+can be pruned,” 2019, arXiv:1905.09418.
+
+2455
+
+[69] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training
+of deep bidirectional transformers for language understanding,” 2018,
+arXiv:1810.04805.
+[70] L. Floridi and M. Chiriatti, “GPT-3: Its nature, scope, limits, and consequences,” Minds Machines, vol. 30, pp. 681–694, 2020.
+[71] C. Raffel et al., “Exploring the limits of transfer learning with a unified text-to-text transformer,” J. Mach. Learn. Res., vol. 21, no. 1,
+pp. 5485–5551, 2020.
+[72] M. Xu et al., “Spatial-temporal transformer networks for traffic flow
+forecasting,” 2020, arXiv:2001.02908.
+[73] W. Zhang, P. Zhang, Y. Yu, X. Li, S. A. Biancardo, and J. Zhang, “Missing
+data repairs for traffic flow with self-attention generative adversarial imputation net,” IEEE Trans. Intell. Transp. Syst., vol. 23, no. 7, pp. 7919–7930,
+Jul. 2021.
+[74] Q. Zeng, L. Wang, S. Zhu, Y. Gao, X. Qiu, and L. Chen, “Long-term PM2.5
+concentrations forecasting using CEEMDAN and deep Transformer neural
+network,” Atmospheric Pollut. Res., vol. 14, no. 9, 2023, Art. no. 101839.
+[75] G. Y. Lu and D. W. Wong, “An adaptive inverse-distance weighting spatial
+interpolation technique,” Comput. Geosci., vol. 34, no. 9, pp. 1044–1055,
+2008.
+[76] G. Lefebvre, S. Berlemont, F. Mamalet, and C. Garcia, “BLSTM-RNN
+based 3D gesture classification,” in Proc. Int. Conf. Artif. Neural Netw.,
+Sofia, Bulgaria, Springer, 2013, pp. 381–388.
+[77] J. T. Springenberg, A. Dosovitskiy, T. Brox, and M. Riedmiller, “Striving
+for simplicity: The all convolutional net,” 2014, arXiv:1412.6806.
+[78] Y. Han, Q. Zhang, V. O. K. Li, and J. C. K. Lam, “Deep-air: A hybrid
+CNN-LSTM framework for air quality modeling in metropolitan cities,”
+Mar. 2021, arXiv:2103.14587.
+[79] W. Du, D. Côté, and Y. Liu, “SAITS: Self-attention-based imputation for
+time series,” Expert Syst. Appl., vol. 219, 2023, Art. no. 119619.
+[80] Air pollution data from the EPD of HKSAR database. Accessed:
+Aug. 31, 2022. [Online]. Available: https://cd.epic.epd.gov.hk/EPICDI/
+air/station/
+[81] Hong KongObservatory Open Database. Accessed: Aug. 31, 2022. [Online]. Available: https://www.hko.gov.hk/en/abouthko/opendata_intro.
+htm
+[82] Hong KongTraffic Speed Map. Accessed: Aug. 31, 2022. [Online].
+Available: https://data.gov.hk/en-data/dataset/hk-ogcio-da_div_02-citydashboard-traffic-speed
+[83] S. Thirukumaran and A. Sumathi, “Missing value imputation techniques
+depth survey and an imputation algorithm to improve the efficiency of
+imputation,” in Proc. 4th IEEE Int. Conf. Adv. Comput., Chennai, India,
+2012, pp. 1–5.
+[84] I. R. White, P. Royston, and A. M. Wood, “Multiple imputation using
+chained equations: Issues and guidance for practice,” Statist. Med., vol. 30,
+no. 4, pp. 377–399, 2011.
+[85] Y. LeCun, Y. Bengio, and G. Hinton, “Deep learning,” Nature, vol. 521,
+no. 7553, pp. 436–444, 2015.
+[86] J. Benesty, J. Chen, Y. Huang, and I. Cohen, “Pearson correlation coefficient,” in Noise Reduction in Speech Processing. Berlin, Germany:
+Springer, 2009, pp. 1–4.
+
+Yangwen Yu received the BEng degree in communication engineering (Science experimental class)
+and the MEng degree in telecommunication & information system from Beijing Jiaotong University,
+Beijing, China, in 2013 and 2016, respectively, and
+the PhD degree from the Department of Electrical &
+Electronic Engineering, University of Hong Kong in
+2022. She is currently a postdoctoral fellow under the
+supervision of Prof. Victor O.K. Li and Dr. Jacqueline
+C.K. Lam. Her research interests include information
+theory, coding and modulation, and temporally and
+spatially correlated missing data recovery.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+2456
+
+Victor O. K. Li (Fellow, IEEE) received the SB,
+SM, EE, and ScD degrees in electrical engineering
+and computer science from MIT. He is a chair of information engineering and Cheng Yu-Tung professor
+in sustainable development with the Department of
+Electrical & Electronic Engineering (EEE) University
+of Hong Kong. He was a visiting professor with the
+Department of Computer Science and Technology,
+University of Cambridge, U.K., from April to August
+2019. He is the director of the HKU-Cambridge Clean
+Energy and Environment Research Platform, and of
+the HKU-Cambridge AI to Advance Well-being and Society Research Platform,
+which are interdisciplinary collaborations with Cambridge University. He was
+the head of EEE, assoc. dean (Research) of Engineering and Managing Director
+of Versitech Ltd. He serves on the board of Sunevision Holdings Ltd., listed on
+the Hong Kong Stock Exchange and co-founded Fano Labs Ltd., an artificial
+intelligence (AI) company with his PhD student. Previously, he was a professor
+of electrical engineering with the University of Southern California (USC), Los
+Angeles, California, USA, and a director with the USC Communication Sciences
+Institute. His research interests include Big Data, AI, optimization techniques,
+and interdisciplinary clean energy and environment studies. In Jan 2018, he was
+awarded a USD 6.3 M RGC Theme-based Research Project to develop deep
+learning techniques for personalized and smart air pollution monitoring and
+health management. Sought by government, industry, and academic organizations, he has lectured and consulted extensively internationally. He has received
+numerous awards, including the PRC Ministry of Education Changjiang Chair
+Professorship at Tsinghua University, the U.K. Royal Academy of Engineering
+Senior Visiting Fellowship in Communications, the Croucher Foundation Senior
+Research Fellowship, and the Order of the Bronze Bauhinia Star, Government
+of the HKSAR. He is a fellow of the Hong Kong Academy of Engineering
+Sciences, the IAE, and the HKIE.
+
+IEEE TRANSACTIONS ON BIG DATA, VOL. 11, NO. 5, SEPTEMBER/OCTOBER 2025
+
+Kelvin Chan received the bachelor of science degree
+in economics from the University of Cambridge, and
+the MBA degree from the London School of Economics. He is a senior research project officer with the
+Department of Electrical and Electronic Engineering,
+the University of Hong Kong. He has a strong background and experience in accounting and technology
+entrepreneurship.
+
+Qi Zhang received the BE degree in electronic engineering from Tsinghua University, Beijing, China, in
+2017. He is currently working toward the PhD degree
+with the Department of Electrical and Electronic Engineering, The University of Hong Kong. His research
+interests include deep-learning and its applications on
+air pollution, spatio-temporal data analysis, and urban
+computing.
+
+Jacqueline C. K. Lam is a associate professor with
+the Department of Electrical and Electronic Engineering, the University of Hong Kong, also co-director
+with the HKU AI to Advance Well-being and Society Institute, which embeds the HKU-Cambridge
+Clean Energy and Environment Research Platform,
+and the HKU-Cambridge AI to Advance Well-being
+and Society Research Platform. She was the Hughes
+Hall visiting fellow, before she takes up visiting senior
+research fellow and associate researcher with Energy
+Policy Research Group, Judge Business School, the
+University of Cambridge. She is currently based in CEEPR, MIT, as a visiting
+scholar. Her research studies clean energy and environment using interdisciplinary approaches, with a special focus on China and the U.K. Her recent
+research focuses on the use of Big Data and machine learning techniques to
+study personalized air pollution monitoring and health management. Her work is
+published in IEEE, Environment International, Applied Energy, Environmental
+Science and Policy, and Energy Policy. Jacqueline has received three times the
+research grants awarded by the Research Grants Council, HKSAR Government,
+from 2011-2017. The funded amount totaled USD 7.8 M in PI or Co-PI capacity.
+Her recent research study, in joint collaboration with Yang Han and Victor OK
+Li on PM2.5 pollution and environmental inequality in Hong Kong, has been
+published in Environmental Science and Policy, and widely covered by more
+than 30 local and overseas newspapers and TVs.
+
+Authorized licensed use limited to: Indian Institute of Technology Patna. Downloaded on March 23,2026 at 08:38:42 UTC from IEEE Xplore. Restrictions apply.
+
+
