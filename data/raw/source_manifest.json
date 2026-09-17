@@ -1,5 +1,5 @@
 {
-  "manifest_generation_timestamp": "2026-09-13T03:32:02.838676+00:00",
+  "manifest_generation_timestamp": "2026-09-13T17:05:27.535425+00:00",
   "project": "CTDI Air Pollution Missing-Data Imputation Project",
   "study_period": "2019-01-01 00:00 to 2021-12-31 23:00 (26,304 hours)",
   "study_stations_count": 16,
@@ -10,7 +10,7 @@
       "dataset_name": "Hong Kong EPD Hourly Air Quality Monitoring Records",
       "source_url": "https://cd.epic.epd.gov.hk/EPICDI/air/station/",
       "local_path": "data/raw/air_quality/epd_air_quality_2019_2021_hourly.csv",
-      "publisher": "Environmental Protection Department, The Government of the Hong Kong Special Administrative Region",
+      "publisher": "Environmental Protection Department, HKSAR",
       "file_type": "csv",
       "coverage_start": "2019-01-01 00:00",
       "coverage_end": "2021-12-31 23:00",
@@ -23,11 +23,12 @@
         "nox",
         "co"
       ],
-      "unit": "\u03bcg/m\u00b3",
+      "unit": "ug/m3",
       "timezone": "Asia/Hong_Kong (HKT, UTC+8)",
       "file_size_bytes": 27136881,
       "sha256": "f2b1b46a9c8e69e2f18077fac4c4d4f664cb24162523dc978219d82c225b57b2",
-      "status": "VERIFIED_VALID"
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "EXACT SOURCE VERIFIED"
     },
     {
       "dataset_domain": "Meteorology",
@@ -50,14 +51,15 @@
       "timezone": "Asia/Hong_Kong (HKT, UTC+8)",
       "file_size_bytes": 25460811,
       "sha256": "e2e7849675a6856286ff92c63334d2d6cae010d409446043c3a4b8a147fa47a3",
-      "status": "VERIFIED_VALID"
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE DIFFERENCE"
     },
     {
       "dataset_domain": "Meteorology Reference",
       "dataset_name": "Hong Kong Observatory (HKO) Daily Benchmark Observations",
       "source_url": "https://data.weather.gov.hk/weatherAPI/opendata/opendata.php",
-      "local_path": "data/raw/meteorology/hko_daily_reference/",
-      "publisher": "Hong Kong Observatory, The Government of the Hong Kong Special Administrative Region",
+      "local_path": "data/raw/meteorology/hko_daily_reference",
+      "publisher": "Hong Kong Observatory, HKSAR",
       "file_type": "csv directory",
       "coverage_start": "2019-01-01",
       "coverage_end": "2021-12-31",
@@ -69,43 +71,108 @@
         "CLMRAIN",
         "CLMWIND"
       ],
-      "status": "VERIFIED_VALID"
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
     },
     {
-      "dataset_domain": "Traffic",
-      "dataset_name": "Hong Kong Annual Traffic Census (ATC) Master Archive",
-      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_TRAFFIC_DATA.zip",
-      "local_path": "data/raw/traffic/ATC_TRAFFIC_DATA.zip",
-      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
-      "file_type": "zip",
-      "coverage_start": "2018-01-01",
-      "coverage_end": "2024-12-31",
+      "dataset_domain": "Traffic Speed Map (1st Generation)",
+      "dataset_name": "Hong Kong Traffic Speed Map Parent Feed - 2019 Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=http%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fspeedmap.xml&time=20190101-0000",
+      "local_path": "data/raw/traffic/samples/historical_td_speedmap_20190101_0000.xml",
+      "publisher": "Transport Department, HKSAR / DATA.GOV.HK Historical Archive",
+      "file_type": "xml",
+      "coverage_start": "2019-01-01 00:00 HKT",
+      "coverage_end": "2019-01-01 00:00 HKT",
       "variables": [
-        "AADT",
-        "Monthly Index",
-        "Weekday Index",
-        "Hourly Profile Fractions"
+        "LINK_ID",
+        "REGION",
+        "ROAD_TYPE",
+        "ROAD_SATURATION_LEVEL",
+        "TRAFFIC_SPEED",
+        "CAPTURE_DATE"
       ],
-      "file_size_bytes": 33710902,
-      "sha256": "b2738720b17f47946cdebae2291bcb56eb0078a2603f412de13b328accfd84f7",
-      "status": "VERIFIED_VALID"
+      "file_size_bytes": 198618,
+      "sha256": "ffd32205bb2e6997df0a94f3f02108bd0fb517c1fc58619cb1fd49a70c634a95",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
     },
     {
-      "dataset_domain": "Traffic Spatial",
-      "dataset_name": "Annual Traffic Census Station Spatial Points",
-      "source_url": "https://static.data.gov.hk/td/traffic-flow-census/ATC_STATION_PT.kmz",
-      "local_path": "data/raw/traffic/spatial/ATC_STATION_PT.kmz",
-      "publisher": "Transport Department, The Government of the Hong Kong Special Administrative Region",
-      "file_type": "kmz",
-      "coverage_start": "Permanent",
-      "coverage_end": "Current",
+      "dataset_domain": "Traffic Speed Map (1st Generation)",
+      "dataset_name": "Hong Kong Traffic Speed Map Parent Feed - 2020 Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=http%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fspeedmap.xml&time=20200101-0000",
+      "local_path": "data/raw/traffic/samples/historical_td_speedmap_20200101_0000.xml",
+      "publisher": "Transport Department, HKSAR / DATA.GOV.HK Historical Archive",
+      "file_type": "xml",
+      "coverage_start": "2020-01-01 00:00 HKT",
+      "coverage_end": "2020-01-01 00:00 HKT",
       "variables": [
-        "ATC_STATION_NO",
-        "Coordinates"
+        "LINK_ID",
+        "REGION",
+        "ROAD_TYPE",
+        "ROAD_SATURATION_LEVEL",
+        "TRAFFIC_SPEED",
+        "CAPTURE_DATE"
       ],
-      "file_size_bytes": 67197,
-      "sha256": "a6ee2b2d0f21286bab5930925df557311a289654d86df40cfa1a972b83fa1ac0",
-      "status": "VERIFIED_VALID"
+      "file_size_bytes": 193129,
+      "sha256": "234a8da1fc57e27aee3784d92ad5038202008c8b282e12edc364150d9f695f99",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
+    },
+    {
+      "dataset_domain": "Traffic Speed Map (1st Generation)",
+      "dataset_name": "Hong Kong Traffic Speed Map Parent Feed - 2021 Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=http%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fspeedmap.xml&time=20210101-0000",
+      "local_path": "data/raw/traffic/samples/historical_td_speedmap_20210101_0000.xml",
+      "publisher": "Transport Department, HKSAR / DATA.GOV.HK Historical Archive",
+      "file_type": "xml",
+      "coverage_start": "2021-01-01 00:00 HKT",
+      "coverage_end": "2021-01-01 00:00 HKT",
+      "variables": [
+        "LINK_ID",
+        "REGION",
+        "ROAD_TYPE",
+        "ROAD_SATURATION_LEVEL",
+        "TRAFFIC_SPEED",
+        "CAPTURE_DATE"
+      ],
+      "file_size_bytes": 198956,
+      "sha256": "4b9e170a7c3b8a5fb4b2e384aecd15909493669f9f0773556e7809bf4059fb9a",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
+    },
+    {
+      "dataset_domain": "Traffic Speed Map (1st Generation)",
+      "dataset_name": "Hong Kong Traffic Speed Map Parent Feed - Study End Snapshot",
+      "source_url": "https://app.data.gov.hk/v1/historical-archive/get-file?url=http%3A%2F%2Fresource.data.one.gov.hk%2Ftd%2Fspeedmap.xml&time=20211231-2357",
+      "local_path": "data/raw/traffic/samples/historical_td_speedmap_20211231_2357.xml",
+      "publisher": "Transport Department, HKSAR / DATA.GOV.HK Historical Archive",
+      "file_type": "xml",
+      "coverage_start": "2021-12-31 23:57 HKT",
+      "coverage_end": "2021-12-31 23:57 HKT",
+      "variables": [
+        "LINK_ID",
+        "REGION",
+        "ROAD_TYPE",
+        "ROAD_SATURATION_LEVEL",
+        "TRAFFIC_SPEED",
+        "CAPTURE_DATE"
+      ],
+      "file_size_bytes": 198937,
+      "sha256": "2445470c4046dca69f54e94d972dff32ff0378a88097c3e1cfe7fe45fae67d84",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
+    },
+    {
+      "dataset_domain": "Traffic Schema",
+      "dataset_name": "Transport Department Speedmap XML Schema Definition",
+      "source_url": "http://data.one.gov.hk/xsd/td/speedmap.xsd",
+      "local_path": "data/raw/traffic/speedmap.xsd",
+      "publisher": "Transport Department, HKSAR",
+      "file_type": "xsd",
+      "file_size_bytes": 1877,
+      "sha256": "769b86e4664d511b08a05d68ec622c6936b09f161952947d7a2d3b2b1fb27a2d",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "EXACT SOURCE VERIFIED"
     },
     {
       "dataset_domain": "Station Metadata",
@@ -126,7 +193,30 @@
       ],
       "file_size_bytes": 1563,
       "sha256": "30bb17250da7174bec73123570ee2bc2730faab2d5d126cb3141c180892186cb",
-      "status": "VERIFIED_VALID"
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "EXACT SOURCE VERIFIED"
+    },
+    {
+      "dataset_domain": "Station Metadata",
+      "dataset_name": "Hong Kong Observatory Weather Station Inventory",
+      "source_url": "https://www.hko.gov.hk/en/cis/stn.htm",
+      "local_path": "data/raw/station_metadata/weather_stations.csv",
+      "publisher": "Hong Kong Observatory, HKSAR",
+      "file_type": "csv",
+      "coverage_start": "1884",
+      "coverage_end": "Current",
+      "variables": [
+        "station_type",
+        "station_code",
+        "raw_name",
+        "latitude",
+        "longitude",
+        "elevation_m"
+      ],
+      "file_size_bytes": 6006,
+      "sha256": "1b48db2ae37d467379e865a9ee739e834531c759468b61b997ca3135d433b676",
+      "status": "VERIFIED_VALID",
+      "fidelity_rating": "SOURCE-SYSTEM MATCH"
     }
   ]
 }

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://data.one.gov.hk/td" targetNamespace="http://data.one.gov.hk/td" elementFormDefault="qualified" attributeFormDefault="qualified" version="1.0">
+	<xs:element name="jtis_speedlist">
+		<xs:complexType>
+			<xs:sequence maxOccurs="unbounded">
+				<xs:element name="jtis_speedmap">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="LINK_ID" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>Reference ID for each link</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="REGION" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>The region of traffic speed data</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="ROAD_TYPE" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>The type of roads with traffic speed data</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="ROAD_SATURATION_LEVEL" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>To define the traffic condition of the roads</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="TRAFFIC_SPEED" type="xs:integer">
+								<xs:annotation>
+									<xs:documentation>The estimated average traffic speed of the roads</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="CAPTURE_DATE" type="xs:dateTime">
+								<xs:annotation>
+									<xs:documentation>Time of generating the traffic speed data</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
