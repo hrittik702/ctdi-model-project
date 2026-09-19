@@ -1,7 +1,5 @@
 # Evaluation Metrics
 
----
-
 ## 1. Point Imputation Metrics (Matching CTDI Benchmark)
 
 Computed on the median trajectory $\hat{\mathbf{x}}$ of $50$ posterior samples:
@@ -14,8 +12,6 @@ $$\text{RMSE} = \sqrt{\frac{\sum_{s,t,c} (1 - M_{s,t,c}) \cdot (\hat{X}_{s,t,c} 
 
 ### 1.3 Mean Absolute Percentage Error (MAPE)
 $$\text{MAPE} = \frac{100\%}{\sum (1 - M)} \sum_{s,t,c} (1 - M_{s,t,c}) \frac{|\hat{X}_{s,t,c} - X_{s,t,c}|}{X_{s,t,c} + \epsilon}$$
-
----
 
 ## 2. Probabilistic & Uncertainty Quantification Metrics
 

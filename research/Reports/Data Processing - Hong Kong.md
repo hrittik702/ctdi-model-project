@@ -29,9 +29,9 @@ The entire data workflow transforms heterogeneous, bilingual government archives
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ 1. RAW DATA INGESTION                                                                          │
 │  - HK EPD: 36 monthly pollutant archives (PM2.5, PM10, NO2, O3, SO2, NOx, CO)                  │
-│  - HKO & Open-Meteo: Hourly meteorology (TEMP, RH, WS, WD, PRES, RAIN) at 16 coordinates       │
-│  - Transport Dept: Annual Traffic Census (ATC) survey files (2019-2021), detectors, KMZ        │
-│  - Spatial Metadata: 18 Air Stations (16 included + 2 excluded), 52 Weather, 76 Detectors      │ 
+│  - ECMWF ERA5: Hourly surface reanalysis (TEMP, RH, WS, WD, PRES, RAIN) at 16 coordinates     │
+│  - Transport Dept: 1st Gen SpeedMap XML archives (2019–2021), 607/632 road links, 5-min cadence │
+│  - Spatial Metadata: 18 Air Stations (16 included + 2 excluded), 16 ERA5 Coords, 632 Road Links│ 
 └───────────────────────────────────────────────┬────────────────────────────────────────────────┘
                                                 │
                                                 ▼
@@ -397,26 +397,20 @@ ctdi-model-project/
 ├── configs/
 │   └── config.yaml                          # Global settings, window size (24), seed (42)
 ├── data/
-│   ├── raw/                                 # 1. IMMUTABLE RAW SOURCES
-│   │   ├── air_quality/
-│   │   │   ├── epd_air_quality_2019_2021_hourly.csv    # 420,864 rows (16 stations x 26,304 hrs)
-│   │   │   ├── air_quality_missingness_summary.csv     # Missingness breakdown per station
-│   │   │   └── monthly_raw/                            # 36 original EPD monthly exports
-│   │   ├── meteorology/
-│   │   │   ├── hourly_meteorology_16stations_2019_2021.csv  # 420,864 rows (6 met variables)
-│   │   │   ├── by_station/                             # 16 individual station series
-│   │   │   └── hko_daily_reference/                    # HKO official daily validation files
-│   │   ├── traffic/
-│   │   │   ├── atc_2019_2021/                          # 629 extracted ATC survey files
-│   │   │   ├── traffic_prop_vehicle_class_info.csv     # 76 detector points & coordinates
-│   │   │   └── spatial/ATC_STATION_PT.kmz              # Road link GIS geometry
-│   │   └── station_metadata/
-│   │       ├── air_quality_stations.csv                # 16 target + 2 excluded stations
-│   │       ├── weather_stations.csv                    # 52 HKO automatic weather stations
-│   │       └── traffic_detectors.csv                   # 76 transport detector locations
-│   ├── interim/                             # 2. ALIGNED INTERMEDIATE DATA
-│   │   ├── aligned_hourly_features.parquet             # Merged air + met + traffic table
-│   │   └── spatial_distance_matrix.npy                 # 16x16 station Euclidean distance matrix
+│   ├── raw/                                 # 1. IMMUTABLE RAW SOURCES (683 files)
+│   │   ├── air_quality/                            # 36 original EPD monthly exports
+│   │   ├── meteorology/                            # Hourly ERA5 surface reanalysis series
+│   │   ├── traffic/monthly/                        # 36 monthly SpeedMap XML archives (774,686 snapshots)
+│   │   └── station_metadata/                       # 16 included stations + 2 excluded stations
+│   ├── interim/                             # 2. STANDARDIZED & ALIGNED DATA
+│   │   ├── air_quality/clean_air_quality.parquet   # 420,864 rows, 55,876 natural NaNs preserved
+│   │   ├── meteorology/clean_meteorology.parquet   # 420,864 rows, 0 NaNs, physical bounds verified
+│   │   ├── traffic/clean_traffic_speedmap_complete.parquet # 774k snapshots, 466.8M records
+│   │   └── aligned/                                # Phase 2 Spatio-Temporal Alignment Layer
+│   │       ├── aligned_hourly_station_data.parquet # Unified 420,864 station-hour 13-channel grid
+│   │       ├── traffic_hourly_link_data.parquet    # 15.7M records across 632 links
+│   │       ├── traffic_station_hourly.parquet      # 418,448 rows (99.43% coverage, IDW p=2)
+│   │       └── spatial_distance_matrix.npy         # 16x16 symmetric Haversine distance matrix
 │   └── canonical/                           # 3. CANONICAL REFERENCED TENSORS
 │       ├── tensor_features.npy                         # [16, 26304, 13] float32
 │       ├── tensor_mask.npy                             # [16, 26304, 13] bool/uint8
@@ -445,7 +439,7 @@ Once you review and approve this guide, the exact execution will proceed in 4 mo
 
 | Stage | Task | Input | Output | Verification Test |
 | :---: | :--- | :--- | :--- | :--- |
-| **Stage 3A** | **Traffic Interpolation & Feature Merge** | ATC census files + Station coordinates | `data/interim/aligned_hourly_features.parquet` | Check that all 13 columns are non-empty and temporally aligned for 26,304 hours. |
+| **Stage 3A** | **Traffic Interpolation & Feature Merge** | SpeedMap XML 632 links + Station coords | `data/interim/aligned/aligned_hourly_station_data.parquet` | Check that all 13 channels are temporally aligned for 26,304 hours (420,864 rows). |
 | **Stage 3B** | **Canonical Tensor Construction** | Merged parquet table | `data/canonical/tensor_features.npy`<br>`data/canonical/tensor_mask.npy` | Assert shape is exactly $[16, 26304, 13]$; assert `tensor_mask` matches natural missingness ($~2.5\%$). |
 | **Stage 3C** | **Preprocessing & Normalization Engine** | Canonical tensors + `configs/config.yaml` | `src/preprocessing/pipeline.py`<br>`data/processed/scalers.json` | Assert scalers fit on Train split only; assert scaled outputs are zero-mean unit-variance or $[0, 1]$. |
 | **Stage 3D** | **24-Hour Windowing & Missingness Simulation** | Normalized tensors | `src/dataset/windowing.py`<br>`src/dataset/missingness.py`<br>`src/dataset/torch_dataset.py` | Run unit test asserting batch shapes $[B, 16, 24, 13]$ and verify simulated missingness masks at 10%, 30%, 50%, 70%. |

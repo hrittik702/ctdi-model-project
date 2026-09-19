@@ -70,38 +70,40 @@ Never; published evidence is conclusive.
 
 ---
 
-## Decision D03: Replacement of `rainfall` with `visibility` for CTDI Source Alignment
+## Decision D03: Investigation of `visibility` vs `rainfall` for CTDI Source Alignment
 
-- **Date**: 2026-09-13
-- **Status**: **`ACCEPTED`**
+- **Date**: 2026-09-13 (Updated 2026-09-17)
+- **Status**: **`SUPERSEDED_BY_D07`**
 
 ### Context
-Interim reanalysis datasets downloaded from Open-Meteo included `rainfall` ($\text{mm}$) as the fourth weather channel.
+Interim reanalysis datasets downloaded from Open-Meteo included `rainfall` ($\text{mm}$) as the fourth weather channel. Initial audit required attempting to recover HKO visibility to match CTDI Table I.
 
 ### Evidence
 Table I of Yu et al. (2025) explicitly specifies `Visibility` ($\text{km}$) from the Hong Kong Observatory Open Database [81] across 47 weather stations. Rainfall is not present in Table I.
+However, subsequent exhaustive empirical investigation of DATA.GOV.HK, the HKO Open Data API, and archival endpoints revealed that retrospective 10-minute historical visibility across 47 stations does not exist in open public data. Furthermore, the CTDI paper's acknowledgments (Page 2454) disclose that the authors obtained an offline dataset from Dr. Yang Han at HKU. Public HKO AWS visibility was formally proven **`[IRRECOVERABLE]`** from open sources (see [Visibility Data Recovery & Provenance Report.md](../Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md)).
 
 ### Decision
-Replace `rainfall` with `visibility` as Channel 9. In the interim reanalysis table, explicitly flag rainfall as a source-fidelity divergence until HKO visibility records are ingested.
+Acknowledge the public irrecoverability of HKO 10-minute AWS historical visibility. Formally superseded by **Decision D07**, which establishes the documented adoption of ERA5 surface rainfall for Channel 9 with explicit scientific justification.
 
 ### Alternatives Considered
-Continuing to use rainfall as a proxy.
+1. Continuing to search public open data endpoints: Proven exhausted and fruitless.
+2. Fabricating synthetic visibility from airport or humidity records: Strictly prohibited under research integrity protocol.
 
 ### Why Alternatives Were Rejected
-Rainfall in Hong Kong is zero for $>90\%$ of hours (extreme zero-inflation), whereas visibility is a continuous indicator of atmospheric aerosol loading and photochemical haze.
+Scientific integrity requires reporting genuine empirical data and documented differences rather than fabricating ungrounded proxies.
 
 ### Consequences
-Requires acquiring HKO historical visibility records.
+Channel 9 is formally designated as `rainfall` in our reconstructed dataset (`ctdi_aligned_reconstructed`), while documenting the exact source difference against CTDI Table I.
 
 ### Revisit Conditions
-Never; Table I explicitly specifies Visibility.
+Only if the CTDI authors release their private raw weather cache or HKO publishes historical 10-minute AWS archives.
 
 ---
 
-## Decision D04: Absolute Prohibition Against Synthetic Traffic Injection
+## Decision D04: Absolute Prohibition Against Synthetic Traffic Injection & Phase 1.1 Resolution
 
-- **Date**: 2026-09-13
-- **Status**: **`ACCEPTED`**
+- **Date**: 2026-09-13 (Updated 2026-09-17)
+- **Status**: **`ACCEPTED_AND_SATISFIED`**
 
 ### Context
 Because historical hourly traffic CSVs were not yet compiled, there was temptation to interpolate or synthesize missing 2019 traffic values to unblock pipeline execution.
@@ -112,17 +114,28 @@ Injecting synthetic data into a benchmark dataset corrupts scientific comparison
 ### Decision
 Enforce a programmatic safety halt in `src/preprocessing/alignment.py`. If real traffic data is unavailable, the pipeline must raise `FileNotFoundError` and halt immediately.
 
+### Empirical Resolution (Phase 1.1 & Phase 2)
+In Phase 1.1, the full 3-year historical traffic archive was extracted from the parent Transport Department 1st Generation Traffic Speed Map (`speedmap.xml`):
+- **774,686 snapshots** parsed across all 36 months ($1,096/1,096$ continuous days, 0 missing days).
+- **466,829,497 link records** extracted across 632 unique links in network union ($590$ core links).
+- Speeds in $[0, 111]\text{ km/h}$ (mean $57.66\text{ km/h}$).
+
+In Phase 2, sub-hourly records were aggregated to hourly link means and spatially projected via IDW ($p=2$) to the 16 air quality stations. In strict compliance with D04:
+- **Zero synthetic traffic coordinates or values were fabricated**.
+- $2,416$ station-hours of natural archive missingness were preserved as genuine `NaN`s ($99.43\%$ empirical coverage), strictly avoiding artificial $0\text{ km/h}$ standstill filling.
+- The programmatic safety assertion passed cleanly with 100% real empirical data.
+
 ### Alternatives Considered
-Synthesize 2019 traffic from diurnal diurnal curves or spline interpolation.
+Synthesize 2019 traffic from diurnal curves or spline interpolation.
 
 ### Why Alternatives Were Rejected
 Violates core scientific integrity principles. Benchmarks evaluated on synthetic data are invalid.
 
 ### Consequences
-Dataset tensor assembly is blocked until real historical traffic snapshots are parsed.
+Tensor assembly was safely gated until real empirical traffic extraction was fully accomplished.
 
 ### Revisit Conditions
-Never. Real data only.
+Permanent policy. Never inject synthetic data into ground truth benchmark datasets.
 
 ---
 
@@ -182,3 +195,36 @@ Maintains absolute intellectual honesty in all publications and reports.
 
 ### Revisit Conditions
 Permanent policy.
+
+---
+
+## Decision D07: Formal Adoption of ERA5 Rainfall Substitution for Channel 9
+
+- **Date**: 2026-09-17
+- **Status**: **`ACCEPTED`**
+
+### Context
+Following the conclusion of the visibility irrecoverability audit (proving that retrospective 10-minute HKO AWS visibility is unavailable from public open data and was acquired privately by the CTDI authors), the project required a scientifically grounded, continuous, and complete replacement channel to maintain the 13-channel multimodal tensor formulation ($\mathbf{X} \in \mathbb{R}^{16 \times 26,304 \times 13}$).
+
+### Evidence
+1. **Physical & Atmospheric Scavenging Justification**: In atmospheric physics and environmental chemistry, precipitation / rainfall is the primary driver of wet deposition (aerosol scavenging and washout of $\text{PM}_{2.5}$, $\text{PM}_{10}$, $\text{SO}_2$, and $\text{NO}_2$). It provides a powerful physically coupled conditioning signal for generative diffusion models.
+2. **Completeness & Continuity**: ECMWF ERA5 atmospheric reanalysis provides continuous hourly surface precipitation at the 16 air quality station coordinates with exactly zero missing values ($420,864$ observations) across the entire 2019–2021 study period.
+3. **Empirical Distribution**: Audited in `research/Reports/Rainfall Feature Investigation.md`: $134,101$ non-zero station-hours ($31.86\%$), range $[0.0, 61.8]\text{ mm}$, mean $0.24\text{ mm}$.
+4. **Architectural Compatibility**: Preserves the exact 13-channel rank and shape required for downstream spatial graph and temporal attention layers without structural modification.
+
+### Decision
+Formally adopt ERA5 hourly rainfall ($\text{mm}$) as Channel 9 of our reconstructed benchmark dataset (`ctdi_aligned_reconstructed`). Maintain strict naming integrity (`rainfall`, NEVER disguised or mislabeled as `visibility`). Explicitly document the source difference in all publications, consistency matrices, and reports per Decision D06.
+
+### Alternatives Considered
+1. *Synthesize pseudo-visibility from relative humidity and aerosol extinction formulas*: Rejected under Decision D04 (violates Zero-Fabrication Protocol).
+2. *Drop Channel 9 to create a 12-channel tensor*: Rejected because it breaks architectural tensor parity with published 13-channel CTDI configurations.
+3. *Use daily airport visibility summaries*: Rejected because a single daily scalar cannot capture diurnal hourly variations across 16 stations.
+
+### Why Alternatives Were Rejected
+Fabrication and ungrounded approximations compromise scientific validity. Dropping channels breaks model tensor geometry.
+
+### Consequences
+Channel 9 is labeled `rainfall` throughout the pipeline and datasets (`data/interim/aligned/aligned_hourly_station_data.parquet`). Datasets are explicitly designated as `ctdi_aligned_reconstructed` with documented source divergence.
+
+### Revisit Conditions
+Only if the CTDI authors' unreleased HKO AWS visibility dataset is officially published or provided.

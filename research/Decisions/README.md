@@ -39,10 +39,11 @@ Status: PROPOSED / ACCEPTED / SUPERSEDED / REJECTED
 1. **[Dataset Decisions](Dataset%20Decisions.md)**:
    - D01: Strict adoption of CTDI Table I 13-channel formulation.
    - D02: Rejection of `traffic_volume` and adoption of `traffic_congestion`.
-   - D03: Replacement of `rainfall` with `visibility` for CTDI source alignment.
-   - D04: Absolute prohibition against synthetic data injection.
+   - D03: Investigation of `visibility` vs `rainfall` for CTDI source alignment (superseded by D07).
+   - D04: Absolute prohibition against synthetic data injection & Phase 1.1 resolution.
    - D05: Exclusion of Southern (#84) and North (#85) monitoring stations.
    - D06: Distinguishing source-system reconstruction from exact raw dataset reproduction.
+   - D07: Formal adoption of ERA5 rainfall substitution for Channel 9.
 2. **[Architecture Decisions](Architecture%20Decisions.md)**:
    - A01: Adoption of SLM conditioning for generative diffusion.
    - A02: Discrete cosine diffusion variance schedule.

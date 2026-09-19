@@ -4,8 +4,8 @@
 **Core Benchmark**: Yangwen Yu, Victor O. K. Li, Jacqueline C. K. Lam, Kelvin Chan, Qi Zhang, *"CTDI: CNN-Transformer-Based Spatial-Temporal Missing Air Pollution Data Imputation"*, **IEEE Transactions on Big Data**, vol. 11, no. 5, pp. 2442–2455, Sept.–Oct. 2025. DOI: [10.1109/TBDATA.2025.3533882](https://doi.org/10.1109/TBDATA.2025.3533882).  
 **Target Domain**: Hong Kong Special Administrative Region (16 air-quality stations × 26,304 hours × 13 channels; 2019-01-01 00:00 to 2021-12-31 23:00)  
 **Document Type**: Living Master Research Specification & Knowledge Base  
-**Current Date**: 13 September 2026  
-**Operational Status**: **`CTDI_ALIGNED_RECONSTRUCTION_WITH_DOCUMENTED_DIFFERENCES`**
+**Current Date**: 2026-09-17  
+**Operational Status**: **`PHASE_2_ALIGNED_DATASET_READY`**
 
 ---
 
@@ -20,7 +20,12 @@
   3. Encode these textual narratives into dense semantic condition vectors $\mathbf{z}_C$ using a lightweight Small Language Model (e.g., Phi-3-Mini / Gemma-2B / Llama-3.2-1B).
   4. Train a conditional Denoising Diffusion Probabilistic Model (DDPM) equipped with spatio-temporal attention layers to denoise masked pollutant observations guided by $\mathbf{z}_C$.
   5. Generate ensemble posterior samples to yield calibrated prediction intervals, uncertainty metrics (CRPS), and physically consistent pollutant reconstructions.
-- **Current Development Status**: **`CTDI_ALIGNED_RECONSTRUCTION_WITH_DOCUMENTED_DIFFERENCES`**. Comprehensive consistency resolution and visibility recovery audit completed. Air quality is verified as an `EXACT SOURCE MATCH` ($420,864$ rows, $55,876$ missing items matching paper's $55,875$ with $99.99995\%$ fidelity). Traffic is verified as a `SOURCE-SYSTEM MATCH` (parent 1st Gen Speedmap, 607 baseline links, 315,648 expected 5-min intervals). Retrospective public 10-minute HKO AWS data and visibility proved `[IRRECOVERABLE]` from open archives (paper authors received offline data from Dr. Yang Han at HKU; HKO API `LTMV` only returns real-time snapshot without historical queries). 100% cryptographic immutability of existing raw data verified (678 files). Documented in [`CTDIDataset Specifications.md`](Dataset/CTDIDataset%20Specifications.md), [`Visibility Data Recovery & Provenance Report.md`](Reports/Visibility%20Data%20Recovery%20&%20Provenance%20Report.md), and [`Raw Data Integrity Manifest.md`](Dataset/Raw%20Data%20Integrity%20Manifest.md). Ready for CTDI-aligned Preprocessing.
+- **Current Development Status**: **`PHASE_2_ALIGNED_DATASET_READY`**. 
+  - **Phase 1 Source-Specific Cleaning**: **`COMPLETE`**. Air quality ($420,864$ rows, $55,876$ natural missing NaNs preserved, 0 duplicates, 0 negative values) and meteorology (ERA5 surface reanalysis, 0 NaNs, physical bounds verified) standardized independently.
+  - **Phase 1.1 Complete Traffic Extraction**: **`COMPLETE`**. All 36 monthly archives extracted: **774,686 snapshots**, **466,829,497 records**, 632 unique links union (590 core links), speeds in $[0, 111]	ext{ km/h}$ (mean $57.66	ext{ km/h}$), saturation mapped ordinally (0.0, 0.5, 1.0).
+  - **Phase 2 Spatio-Temporal Alignment**: **`COMPLETE`**. Unified Cartesian grid constructed across $16 	ext{ stations} 	imes 26,304 	ext{ hours} = \mathbf{420,864} 	ext{ station-hours}$ across all 13 canonical channels ($5,471,232$ float values). IDW ($p=2$) spatial mapping validated without coordinate fabrication. $16 	imes 16$ symmetric Haversine distance matrix verified. Automated validation passed 9/9 checks with 0 errors (`data/interim/aligned/alignment_validation.json`).
+  - **Cryptographic Immutability**: 100% verified across 683 raw files in `data/raw/` (0 modified, 0 deleted, 0 added).
+  - **Next Phase**: Phase 3 (24-hour sliding window segmentation and missingness mask generation).
 
 ---
 
@@ -274,6 +279,21 @@ To preserve research integrity, data sources are categorized into four mutually 
   - Standardized Traffic (1st Gen Speedmap snapshots): parsed XML snapshots, extracted link IDs, verified speeds ($[3, 109]\text{ km/h}$), preserved raw saturation categories, and established documented continuous ordinal mapping (`GOOD`=0.0, `AVERAGE`=0.5, `BAD`=1.0) without spatial IDW. Serialized to `data/interim/traffic/clean_traffic_speedmap_snapshots.parquet` and `.csv`.
   - Created, executed, and validated reproducible 16-section Jupyter Notebook: `notebooks/02_source_specific_cleaning.ipynb`.
   - Published comprehensive research report: [`Phase 1 - Source-Specific Cleaning Report.md`](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md).
+- **2026-09-17 (Phase 1.1: Complete Historical Traffic Extraction Complete)**:
+  - Extracted and processed all 36 monthly archives (2019-01 to 2021-12) from Transport Department Traffic Speed Map.
+  - Processed **774,686 snapshots** across 1,096 calendar days (0 missing days, 0 failures).
+  - Extracted **466,829,497 total link records** across 632 unique links union (590 common core links present in every snapshot).
+  - Validated speeds in $[0, 111]	ext{ km/h}$ (mean $57.66	ext{ km/h}$); mapped categorical saturation ordinally (`GOOD`=0.0, `AVERAGE`=0.5, `BAD`=1.0).
+  - Serialized complete table to `data/interim/traffic/clean_traffic_speedmap_complete.parquet`.
+- **2026-09-17 (Phase 2: Spatio-Temporal Alignment & 13-Channel Dataset Complete)**:
+  - Assembled unified Cartesian grid: $\mathcal{S} 	imes \mathcal{T} = 16 	ext{ stations} 	imes 26,304 	ext{ hours} = \mathbf{420,864} 	ext{ station-hour observations}$.
+  - Unified all 13 canonical channels: 5 air pollutants (`pm25`, `pm10`, `no2`, `so2`, `o3`), 6 meteorological variables (`pressure`, `relative_humidity`, `temperature`, `rainfall`, `wind_direction`, `wind_speed`), and 2 traffic variables (`traffic_speed`, `traffic_congestion`).
+  - Executed spatial IDW ($p=2$) projection of 632 road links to 16 stations (418,448 rows, 99.43% coverage, 2,416 natural archive missing hours preserved as NaN with zero artificial 0 km/h filling).
+  - Verified 3D tensor reshapeability: $(420864, 13) 	o (16, 26304, 13) = \mathbf{5,471,232} 	ext{ values}$.
+  - Verified $16 	imes 16$ symmetric Haversine distance matrix (`data/interim/aligned/spatial_distance_matrix.npy`).
+  - Automated validation suite: 9/9 assertions passed with 0 errors (`data/interim/aligned/alignment_validation.json`).
+  - Serialized primary dataset to `data/interim/aligned/aligned_hourly_station_data.parquet`.
+  - Published comprehensive engineering report: [`Phase 2 - Spatio-Temporal Alignment Report.md`](Reports/Phase%202%20-%20Spatio-Temporal%20Alignment%20Report.md).
 
 ### 7.1 Phase 1 Methodology: Source-Specific Standardization
 
@@ -620,6 +640,9 @@ Documenting failed paths and invalid assumptions prevents future researchers fro
 - **2026-09-12**: [Phase 1 Raw Dataset Acquisition & Verification](Checkpoints/README.md)
 - **2026-09-13**: [CTDI Table I Reconstruction, Traffic Audit & Checkpoint Freeze](Checkpoints/2026-09-13.md)
 - **2026-09-14**: [CTDI Empirical Missingness Analysis (Figs. 6–10) & 1-Hour Temporal Offset Resolution](Checkpoints/2026-09-14.md)
+- **2026-09-17**: [Phase 1 Source-Specific Cleaning & Standardization](Reports/Phase%201%20-%20Source-Specific%20Cleaning%20Report.md)
+- **2026-09-17**: [Phase 1.1 Complete Historical Traffic Extraction (774k snapshots, 466M records)](Checkpoints/2026-09-17_phase_1_1.md)
+- **2026-09-17**: [Phase 2 Spatio-Temporal Alignment & 13-Channel Multimodal Dataset](Checkpoints/2026-09-17_phase_2.md)
 
 ---
 

@@ -1,0 +1,111 @@
+# Experimental Dataset & Masking Protocol Configuration
+# Context-Aware Generative Imputation of Air Pollution Data
+
+version: "1.1.0"
+project: "air-pollution-imputation"
+canonical_reference: "CTDI (Yu et al., IEEE TBD 2025)"
+
+dataset:
+  window_length: 24
+  num_stations: 16
+  num_channels: 13
+  channels:
+    - pm25               # index 0: Criteria Pollutant (ug/m3)
+    - pm10               # index 1: Criteria Pollutant (ug/m3)
+    - no2                # index 2: Criteria Pollutant (ug/m3)
+    - so2                # index 3: Criteria Pollutant (ug/m3)
+    - o3                 # index 4: Criteria Pollutant (ug/m3)
+    - pressure           # index 5: Atmospheric Pressure (hPa)
+    - relative_humidity  # index 6: Relative Humidity (%)
+    - temperature        # index 7: Temperature (deg C)
+    - rainfall           # index 8: Hourly Rainfall (mm/h) [Channel #9]
+    - wind_direction     # index 9: Wind Direction (deg 1-360)
+    - wind_speed         # index 10: Wind Speed (m/s)
+    - traffic_speed      # index 11: Corridor Speed (km/h)
+    - traffic_congestion # index 12: Congestion Saturation Index [0, 1]
+
+  target_channels: [0, 1, 2, 3, 4]  # pm25, pm10, no2, so2, o3
+  exogenous_channels: [5, 6, 7, 8, 9, 10, 11, 12]
+
+splits:
+  train:
+    start: "2019-01-01 00:00:00"
+    end: "2021-02-05 23:00:00"
+    window_count: 294160
+    percentage: 69.96
+  buffer_train_val:
+    purge_calendar_date: "2021-02-06"
+    purge_duration_hours: 24.0
+    temporal_separation_gap_hours: 25.0
+    excluded_windows_count: 752
+    excluded_windows_per_station: 47
+    percentage: 0.18
+    explanation: "752 sliding windows (47/station) are purged because their 24h span intersects the 24h calendar day 2021-02-06."
+  val:
+    start: "2021-02-07 00:00:00"
+    end: "2021-07-20 23:00:00"
+    window_count: 62608
+    percentage: 14.89
+  buffer_val_test:
+    purge_calendar_date: "2021-07-21"
+    purge_duration_hours: 24.0
+    temporal_separation_gap_hours: 25.0
+    excluded_windows_count: 752
+    excluded_windows_per_station: 47
+    percentage: 0.18
+    explanation: "752 sliding windows (47/station) are purged because their 24h span intersects the 24h calendar day 2021-07-21."
+  test:
+    start: "2021-07-22 00:00:00"
+    end: "2021-12-31 23:00:00"
+    window_count: 62224
+    percentage: 14.80
+
+normalization:
+  fit_partition: "train"
+  # PRIMARY CANONICAL CONTRACT: Standard Z-Score scaling across all continuous channels.
+  # Optimal for diffusion score-matching where forward process converges to N(0, I).
+  primary_contract: "z_score"
+  # ABLATION CONTRACTS: Explicitly labeled alternatives.
+  ablation_contracts:
+    - "min_max"        # CTDI baseline comparison ([0, 1] scaling)
+    - "robust"         # Robust median/IQR scaling
+    - "rainfall_log1p" # Log1p scaling specifically on rainfall to address 68.8% zeros
+  rainfall:
+    primary: "z_score"
+    ablation: "log1p"
+  wind_direction:
+    primary: "degrees_13_channel"           # 13 channels, standardized degrees
+    ablation: "circular_sin_cos_14_channel" # 14 channels, dynamic sin/cos expansion
+
+masking:
+  rates:
+    - 0.10
+    - 0.30
+    - 0.50
+    - 0.70
+  rate_tolerance: 0.005  # +/- 0.5 percentage points
+  patterns:
+    - random        # Point MCAR
+    - block         # Continuous Temporal Block MAR (trimmed to exact target)
+    - station_wise  # Spatial Station Outage (S1, S2, S4)
+  seeds:
+    primary: 42
+    benchmarks: [42, 123, 2026]
+  block_length_range: [3, 12]
+  station_outage_scenarios:
+    s1:
+      outage_stations_count: 1
+      network_missing_fraction: 0.0625  # 1/16
+      description: "1 station completely unavailable for 24h"
+    s2:
+      outage_stations_count: 2
+      network_missing_fraction: 0.1250  # 2/16
+      description: "2 stations completely unavailable for 24h"
+    s4:
+      outage_stations_count: 4
+      network_missing_fraction: 0.2500  # 4/16
+      description: "4 stations completely unavailable for 24h"
+    s_full:
+      outage_stations_count: 16
+      network_missing_fraction: 1.0000  # 16/16
+      description: "Complete network blackout across target pollutants"

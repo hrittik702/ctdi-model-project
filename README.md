@@ -19,9 +19,9 @@ This project investigates **SLM-Conditioned Diffusion**: introducing a Small Lan
 | :--- | :---: | :--- |
 | **Literature & CTDI Analysis** | **`Verified`** | Table I, Section III-A (IDW), and Section V-C of Yu et al. (IEEE TBD 2025) audited in [`research/literature/CTDI Paper Exhaustive Analysis.md`](research/Literature/CTDI%20Paper%20Exhaustive%20Analysis.md). |
 | **Air-Quality Dataset** | **`Verified`** | 3-year continuous EPD records (420,864 rows, 16 stations, 0 negative values) validated in [`data/raw/air_quality/`](data/raw/air_quality/). |
-| **Meteorology Dataset** | **`Partially Verified`** | Interim ERA5 reanalysis dataset loaded (420,864 rows); pending acquisition of HKO AWS visibility to replace rainfall. |
-| **Traffic Dataset** | **`Blocked`** | Parent 1st Gen Speedmap verified across 607 links (774k snapshots); batch historical XML ingestion pending. |
-| **13-Channel Alignment** | **`Blocked`** | Spatial Cartesian grid constructed; alignment script enforces a safety halt until real traffic is ingested. |
+| **Meteorology Dataset** | **`Verified`** | Continuous ERA5 surface reanalysis (420,864 rows, 16 stations, 0 missing). Retrospective HKO AWS visibility proved irrecoverable from open data; rainfall formally adopted as Channel 9 with physical justification. |
+| **Traffic Dataset** | **`Verified`** | Phase 1.1 complete: all 36 monthly archives extracted (774,686 snapshots, 466,829,497 records, 632 unique links union, 590 core links, 0 failed snapshots). |
+| **13-Channel Alignment** | **`Verified`** | Phase 2 complete: unified 13-channel Cartesian grid ($420,864$ station-hours, shape $(16, 26304, 13)$) constructed and validated across all 9 assertion checks. |
 | **Context Builder** | **`In Progress`** | Deterministic atmospheric prompt builder prototype implemented in [`src/context/builder.py`](src/context/builder.py). |
 | **SLM Context Encoder** | **`In Progress`** | Architecture designed for lightweight frozen/LoRA SLMs (Phi-3 / Gemma-2B / Llama-3.2-1B). |
 | **Conditional Diffusion** | **`In Progress`** | DDPM formulation with AdaLN conditioning, temporal attention, and spatial graph prior specified. |
@@ -71,8 +71,8 @@ Benchmarked directly against the Hong Kong experimental setting published in Yu 
 
 ### Prepared State vs. Published Ground Truth
 - **Air Quality**: Fully validated ($420,864$ rows, natural missingness $\approx 2.5\%\text{--}2.8\%$, zero negative values).
-- **Meteorology**: Reanalysis table complete; source-fidelity update pending to ingest HKO AWS visibility in place of rainfall.
-- **Traffic**: Parent 1st Gen Traffic Speed Map verified across 607 road links (774k archived XML snapshots); batch historical ingestion is pending. Synthetic traffic generation is strictly prohibited by pipeline safety assertions.
+- **Meteorology**: Reanalysis table complete (420,864 rows, 0 NaNs). HKO AWS visibility irrecoverability audited; ERA5 rainfall formally adopted for Channel 9 with environmental physics rationale.
+- **Traffic**: Complete 3-year historical archive extraction verified (774,686 snapshots, 466,829,497 records, speeds in $[0, 111]\text{ km/h}$, categorical saturation mapped ordinally). Spatial IDW ($p=2$) projection to 16 stations validated with zero synthetic coordinate fabrication.
 
 → Detailed dataset documentation: [`research/dataset/CTDIDataset Specifications.md`](research/Dataset/CTDIDataset%20Specifications.md)
 
@@ -124,8 +124,8 @@ pip install -r requirements.txt
 # Run automated dataset verification suite
 python scripts/verify_raw_datasets.py
 
-# Run standalone spatio-temporal alignment check (verifies traffic safety assertion)
-python -c "from src.preprocessing.alignment import run_standalone_check; run_standalone_check()"
+# Run automated 13-channel spatio-temporal alignment validation suite
+python src/preprocessing/validate_alignment.py
 ```
 
 → Preprocessing and pipeline execution guide: [`research/Preprocessing/`](research/Preprocessing/)
