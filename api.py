@@ -7,7 +7,6 @@ Model inference, SLM encoding, and diffusion pipelines are not implemented yet.
 from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 app = FastAPI(
     title="Air Pollution Imputation API",

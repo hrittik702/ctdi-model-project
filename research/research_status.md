@@ -2,7 +2,7 @@
 
 **Project**: Context-Aware Generative Imputation of Air Pollution Using SLM-Conditioned Diffusion  
 **Benchmark Reference**: Yu et al., *"CTDI: CNN-Transformer-Based Spatial-Temporal Missing Air Pollution Data Imputation"*, IEEE Transactions on Big Data, 2025.  
-**Last Updated**: 2026-09-17  
+**Last Updated**: 2026-09-19  
 **Raw Data Acquisition Status**: **`COMPLETE`**  
 **Phase 1 Status (Source-Specific Cleaning & Full Extraction)**: **`COMPLETE`**  
 - `TRAFFIC SOURCE ACQUISITION`: **`COMPLETE`**  
@@ -30,8 +30,18 @@
 - `BENCHMARK EVALUATION MASKS`: **`COMPLETE`** (Pre-computed for 62,224 test windows: Point MCAR [10%, 30%, 50%, 70%], trimmed Temporal Block MAR [10%, 30%, 50%, 70% with dev < 0.07%], and deterministic rotating Station Outages S1, S2, S4, S_full; `test_benchmark_masks.parquet`)  
 - `TARGET PARTITION INVARIANTS`: **`VERIFIED`** ($M_{\text{nat}} == M_{\text{obs}} + M_{\text{tgt}}$; 0 natural NaNs converted to targets across all 7,261,392 eligible cells)  
 - `QUALITY CONTROL AUDIT`: **`VERIFIED`** (17/17 automated tests passed across the project in 8.70s; 15/15 in `test_experimental_dataset.py`)  
-**Current Operational Status**: **`PHASE_4B_EXPERIMENTAL_DATASET_READY`**  
-**Next Phase**: **`PHASE 4C — MODEL ARCHITECTURE SCAFFOLDING & DENOISING BACKBONE IMPLEMENTATION`** (Awaiting user authorization; NOT started)
+**Phase 4 Data Finalization Status (Frozen Training Package v1.0)**: **`COMPLETE & VERIFIED`**  
+- `FROZEN PACKAGE`: **`COMPLETE`** (`data/final/CTDI_AirPollution_TrainingDataset_v1.0/`, 46 files, ~121 MB total footprint)  
+- `DUAL REFORMATTING`: **`COMPLETE`** (Dual Parquet & dense NumPy NPZ tensors across train, validation, and test partitions)  
+- `BENCHMARK MASKS`: **`COMPLETE`** (All 12 evaluation scenarios pre-computed in NPZ and Parquet under `masks/`)  
+- `METADATA STANDARDIZATION`: **`COMPLETE`** (`channel_schema.csv`, `station_metadata.csv`, `split_manifest.csv`, `window_metadata.parquet`, `normalization_stats.json`, `masking_statistics.json`)  
+- `PACKAGE VALIDATION`: **`VERIFIED`** (15/15 automated validation checks passed with 100% success; `validate_final_dataset.py`)  
+- `DETERMINISTIC REPRODUCIBILITY`: **`VERIFIED`** (0 bitwise hash mismatches across regeneration runs)  
+- `CRYPTOGRAPHIC CHECKSUMS`: **`VERIFIED`** (All 46 files verified `OK` against `checksums/SHA256SUMS`)  
+- `TEAMMATE CONSUMPTION`: **`VERIFIED`** (PyTorch DataLoader and Pandas pipelines verified; 23/23 tests passed in 12.51s)  
+- `RAW DATA IMMUTABILITY`: **`VERIFIED`** (683/683 files identical bit-for-bit against manifest)  
+**Current Operational Status**: **`DATASET_V1_FROZEN_AND_PACKAGED`**  
+**Next Phase**: **`PHASE 4C — MODEL ARCHITECTURE SCAFFOLDING & DENOISING BACKBONE IMPLEMENTATION`** (NOT STARTED; awaiting user authorization)
 
 ---
 
@@ -81,8 +91,18 @@
   - Quality Control: 17/17 automated tests passed across the project in 8.70s (15/15 in `test_experimental_dataset.py`).
   - Zero Model Training: Dataset construction and masking specifications only; zero model parameters tuned.
 
+- **PHASE 4 DATA FINALIZATION — FROZEN TRAINING PACKAGE v1.0**: **`COMPLETE & VERIFIED`**
+  - Primary Document: [`Final Training Dataset v1.0.md`](Dataset/Final%20Training%20Dataset%20v1.0.md).
+  - Frozen Package: `data/final/CTDI_AirPollution_TrainingDataset_v1.0/` (~121 MB total footprint across 46 files).
+  - Dual Parquet & NPZ Tensors: Train ($294,160$ windows), Validation ($62,608$ windows), Test ($62,224$ windows).
+  - Benchmark Evaluation Masks: Pre-computed for all 12 evaluation scenarios (MCAR, Block, Station Outage).
+  - Standardized Metadata: Channel schema, station metadata, split manifest, window metadata, normalization stats, masking statistics.
+  - Quality Control: 15/15 checks passed in `validate_final_dataset.py`, 0 bitwise hash mismatches across regeneration runs, 46/46 SHA-256 hashes OK, 23/23 tests passed in pytest suite (`test_teammate_consumption.py`).
+  - Raw Data Immutability: 100% verified across 683 raw files (0 modified, 0 added, 0 deleted).
+  - Zero Model Training: Phase 4C model architecture NOT started.
+
 ### PENDING:
-- None for Phase 1, Phase 1.1, Phase 2, Phase 3, Phase 4A, or Phase 4B.
+- None for Phase 1, Phase 1.1, Phase 2, Phase 3, Phase 4A, Phase 4B, or Phase 4 Data Finalization.
 
 ### NEXT PHASE:
 - **Phase 4C — Model Architecture Scaffolding & Denoising Backbone Implementation**:
@@ -107,8 +127,9 @@
 | **13-Channel Alignment** | **`VERIFIED`** | `src/preprocessing/build_aligned_dataset.py` executed successfully. Canonical 13-channel dataset saved at `data/interim/aligned/aligned_hourly_station_data.parquet` ($420,864 \times 13$). Shape $(16, 26304, 13)$ validated. | Ready for Phase 3 window segmentation. |
 | **Spatial Alignment** | **`VERIFIED`** | Pairwise Haversine distance matrix computed and verified symmetric with zero diagonal (`data/interim/aligned/spatial_distance_matrix.npy`). IDW formula ($p=2$) computed on georeferenced links without coordinate fabrication. Audited in [`Phase 2 - Spatio-Temporal Alignment Report.md`](Reports/Phase%202%20-%20Spatio-Temporal%20Alignment%20Report.md). | Complete for Phase 2. |
 | **Missingness & EDA** | **`VERIFIED`** | CTDI Section IV-B empirical missingness analysis fully reproduced in `notebooks/01_ctdi_style_missingness_analysis.ipynb`. Figures 6–10 published to `research/Figures/`. 1-hour temporal offset between EPD 1-indexed interval-end hours and ISO interval-start timestamps resolved ($\text{hour} = (\text{dt.hour}+1)\%24$). Bit-for-bit parity with published CTDI curves confirmed. Research report updated ([`CTDI Missingness Pattern Analysis.md`](Reports/CTDI%20Missingness%20Pattern%20Analysis.md)). | Finalize DataLoader integration once canonical tensor exists. |
-| **Normalization** | **`READY`** | Mathematical specifications for zero-data-leakage scaling (fit on Train split ONLY) and cyclical temporal embeddings documented in [`Normalization & Zero-Leakage Protocol.md`](Preprocessing/Normalization%20&%20Zero-Leakage%20Protocol.md). | Execute scaling transformation on completed canonical tensor. |
-| **Context Construction** | **`IN_PROGRESS`** | Deterministic Environmental Context Builder prototype drafted in `src/context/builder.py` and documented in [`reports/Data Processing - Hong Kong.md`](Reports/Data%20Processing%20-%20Hong%20Kong.md). | Update prompt templates with rainfall/visibility and traffic saturation features; test batch rendering. |
+| **Normalization** | **`VERIFIED`** | Train-only z-score parameters fit strictly on 294,528 training station-hours. Validated in `normalization_stats.json` and [`Final Training Dataset v1.0.md`](Dataset/Final%20Training%20Dataset%20v1.0.md). | Complete and frozen for Dataset v1.0. |
+| **Dataset Packaging** | **`VERIFIED`** | Frozen training package `CTDI_AirPollution_TrainingDataset_v1.0` (~121 MB, 46 files, dual Parquet/NPZ, 12 masks). Audited in [`Final Training Dataset v1.0.md`](Dataset/Final%20Training%20Dataset%20v1.0.md). | Ready for teammate model development. |
+| **Context Construction** | **`IN_PROGRESS`** | Deterministic Environmental Context Builder prototype drafted in `src/context/builder.py` and documented in [`Data Processing - Hong Kong.md`](Reports/Data%20Processing%20-%20Hong%20Kong.md). | Update prompt templates with rainfall/visibility and traffic saturation features; test batch rendering. |
 | **SLM Integration** | **`IN_PROGRESS`** | Architecture specified for frozen/LoRA SLM (Phi-3 / Gemma / Llama) context encoder $\mathbf{z}_C$ in [`SLM Context Encoder.md`](Architecture/SLM%20Context%20Encoder.md). | Benchmark lightweight SLM token inference latency and linear projection layer. |
 | **Diffusion Denoiser** | **`IN_PROGRESS`** | Math formulated: DDPM with cross-attention / AdaLN conditioning on $\mathbf{z}_C$, spatial graph layers, temporal transformer blocks ([`Conditional Diffusion Model.md`](Architecture/Conditional%20Diffusion%20Model.md)). | Implement PyTorch module for conditional denoising backbone. |
 | **Training Pipeline** | **`NOT_STARTED`** | Chronological 70/15/15 train/val/test split and composite loss function ($\mathcal{L}_{\text{diff}} + \mathcal{L}_{\text{chem}}$) formulated in [`Loss Functions & Objectives.md`](Architecture/Loss%20Functions%20&%20Objectives.md). | Implement training loop, optimizer, checkpointing, and WandB/TensorBoard logging. |

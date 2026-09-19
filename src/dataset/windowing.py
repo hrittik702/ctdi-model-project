@@ -1,11 +1,13 @@
-"""Sliding window sequence generation placeholder.
+"""Windowing sequence generation specification.
 
-This module will segment continuous multivariate air-pollution time-series
-into structured fixed-length temporal windows (e.g., 24 hours).
-Implementation will be added in the dataset construction stage.
+Note: Canonical 24-hour sliding window generation with chronological indexing,
+missingness masks, and purge buffer identification is implemented in
+`src/preprocessing/build_windows.py`.
 """
 
 
 def create_sliding_windows(*args, **kwargs):
-    """Create sliding temporal windows placeholder."""
-    raise NotImplementedError("Windowing logic will be implemented in the dataset construction phase.")
+    """Create sliding temporal windows. Refer to src/preprocessing/build_windows.py."""
+    raise NotImplementedError(
+        "Canonical 24-hour window generation is implemented in src/preprocessing/build_windows.py."
+    )

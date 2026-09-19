@@ -24,23 +24,8 @@ OUT_SUMMARY_PATH = OUT_DIR / "aligned_dataset_summary.json"
 OUT_DIST_MATRIX_PATH = OUT_DIR / "spatial_distance_matrix.npy"
 OUT_DIST_LEGACY_PATH = PROJECT_ROOT / "data" / "interim" / "spatial_distance_matrix.npy"
 
-# Canonical 13-channel specification matching CTDI Table I (Yu et al. 2025)
-# with rainfall explicitly substituting unrecovered historical visibility.
-CANONICAL_13_CHANNELS = [
-    "pm25",
-    "pm10",
-    "no2",
-    "so2",
-    "o3",
-    "pressure",
-    "relative_humidity",
-    "temperature",
-    "rainfall",
-    "wind_direction",
-    "wind_speed",
-    "traffic_speed",
-    "traffic_congestion",
-]
+sys.path.insert(0, str(PROJECT_ROOT))
+from src.dataset.normalization import CANONICAL_13_CHANNELS
 
 TARGET_STATION_COUNT = 16
 TARGET_HOURS = 26304

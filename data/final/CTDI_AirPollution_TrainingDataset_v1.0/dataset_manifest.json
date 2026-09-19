@@ -1,0 +1,594 @@
+{
+  "dataset_name": "CTDI_AirPollution_TrainingDataset_v1.0",
+  "version": "1.0.0",
+  "freeze_date": "2026-09-19",
+  "authoritative_benchmark_reference": "Yu et al., IEEE Transactions on Big Data, 2025 (Table I)",
+  "git_commit": "579217255ff5345a98b8706db127f005141b0e08",
+  "creation_timestamp": "2026-09-19T23:17:25.157068",
+  "temporal_coverage": {
+    "start": "2019-01-01 00:00:00",
+    "end": "2021-12-31 23:00:00",
+    "timezone": "Asia/Hong_Kong",
+    "total_calendar_days": 1096,
+    "total_hourly_timestamps": 26304
+  },
+  "spatial_coverage": {
+    "station_count": 16,
+    "station_ids": [
+      66,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83
+    ],
+    "excluded_newer_stations": [
+      84,
+      85
+    ]
+  },
+  "tensor_contract": {
+    "channel_count": 13,
+    "channel_order": [
+      "pm25",
+      "pm10",
+      "no2",
+      "so2",
+      "o3",
+      "pressure",
+      "relative_humidity",
+      "temperature",
+      "rainfall",
+      "wind_direction",
+      "wind_speed",
+      "traffic_speed",
+      "traffic_congestion"
+    ],
+    "channel_index_8": "rainfall",
+    "window_length_hours": 24,
+    "window_stride_hours": 1,
+    "axis_semantics": {
+      "axis_0": "sample / window (window_id)",
+      "axis_1": "hourly timestep [0..23]",
+      "axis_2": "feature channel [0..12]"
+    },
+    "tensor_dtype": "float32",
+    "natural_mask_dtype": "uint8"
+  },
+  "split_summary": {
+    "train": {
+      "window_count": 294160,
+      "percentage": 69.96,
+      "start_min": "2019-01-01 00:00:00",
+      "start_max": "2021-02-05 00:00:00",
+      "end_min": "2019-01-01 23:00:00",
+      "end_max": "2021-02-05 23:00:00",
+      "station_count": 16,
+      "missing_pollutant_cells": 908181,
+      "missing_pollutant_pct": 2.57,
+      "windows_with_missing": 146820
+    },
+    "buffer_train_val": {
+      "window_count": 752,
+      "percentage": 0.18,
+      "start_min": "2021-02-05 01:00:00",
+      "start_max": "2021-02-06 23:00:00",
+      "end_min": "2021-02-06 00:00:00",
+      "end_max": "2021-02-07 22:00:00",
+      "station_count": 16,
+      "missing_pollutant_cells": 1275,
+      "missing_pollutant_pct": 1.41,
+      "windows_with_missing": 414
+    },
+    "val": {
+      "window_count": 62608,
+      "percentage": 14.89,
+      "start_min": "2021-02-07 00:00:00",
+      "start_max": "2021-07-20 00:00:00",
+      "end_min": "2021-02-07 23:00:00",
+      "end_max": "2021-07-20 23:00:00",
+      "station_count": 16,
+      "missing_pollutant_cells": 222054,
+      "missing_pollutant_pct": 2.96,
+      "windows_with_missing": 40207
+    },
+    "buffer_val_test": {
+      "window_count": 752,
+      "percentage": 0.18,
+      "start_min": "2021-07-20 01:00:00",
+      "start_max": "2021-07-21 23:00:00",
+      "end_min": "2021-07-21 00:00:00",
+      "end_max": "2021-07-22 22:00:00",
+      "station_count": 16,
+      "missing_pollutant_cells": 3350,
+      "missing_pollutant_pct": 3.71,
+      "windows_with_missing": 578
+    },
+    "test": {
+      "window_count": 62224,
+      "percentage": 14.8,
+      "start_min": "2021-07-22 00:00:00",
+      "start_max": "2021-12-31 00:00:00",
+      "end_min": "2021-07-22 23:00:00",
+      "end_max": "2021-12-31 23:00:00",
+      "station_count": 16,
+      "missing_pollutant_cells": 205488,
+      "missing_pollutant_pct": 2.75,
+      "windows_with_missing": 38623
+    },
+    "buffer_architecture": {
+      "buffer_train_val": {
+        "purge_calendar_date": "2021-02-06",
+        "purge_duration_hours": 24.0,
+        "temporal_separation_gap_hours": 25.0,
+        "train_last_timestamp": "2021-02-05 23:00:00",
+        "val_first_timestamp": "2021-02-07 00:00:00",
+        "excluded_windows_count": 752,
+        "excluded_windows_per_station": 47,
+        "explanation": "752 sliding windows (47/station) are purged because their 24h span intersects the 24h calendar day 2021-02-06."
+      },
+      "buffer_val_test": {
+        "purge_calendar_date": "2021-07-21",
+        "purge_duration_hours": 24.0,
+        "temporal_separation_gap_hours": 25.0,
+        "val_last_timestamp": "2021-07-20 23:00:00",
+        "test_first_timestamp": "2021-07-22 00:00:00",
+        "excluded_windows_count": 752,
+        "excluded_windows_per_station": 47,
+        "explanation": "752 sliding windows (47/station) are purged because their 24h span intersects the 24h calendar day 2021-07-21."
+      }
+    }
+  },
+  "natural_missingness_summary": {
+    "total_natural_pollutant_nans": 55876,
+    "expected_bit_for_bit_match": true,
+    "per_pollutant_nans": {
+      "pm25": 10657,
+      "pm10": 11395,
+      "no2": 11651,
+      "so2": 11056,
+      "o3": 11117
+    },
+    "meteorology_nans": 0,
+    "traffic_natural_missing_station_hours": 2416
+  },
+  "normalization_contract": {
+    "primary": "z_score",
+    "fit_split": "train_only",
+    "fit_sample_count": 294528,
+    "fit_criteria": {
+      "start_timestamp": "2019-01-01 00:00:00",
+      "end_timestamp": "2021-02-05 23:00:00",
+      "num_station_hours": 294528,
+      "target_stations": 16,
+      "isolation_guarantee": "Zero validation or test observations were accessed."
+    },
+    "channel_statistics": {
+      "pm25": {
+        "mean": 18.400673764300944,
+        "std": 12.546828787735526,
+        "median": 16.0,
+        "iqr": 15.0,
+        "q25": 9.0,
+        "q75": 24.0,
+        "min": 0.0,
+        "max": 167.0
+      },
+      "pm10": {
+        "mean": 31.188498146268646,
+        "std": 20.039736753423234,
+        "median": 27.0,
+        "iqr": 25.0,
+        "q25": 16.0,
+        "q75": 41.0,
+        "min": 0.0,
+        "max": 241.0
+      },
+      "no2": {
+        "mean": 43.72960515994073,
+        "std": 32.017779336769706,
+        "median": 36.0,
+        "iqr": 39.0,
+        "q25": 20.0,
+        "q75": 59.0,
+        "min": 0.0,
+        "max": 366.0
+      },
+      "so2": {
+        "mean": 4.885664560817278,
+        "std": 2.991581183450026,
+        "median": 4.0,
+        "iqr": 3.0,
+        "q25": 3.0,
+        "q75": 6.0,
+        "min": 0.0,
+        "max": 81.0
+      },
+      "o3": {
+        "mean": 51.45871297412982,
+        "std": 39.34901161998171,
+        "median": 43.0,
+        "iqr": 54.0,
+        "q25": 21.0,
+        "q75": 75.0,
+        "min": 0.0,
+        "max": 422.0
+      },
+      "pressure": {
+        "mean": 1010.9060506980659,
+        "std": 6.622068575570788,
+        "median": 1011.0,
+        "iqr": 10.200000000000045,
+        "q25": 1005.9,
+        "q75": 1016.1,
+        "min": 988.8,
+        "max": 1029.4
+      },
+      "relative_humidity": {
+        "mean": 81.284604519774,
+        "std": 15.071070186353529,
+        "median": 86.0,
+        "iqr": 18.0,
+        "q25": 74.0,
+        "q75": 92.0,
+        "min": 13.0,
+        "max": 100.0
+      },
+      "temperature": {
+        "mean": 22.770727740656238,
+        "std": 5.067742274954361,
+        "median": 23.6,
+        "iqr": 7.799999999999997,
+        "q25": 19.1,
+        "q75": 26.9,
+        "min": 2.9,
+        "max": 35.6
+      },
+      "rainfall": {
+        "mean": 0.23197998152976967,
+        "std": 1.0006112351604497,
+        "median": 0.0,
+        "iqr": 0.1,
+        "q25": 0.0,
+        "q75": 0.1,
+        "min": 0.0,
+        "max": 61.8,
+        "log1p_mean": 0.12748058462863263,
+        "log1p_std": 0.3128629095495815
+      },
+      "wind_direction": {
+        "mean": 116.81054772381573,
+        "std": 80.03626404424737,
+        "median": 94.0,
+        "iqr": 119.0,
+        "q25": 61.0,
+        "q75": 180.0,
+        "min": 1.0,
+        "max": 360.0
+      },
+      "wind_speed": {
+        "mean": 3.5634202860169495,
+        "std": 1.706082588782948,
+        "median": 3.4,
+        "iqr": 2.4299999999999997,
+        "q25": 2.25,
+        "q75": 4.68,
+        "min": 0.0,
+        "max": 17.35
+      },
+      "traffic_speed": {
+        "mean": 62.028018951416016,
+        "std": 5.7545061111450195,
+        "median": 62.65999984741211,
+        "iqr": 5.609996795654297,
+        "q25": 59.47999954223633,
+        "q75": 65.08999633789062,
+        "min": 34.7599983215332,
+        "max": 146.66000366210938
+      },
+      "traffic_congestion": {
+        "mean": 0.1196133941411972,
+        "std": 0.06258144974708557,
+        "median": 0.10760000348091125,
+        "iqr": 0.066600002348423,
+        "q25": 0.08240000158548355,
+        "q75": 0.14900000393390656,
+        "min": 0.0,
+        "max": 0.7958999872207642
+      }
+    }
+  },
+  "benchmark_mask_scenarios": {
+    "mcar_10": {
+      "category": "mcar",
+      "npz_size_bytes": 1697083,
+      "parquet_size_bytes": 1386984,
+      "total_masked_cells": 731326
+    },
+    "mcar_30": {
+      "category": "mcar",
+      "npz_size_bytes": 2834148,
+      "parquet_size_bytes": 1460522,
+      "total_masked_cells": 2174824
+    },
+    "mcar_50": {
+      "category": "mcar",
+      "npz_size_bytes": 3108804,
+      "parquet_size_bytes": 1395345,
+      "total_masked_cells": 3627817
+    },
+    "mcar_70": {
+      "category": "mcar",
+      "npz_size_bytes": 2970006,
+      "parquet_size_bytes": 1444276,
+      "total_masked_cells": 5085285
+    },
+    "block_10": {
+      "category": "temporal_block",
+      "npz_size_bytes": 828107,
+      "parquet_size_bytes": 842154,
+      "total_masked_cells": 731326
+    },
+    "block_30": {
+      "category": "temporal_block",
+      "npz_size_bytes": 1606377,
+      "parquet_size_bytes": 1234151,
+      "total_masked_cells": 2174824
+    },
+    "block_50": {
+      "category": "temporal_block",
+      "npz_size_bytes": 1974222,
+      "parquet_size_bytes": 1440209,
+      "total_masked_cells": 3627817
+    },
+    "block_70": {
+      "category": "temporal_block",
+      "npz_size_bytes": 1972775,
+      "parquet_size_bytes": 1437676,
+      "total_masked_cells": 5085285
+    },
+    "station_outage_1": {
+      "category": "station_outage",
+      "npz_size_bytes": 172077,
+      "parquet_size_bytes": 456969,
+      "total_masked_cells": 453636
+    },
+    "station_outage_2": {
+      "category": "station_outage",
+      "npz_size_bytes": 204151,
+      "parquet_size_bytes": 468171,
+      "total_masked_cells": 907691
+    },
+    "station_outage_4": {
+      "category": "station_outage",
+      "npz_size_bytes": 256612,
+      "parquet_size_bytes": 489859,
+      "total_masked_cells": 1815340
+    },
+    "station_outage_full": {
+      "category": "station_outage",
+      "npz_size_bytes": 289410,
+      "parquet_size_bytes": 491069,
+      "total_masked_cells": 7261392
+    }
+  },
+  "source_artifacts": {
+    "24h_windows.parquet": {
+      "sha256": "03c1ab8c13e2d8cf1d136bfd2abc2a0849b0443d794c458a0db1ec685eced62c",
+      "size_bytes": 65778471
+    },
+    "missingness_masks.parquet": {
+      "sha256": "959d859a5a756345e5952a5b2eb54ee1d9933a64d3484ab9e1e11a08cb881295",
+      "size_bytes": 3382523
+    },
+    "window_metadata.parquet": {
+      "sha256": "4c45d9506ce933142f8d4c20308dc1f2b8f30add79587dc20eace2ba58933624",
+      "size_bytes": 4070452
+    },
+    "aligned_hourly_station_data.parquet": {
+      "sha256": "083bcfa734bdebc6cdab43eaae669527210d51c0539e4eada8de315061066237",
+      "size_bytes": 6734178
+    },
+    "test_benchmark_masks.parquet": {
+      "sha256": "f22d3c600c77b767889702fb19835d4572fd0453c06dee1b481fba9f3461673d",
+      "size_bytes": 7747448
+    }
+  },
+  "package_files": {
+    "DATASET_CARD.md": {
+      "sha256": "cdceb01165f40950dff41a5161cf6a22264a52f8a1c2cae11beb81d9de0959e0",
+      "size_bytes": 7570
+    },
+    "README.md": {
+      "sha256": "a5cce2584024403bdfd3dfd5fcee1731f7ad2b65f835163fabe092c4a497c2ce",
+      "size_bytes": 5951
+    },
+    "masks/mcar/mcar_10.npz": {
+      "sha256": "e9c6f3753a3f39413e312ba7c8c7cb7667e0641b99841a63f8fc4cc8011fd750",
+      "size_bytes": 1697083
+    },
+    "masks/mcar/mcar_10.parquet": {
+      "sha256": "8d0b16b02df06c66215e328ee9db89aba7aa5e0718342b8b175069e0e1c060c9",
+      "size_bytes": 1386984
+    },
+    "masks/mcar/mcar_30.npz": {
+      "sha256": "16901ff3386a8890167d11ae64656c233989d0b1603494fbc5e17385438bee35",
+      "size_bytes": 2834148
+    },
+    "masks/mcar/mcar_30.parquet": {
+      "sha256": "20bb56cb922e4ab2a450a72e27caec8e1ac37f7bcaa0266f46c61bcdb0d96cb7",
+      "size_bytes": 1460522
+    },
+    "masks/mcar/mcar_50.npz": {
+      "sha256": "bae80dbf2e524e09cf8620e6c7df432b8776c1fec034d39dc436ffc511aa335b",
+      "size_bytes": 3108804
+    },
+    "masks/mcar/mcar_50.parquet": {
+      "sha256": "a21d505dfc48674cd96a65b05d758b838137aed2e43d444c0cce469c51d9a3a8",
+      "size_bytes": 1395345
+    },
+    "masks/mcar/mcar_70.npz": {
+      "sha256": "dc89517e747012943b8dea45f6cac6ec23c446d70845bbe0c0a84aec66c40892",
+      "size_bytes": 2970006
+    },
+    "masks/mcar/mcar_70.parquet": {
+      "sha256": "b54a7b90e53da04964acc5b6a250fdd4e8d45e2869c9f5eb18c3a2d1ead8da31",
+      "size_bytes": 1444276
+    },
+    "masks/station_outage/station_outage_1.npz": {
+      "sha256": "6685e2d1448ebbe93410f32af8bce708c848e2965e446e52e859c5e3a308ffcb",
+      "size_bytes": 172077
+    },
+    "masks/station_outage/station_outage_1.parquet": {
+      "sha256": "89e7ba0f0703614de8bc871dc18e76cccddcdd94b1d8e8c60cb2c1d948546ac4",
+      "size_bytes": 456969
+    },
+    "masks/station_outage/station_outage_2.npz": {
+      "sha256": "24613b4683dce34c77749fe7a96bec43ff72ba5041740a9e5770723bcf012ca3",
+      "size_bytes": 204151
+    },
+    "masks/station_outage/station_outage_2.parquet": {
+      "sha256": "ae4c623d23aba9c82e82625ebb71523749ac84b5233ae85688e70ffc396cd054",
+      "size_bytes": 468171
+    },
+    "masks/station_outage/station_outage_4.npz": {
+      "sha256": "3e1d66a6020a7190cffe4bba55cf2db9c58568f91112411fea449ef65d31bbb1",
+      "size_bytes": 256612
+    },
+    "masks/station_outage/station_outage_4.parquet": {
+      "sha256": "5e9e1a0b45515c035e66f41239f9bc4cfc21575aca226c5e4db04d068a1a10e0",
+      "size_bytes": 489859
+    },
+    "masks/station_outage/station_outage_full.npz": {
+      "sha256": "ea2be9f4ba7ff73d572009860852cbdec1965a7d3dfd89562bf086f19ec2bc02",
+      "size_bytes": 289410
+    },
+    "masks/station_outage/station_outage_full.parquet": {
+      "sha256": "e2dee2e9421a36ab739141a664f845c05da5d03f61d8544980b513a7cb93dcbb",
+      "size_bytes": 491069
+    },
+    "masks/temporal_block/block_10.npz": {
+      "sha256": "fee3aa2dd0c0269c4406a490f56ab9d29579b2200177a76f719a1e96ec80c82a",
+      "size_bytes": 828107
+    },
+    "masks/temporal_block/block_10.parquet": {
+      "sha256": "7a6859cc0596723802cdca34dd3b89b8f3e97721db259730b1e5a418aa763952",
+      "size_bytes": 842154
+    },
+    "masks/temporal_block/block_30.npz": {
+      "sha256": "d680b3b7a8ec46ea2ab8c9e7e246e666cb6db9dbb8e173ac36f9561db48b4868",
+      "size_bytes": 1606377
+    },
+    "masks/temporal_block/block_30.parquet": {
+      "sha256": "645e0a9261b6efe62ebc18da0ceb1aa3f0b7583af1c2d2adb67a9f5c5481c5f8",
+      "size_bytes": 1234151
+    },
+    "masks/temporal_block/block_50.npz": {
+      "sha256": "d26afa6b8a9d965d334aa8d3b9e5d6e3611dcc0114d8ecf1235abaa3c4f7d999",
+      "size_bytes": 1974222
+    },
+    "masks/temporal_block/block_50.parquet": {
+      "sha256": "5435ce0a032d0dfadd14d1999a659f7021d358a3f2ce77fd00596d544f2af82a",
+      "size_bytes": 1440209
+    },
+    "masks/temporal_block/block_70.npz": {
+      "sha256": "ea2f30c80b67db94ae2ad955991193cb8f54b9e955952e7df21009d71fe8f010",
+      "size_bytes": 1972775
+    },
+    "masks/temporal_block/block_70.parquet": {
+      "sha256": "e8c57d33eb504e54616d7e7d9b7f6c56f54a663f6c0a6b2d9dd63a3f86412439",
+      "size_bytes": 1437676
+    },
+    "masks/test_benchmark_masks.parquet": {
+      "sha256": "f22d3c600c77b767889702fb19835d4572fd0453c06dee1b481fba9f3461673d",
+      "size_bytes": 7747448
+    },
+    "metadata/channel_schema.csv": {
+      "sha256": "641ec9e053e31e5d7cf5af2626b98b1fb8a817e497a53e7fe4499d02fa6fee40",
+      "size_bytes": 1172
+    },
+    "metadata/masking_statistics.json": {
+      "sha256": "3cadaf900ed724645f0a1bd9639a484d609231f414a22d876ae024fa6fded5d7",
+      "size_bytes": 2814
+    },
+    "metadata/normalization_stats.json": {
+      "sha256": "4d8da2270ac2e857f82695f4fbd4fad40b44a3051f60c4ff4d4629165fe0577d",
+      "size_bytes": 3594
+    },
+    "metadata/split_manifest.csv": {
+      "sha256": "181599cf756860d255fb0df98e939df2aa2f8b09917198f797cd927248b02792",
+      "size_bytes": 1191
+    },
+    "metadata/station_metadata.csv": {
+      "sha256": "342de9ed4d6ce64fffbf69aa0d875788a4f02880c4d57c5e03ddc886fd1c5968",
+      "size_bytes": 1336
+    },
+    "metadata/window_metadata.parquet": {
+      "sha256": "4c45d9506ce933142f8d4c20308dc1f2b8f30add79587dc20eace2ba58933624",
+      "size_bytes": 4070452
+    },
+    "test/M_natural_test.npz": {
+      "sha256": "9527d55f172776ae376dd134e1f115eceadf1eeefb91a2fcbf151b71653ed8dd",
+      "size_bytes": 198609
+    },
+    "test/M_natural_test.parquet": {
+      "sha256": "c9854b5c441f7353d7545af2f0389b8cc1ae4bc1f1f55535dcf43d1df7144935",
+      "size_bytes": 593133
+    },
+    "test/X_test.npz": {
+      "sha256": "11d3e315750ac30f71b1b8ee7c45d7cf203e3442b633236862559eb354f2eb5b",
+      "size_bytes": 2275477
+    },
+    "test/X_test.parquet": {
+      "sha256": "adf6b6a9cef7ddf9c67ccd09a747a21c46a7a9b46a4cbfa16cb0977df9e06e81",
+      "size_bytes": 9294909
+    },
+    "train/M_natural_train.npz": {
+      "sha256": "12815fabd29387be028b6d174104988d98a06a1962e83aadf792e58754cd032c",
+      "size_bytes": 885680
+    },
+    "train/M_natural_train.parquet": {
+      "sha256": "47d1584943893903c8edba802d582c55645abb8ec98b2a4e235c4d90f644e0a9",
+      "size_bytes": 2450124
+    },
+    "train/X_train.npz": {
+      "sha256": "5bae411abfbbccf3e802bb4a3c59b2bb07a3604d7202a486a3c369debbb8b032",
+      "size_bytes": 10594624
+    },
+    "train/X_train.parquet": {
+      "sha256": "a7f818f147af2e5177b95892de5b3111b70e83a4116c0baa4d2655809e005fd8",
+      "size_bytes": 44722983
+    },
+    "validation/M_natural_val.npz": {
+      "sha256": "351b2630184f10b8eaedeb3ffe1e36b521c9ab44146583ed4420c8dc0b760bbc",
+      "size_bytes": 205074
+    },
+    "validation/M_natural_val.parquet": {
+      "sha256": "1285421eef72eff1512c70570f2aa021d7de6bcf1f4d87d7f3d7eb019c04e25e",
+      "size_bytes": 602740
+    },
+    "validation/X_val.npz": {
+      "sha256": "4cf1615325160e0f0cbdf02fe91c4d09886259f626ef48db934543f65473a414",
+      "size_bytes": 2265458
+    },
+    "validation/X_val.parquet": {
+      "sha256": "05bc40db448d3c1eaaf0223ae1a8997d35652105f41eae903474c90d9467af51",
+      "size_bytes": 8684888
+    }
+  },
+  "known_limitations": [
+    "Channel 8 is ECMWF ERA5 surface precipitation (rainfall, mm) rather than unreleased private HKO AWS visibility.",
+    "Traffic variables derived from Transport Department 1st Gen Speedmap (632 links union across 2019-2021) projected via IDW (p=2). 2,416 missing hours preserved as genuine NaNs.",
+    "Natural sensor dropouts are preserved as NaNs in raw tensors and 0 in M_natural; model inputs must be masked before loss computation."
+  ]
+}

@@ -1,11 +1,10 @@
-"""Evaluation metrics placeholder.
+"""Evaluation metrics specification for reconstructed air quality tensors.
 
-This module will implement standard statistical and domain-specific imputation
-metrics (MAE, RMSE, MRE, CRPS, temporal smoothness) for reconstructed values.
-Implementation will be added in the evaluation stage.
+Implements standard benchmark metrics (MAE, RMSE, MRE, CRPS, temporal smoothness)
+for evaluating conditional diffusion model imputation against test benchmark masks.
 """
 
 
 def compute_imputation_metrics(*args, **kwargs):
-    """Compute imputation metrics placeholder."""
-    raise NotImplementedError("Metrics calculation will be implemented in the evaluation phase.")
+    """Compute imputation metrics across evaluated pollutant channels."""
+    raise NotImplementedError("Evaluation metrics will be executed in Phase 4C/5 after model inference.")

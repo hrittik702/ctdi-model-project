@@ -1,5 +1,4 @@
-"""Model architectures package placeholder.
+"""Model architectures package for conditional diffusion and temporal baselines.
 
-Model implementations (e.g. SLM context encoder, conditional diffusion models)
-will be introduced in their respective development stages.
+Implementation of diffusion backbone and conditioning modules will be introduced in Phase 4C.
 """

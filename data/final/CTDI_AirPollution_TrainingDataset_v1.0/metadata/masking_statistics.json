@@ -1,0 +1,106 @@
+{
+  "mcar_10": {
+    "pattern": "random_mcar",
+    "requested_rate": 0.1,
+    "actual_rate": 0.1007,
+    "rate_deviation": 0.0007,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 731326
+  },
+  "mcar_30": {
+    "pattern": "random_mcar",
+    "requested_rate": 0.3,
+    "actual_rate": 0.2995,
+    "rate_deviation": 0.0005,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 2174824
+  },
+  "mcar_50": {
+    "pattern": "random_mcar",
+    "requested_rate": 0.5,
+    "actual_rate": 0.4996,
+    "rate_deviation": 0.0004,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 3627817
+  },
+  "mcar_70": {
+    "pattern": "random_mcar",
+    "requested_rate": 0.7,
+    "actual_rate": 0.7003,
+    "rate_deviation": 0.0003,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 5085285
+  },
+  "block_10": {
+    "pattern": "temporal_block_mar",
+    "requested_rate": 0.1,
+    "actual_rate": 0.1007,
+    "rate_deviation": 0.0007,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 731326
+  },
+  "block_30": {
+    "pattern": "temporal_block_mar",
+    "requested_rate": 0.3,
+    "actual_rate": 0.2995,
+    "rate_deviation": 0.0005,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 2174824
+  },
+  "block_50": {
+    "pattern": "temporal_block_mar",
+    "requested_rate": 0.5,
+    "actual_rate": 0.4996,
+    "rate_deviation": 0.0004,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 3627817
+  },
+  "block_70": {
+    "pattern": "temporal_block_mar",
+    "requested_rate": 0.7,
+    "actual_rate": 0.7003,
+    "rate_deviation": 0.0003,
+    "within_tolerance": true,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 5085285
+  },
+  "station_outage_1": {
+    "pattern": "station_outage",
+    "outage_station_count": 1,
+    "expected_network_rate": 0.0625,
+    "actual_rate": 0.0625,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 453636
+  },
+  "station_outage_2": {
+    "pattern": "station_outage",
+    "outage_station_count": 2,
+    "expected_network_rate": 0.125,
+    "actual_rate": 0.125,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 907691
+  },
+  "station_outage_4": {
+    "pattern": "station_outage",
+    "outage_station_count": 4,
+    "expected_network_rate": 0.25,
+    "actual_rate": 0.25,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 1815340
+  },
+  "station_outage_full": {
+    "pattern": "station_outage",
+    "outage_station_count": 16,
+    "expected_network_rate": 1.0,
+    "actual_rate": 1.0,
+    "total_eligible_cells": 7261392,
+    "total_masked_cells": 7261392
+  }
+}

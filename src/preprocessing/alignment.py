@@ -1,4 +1,10 @@
-"""Spatio-temporal alignment and multi-modal feature fusion for Hong Kong air quality research."""
+"""Historical Phase 2 Prototype: Spatio-temporal alignment and multimodal feature fusion.
+
+Note: This was an early prototype (Sep 13, 2026) retained for research history.
+The canonical Phase 2 alignment pipeline is implemented across:
+- `src/preprocessing/temporal_alignment.py` (air quality + meteorology temporal grid)
+- `src/preprocessing/build_aligned_dataset.py` (13-channel multimodal fusion & distance matrix)
+"""
 
 from pathlib import Path
 from typing import Dict, List, Tuple

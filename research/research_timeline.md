@@ -634,3 +634,56 @@ Construct the experimental dataset layer required to evaluate the proposed SLM-c
 
 ### Status
 - **`PHASE_4B_EXPERIMENTAL_DATASET_COMPLETE_AND_AUDIT_VERIFIED`**
+
+---
+
+## 2026-09-19 — Phase 4 Data Finalization: Frozen Training Package v1.0
+
+### Objective
+Freeze and package the validated Phase 1–4B data artifacts into a self-contained, reproducible training package (`CTDI_AirPollution_TrainingDataset_v1.0`) directly consumable by ML pipelines and teammate developers:
+1. Export dual Parquet and dense NumPy NPZ representations for Train, Validation, and Test partitions.
+2. Pre-compute and package all 12 benchmark evaluation masks (MCAR 10/30/50/70%, Contiguous Temporal Block 10/30/50/70%, and Station Outages S1, S2, S4, S_full).
+3. Standardize schemas and metadata manifests (`channel_schema.csv`, `station_metadata.csv`, `split_manifest.csv`, `window_metadata.parquet`, `normalization_stats.json`, `masking_statistics.json`).
+4. Generate self-contained documentation: `README.md`, `DATASET_CARD.md`, `dataset_manifest.json`, and `checksums/SHA256SUMS`.
+5. Execute a 15-point automated validation engine, deterministic reproducibility verification, cryptographic checksum audit, and teammate consumption test suite.
+6. Verify 100% cryptographic raw data immutability across all 683 files.
+7. Maintain strict research boundary: zero model architecture implementation or model training (Phase 4C NOT started).
+
+### Work
+- Implemented packaging pipeline `src/dataset/build_final_package.py` and generated release directory `data/final/CTDI_AirPollution_TrainingDataset_v1.0/` (~121 MB across 46 files):
+  - Train: `X_train.parquet` ($42.65\text{ MB}$), `M_natural_train.parquet` ($2.34\text{ MB}$), `X_train.npz` ($10.10\text{ MB}$, shape `(294160, 24, 13)`), `M_natural_train.npz` ($0.84\text{ MB}$).
+  - Validation: `X_val.parquet` ($8.28\text{ MB}$), `M_natural_val.parquet` ($0.57\text{ MB}$), `X_val.npz` ($2.16\text{ MB}$, shape `(62608, 24, 13)`), `M_natural_val.npz` ($0.20\text{ MB}$).
+  - Test: `X_test.parquet` ($8.86\text{ MB}$), `M_natural_test.parquet` ($0.57\text{ MB}$), `X_test.npz` ($2.17\text{ MB}$, shape `(62224, 24, 13)`), `M_natural_test.npz` ($0.19\text{ MB}$).
+  - Benchmark Masks: `test_benchmark_masks.parquet` ($7.39\text{ MB}$) plus 12 modular `.npz` and `.parquet` scenario files under `masks/mcar/`, `masks/temporal_block/`, and `masks/station_outage/`.
+  - Standardized Metadata: `channel_schema.csv`, `station_metadata.csv`, `split_manifest.csv`, `window_metadata.parquet`, `normalization_stats.json`, `masking_statistics.json`.
+  - Package Documentation: `README.md`, `DATASET_CARD.md`, `dataset_manifest.json`, and `checksums/SHA256SUMS`.
+- Implemented and executed 15-point automated validation suite `src/dataset/validate_final_dataset.py`: 15/15 checks passed with 100% success.
+- Executed deterministic reproducibility check: 0 bitwise hash mismatches across independent export runs.
+- Verified cryptographic SHA-256 manifest: all 46 package files reported `OK` via `sha256sum -c checksums/SHA256SUMS`.
+- Implemented teammate consumption test suite `tests/test_teammate_consumption.py`: verified PyTorch `Dataset`/`DataLoader` batching, Pandas/Parquet reshaping, target firewall invariant on live batches, denormalization roundtrip, and dynamic mask loading. All 23 tests in project suite passed in 12.51s.
+- Audited raw data: confirmed 683/683 raw files 100% bitwise identical against `raw_data_sha256_manifest.json`.
+- Authored canonical research documentation: `research/Dataset/Final Training Dataset v1.0.md` and checkpoint `research/Checkpoints/2026-09-19_dataset_v1_finalization.md`.
+
+### Finding
+- **Self-Contained Portability**: Teammates can immediately consume the dataset via PyTorch `Dataset` or Pandas without running upstream preprocessing scripts.
+- **Storage Efficiency**: Total package footprint is ~$121\text{ MB}$ ($56\text{ MB}$ train, $37\text{ MB}$ masks, $12\text{ MB}$ val, $12\text{ MB}$ test, $4\text{ MB}$ metadata).
+- **Dual Representation Fidelity**: Dense NumPy arrays and Parquet tables contain identical values with zero precision loss.
+- **Target Firewall Guarantee**: Target invariant $M_{\text{target}} \le M_{\text{natural}}$ holds across all $7,261,392$ candidate evaluation cells; zero natural sensor NaNs are treated as evaluation targets.
+- **Raw Data Immutability**: All 683 raw files in `data/raw/` remain bit-for-bit identical to the baseline manifest.
+
+### Decision
+- Declare operational status: **`DATASET_V1_FROZEN_AND_PACKAGED = COMPLETE & VERIFIED`**.
+- Freeze `data/final/CTDI_AirPollution_TrainingDataset_v1.0/` as the immutable dataset contract for model training.
+- Any future scientific changes or additional sensor modalities require releasing an explicitly incremented dataset version (e.g., `v1.1`).
+- Proceed to Phase 4C (Model Architecture Scaffolding) only upon user authorization; Phase 4C is currently **`NOT_STARTED`**.
+
+### Evidence
+- `data/final/CTDI_AirPollution_TrainingDataset_v1.0/`
+- `src/dataset/build_final_package.py`
+- `src/dataset/validate_final_dataset.py`
+- `tests/test_teammate_consumption.py`
+- `research/Dataset/Final Training Dataset v1.0.md`
+- `research/Checkpoints/2026-09-19_dataset_v1_finalization.md`
+
+### Status
+- **`DATASET_V1_FROZEN_AND_PACKAGED`**

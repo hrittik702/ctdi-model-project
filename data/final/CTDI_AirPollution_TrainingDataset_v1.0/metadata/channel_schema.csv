@@ -1,0 +1,14 @@
+channel_index,channel_name,group,unit,description,normalization_method,primary_representation
+0,pm25,air_quality,ug/m3,Fine Particulate Matter (<2.5 um),z_score,continuous
+1,pm10,air_quality,ug/m3,Respirable Suspended Particulates (<10 um),z_score,continuous
+2,no2,air_quality,ug/m3,Nitrogen Dioxide,z_score,continuous
+3,so2,air_quality,ug/m3,Sulphur Dioxide,z_score,continuous
+4,o3,air_quality,ug/m3,Ground-Level Ozone,z_score,continuous
+5,pressure,meteorology,hPa,Surface Atmospheric Pressure,z_score,continuous
+6,relative_humidity,meteorology,%,Surface Relative Humidity,z_score,continuous
+7,temperature,meteorology,degC,2-Meter Dry-Bulb Air Temperature,z_score,continuous
+8,rainfall,meteorology,mm,Total Hourly Surface Precipitation (wet scavenging proxy),z_score,continuous
+9,wind_direction,meteorology,degrees,10-Meter Wind Direction Bearing (0-360 deg),z_score,degrees_13_channel
+10,wind_speed,meteorology,m/s,10-Meter Wind Speed,z_score,continuous
+11,traffic_speed,traffic,km/h,Spatial-IDW Road Vehicular Speed,z_score,continuous
+12,traffic_congestion,traffic,"[0.0, 1.0]","Spatial-IDW Road Saturation Level (ordinal: GOOD=0, AVG=0.5, BAD=1.0)",z_score,continuous

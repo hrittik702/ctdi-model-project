@@ -14,7 +14,6 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Tuple
 import pandas as pd
-import numpy as np
 
 # Canonical pollutant columns and target units
 CANONICAL_POLLUTANTS = ["pm25", "pm10", "no2", "so2", "o3"]

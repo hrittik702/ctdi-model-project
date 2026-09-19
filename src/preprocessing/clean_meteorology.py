@@ -19,7 +19,6 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Tuple
 import pandas as pd
-import numpy as np
 
 CANONICAL_MET_VARS = [
     "temperature",

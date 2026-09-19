@@ -10,11 +10,11 @@ Supports:
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 
 def serialize_to_narrative(context: Dict[str, Any], include_observed_aq: bool = False) -> str:
-    """Format structured context into a coherent, natural English atmospheric narrative.
+    """Format structured context into an atmospheric narrative prompt.
     
     Args:
         context: Hierarchical dictionary produced by extract_window_features().

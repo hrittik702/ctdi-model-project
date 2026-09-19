@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, List
 import xml.etree.ElementTree as ET
 import pandas as pd
-import numpy as np
 
 # Canonical variable names
 CANONICAL_SPEED_VAR = "traffic_speed"

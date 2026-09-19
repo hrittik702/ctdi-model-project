@@ -11,7 +11,7 @@ Strictly enforces information leakage boundaries:
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
@@ -199,7 +199,7 @@ class EnvironmentalContextBuilder:
         window_data: np.ndarray,
         eval_mask: np.ndarray,
         prompt: str,
-        pollutant_indices: List[int] = (0, 1, 2, 3, 4),
+        pollutant_indices: Union[List[int], Tuple[int, ...]] = (0, 1, 2, 3, 4),
     ) -> bool:
         """Audit whether any hidden numerical pollutant values leaked into the prompt.
         

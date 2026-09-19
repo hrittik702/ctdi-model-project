@@ -17,7 +17,7 @@ Strict Guarantees:
 5. All mask generation is 100% reproducible via explicit random seeds.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 

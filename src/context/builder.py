@@ -1,4 +1,7 @@
-"""Environmental context builder module (wrapper for context_builder)."""
+"""Backward-compatibility alias module for context_builder.
+
+Direct imports from `src.context.context_builder` are preferred.
+"""
 
 from src.context.context_builder import (
     EnvironmentalContextBuilder,
