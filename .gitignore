@@ -7,9 +7,11 @@ __pycache__/
 venv/
 env/
 
-# Data
-# data/
-# data/**
+# Data - Local Research Artifacts
+data/raw/
+data/interim/
+data/processed/
+data/canonical/
 *.zip
 
 # Vite & Node
