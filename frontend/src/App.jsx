@@ -1,7 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
-// API Service
+// API Service & Canonical Data Contract
 import api from './services/api';
+import {
+  HONG_KONG_STATIONS,
+  CANONICAL_CHANNELS,
+  DATASET_METADATA
+} from './constants/datasetContract';
 
 // Shell & Navigation Components
 import Sidebar from './components/Sidebar';
@@ -17,11 +22,13 @@ import DataExplorerView from './views/DataExplorerView';
 import LiveImputationView from './views/LiveImputationView';
 import ExperimentHistoryView from './views/ExperimentHistoryView';
 import ModelComparisonLabView from './views/ModelComparisonLabView';
+import SettingsView from './views/SettingsView';
 
 // Modals
 import GlobalSearchModal from './components/GlobalSearchModal';
 import ExportModal from './components/ExportModal';
 import ModelConfigModal from './components/ModelConfigModal';
+import HelpModal from './components/HelpModal';
 
 export default function App() {
   // Theme state: dark / light
@@ -29,9 +36,27 @@ export default function App() {
   const isDark = theme === 'dark';
 
   // Navigation & Shell state
-  const [currentTab, setCurrentTab] = useState('explorer');
+  const [currentTab, setCurrentTab] = useState(() => {
+    const hash = window.location.hash ? window.location.hash.replace('#', '') : '';
+    return hash || 'dashboard';
+  });
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        setCurrentTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('ctdi_sidebar_collapsed') === 'true';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('collapsed')) return params.get('collapsed') === 'true';
+      return localStorage.getItem('ctdi_sidebar_collapsed') === 'true';
+    }
+    return false;
   });
   const [isPresentationMode, setIsPresentationMode] = useState(false);
 
@@ -39,12 +64,13 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isModelConfigOpen, setIsModelConfigOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Backend data states
+  // Backend data states (Aligned to Hong Kong 16 Stations & 13 Channels)
   const [metadata, setMetadata] = useState(null);
-  const [stations, setStations] = useState([]);
-  const [selectedStation, setSelectedStation] = useState('Delhi');
-  const [activeModel, setActiveModel] = useState('delhi_ctdi_original');
+  const [stations, setStations] = useState(HONG_KONG_STATIONS);
+  const [selectedStation, setSelectedStation] = useState('CW');
+  const [activeModel, setActiveModel] = useState('ctdi_cnn_transformer');
   const [metrics, setMetrics] = useState([]);
   const [pollutantMetrics, setPollutantMetrics] = useState({});
   const [experiments, setExperiments] = useState([]);
@@ -52,8 +78,11 @@ export default function App() {
   const [healthInfo, setHealthInfo] = useState(null);
   const [backendOnline, setBackendOnline] = useState(false);
 
-  // Trajectory exploration state
-  const [sampleIdx, setSampleIdx] = useState(0);
+  // Trajectory exploration state (Station-local window index: 0 to 26,280)
+  const [sampleIdx, setSampleIdx] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get('sample');
+    return p !== null && !isNaN(Number(p)) ? Number(p) : 0;
+  });
   const [targetPollutant, setTargetPollutant] = useState('PM2.5');
   const [sampleData, setSampleData] = useState(null);
   const [isLoadingSample, setIsLoadingSample] = useState(false);
@@ -63,14 +92,14 @@ export default function App() {
     groundTruth: true,
     observed: true,
     hiddenTarget: true,
-    transformer: true,
-    linear: true,
+    transformer: false, // Model imputation series
+    linear: false,
     knn: false,
     mlp: false
   });
 
   // Live simulation sandbox state
-  const [liveRate, setLiveRate] = useState(0.35);
+  const [liveRate, setLiveRate] = useState(0.30);
   const [liveMechanism, setLiveMechanism] = useState('random');
   const [liveSeed, setLiveSeed] = useState(42);
   const [liveResult, setLiveResult] = useState(null);
@@ -100,22 +129,29 @@ export default function App() {
     });
   };
 
-  // Keyboard shortcut for Ctrl+K
+  // Keyboard shortcuts: Ctrl+K (Search) & Ctrl+B (Sidebar toggle)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      const isMac = typeof navigator !== 'undefined' && navigator.platform?.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modifier && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen(prev => !prev);
+      }
+      if (modifier && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Poll health and fetch initial metadata & global metrics
+  // Poll health and fetch initial metadata & global metrics on mount
   const loadInitialData = useCallback(async () => {
     try {
-      const initialStation = selectedStation || 'Delhi';
+      const initialStation = selectedStation || 'CW';
       const [health, stnsRes, meta, metList, polMets, exps, config] = await Promise.all([
         api.getHealth(initialStation),
         api.getStations(),
@@ -133,16 +169,16 @@ export default function App() {
         setStations(stnsRes.stations);
       }
       setMetadata(meta);
-      setMetrics(metList);
-      setPollutantMetrics(polMets);
-      setExperiments(exps);
+      setMetrics(metList || []);
+      setPollutantMetrics(polMets || {});
+      setExperiments(exps || []);
       setModelConfig(config);
 
-      if (meta.pollutants?.length > 0 && !targetPollutant) {
-        setTargetPollutant(meta.pollutants[0]);
+      if (meta?.pollutants?.length > 0) {
+        setTargetPollutant(prev => prev || meta.pollutants[0]);
       }
     } catch (err) {
-      console.warn('Initial data load failed:', err);
+      console.warn('Initial data load completed with fallbacks:', err);
       setBackendOnline(false);
     }
   }, []);
@@ -160,53 +196,34 @@ export default function App() {
       } catch {
         setBackendOnline(false);
       }
-    }, 10000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [selectedStation]);
 
   // Handle station selection
-  const handleSelectStation = async (stationName) => {
-    setSelectedStation(stationName);
+  const handleSelectStation = async (stationId) => {
+    setSelectedStation(stationId);
     try {
-      await api.selectStation(stationName);
-      // Simultaneously fetch all updated model & station data dynamically
-      const [newHealth, newMeta, newSample, newMetrics, newPolMets, newConfig] = await Promise.all([
-        api.getHealth(stationName),
-        api.getMetadata(stationName),
-        api.getSample(sampleIdx, stationName),
-        api.getMetrics(stationName),
-        api.getPollutantMetrics(stationName),
-        api.getModelConfig(stationName)
+      await api.selectStation(stationId);
+      const [newHealth, newMeta, newConfig] = await Promise.all([
+        api.getHealth(stationId),
+        api.getMetadata(stationId),
+        api.getModelConfig(stationId)
       ]);
       setHealthInfo(newHealth);
       setMetadata(newMeta);
-      setSampleData(newSample);
-      setMetrics(newMetrics);
-      setPollutantMetrics(newPolMets);
       setModelConfig(newConfig);
     } catch (err) {
-      console.warn('Failed to switch station:', err);
+      console.warn('Failed to switch station metadata:', err);
     }
   };
 
-  // Handle active model selection (e.g. PyTorch vs Keras 3 for Delhi)
+  // Handle active model selection
   const handleSelectActiveModel = async (modelId) => {
     setActiveModel(modelId);
     try {
       await api.selectActiveModel(modelId);
-      const [newHealth, newMeta, newSample, newMetrics, newPolMets, newConfig] = await Promise.all([
-        api.getHealth(selectedStation),
-        api.getMetadata(selectedStation),
-        api.getSample(sampleIdx, selectedStation),
-        api.getMetrics(selectedStation),
-        api.getPollutantMetrics(selectedStation),
-        api.getModelConfig(selectedStation)
-      ]);
-      setHealthInfo(newHealth);
-      setMetadata(newMeta);
-      setSampleData(newSample);
-      setMetrics(newMetrics);
-      setPollutantMetrics(newPolMets);
+      const newConfig = await api.getModelConfig(selectedStation);
       setModelConfig(newConfig);
     } catch (err) {
       console.warn('Failed to switch active model:', err);
@@ -215,18 +232,29 @@ export default function App() {
 
   // Fetch sample telemetry whenever sampleIdx or selectedStation changes
   useEffect(() => {
+    let isMounted = true;
     async function fetchSample() {
       setIsLoadingSample(true);
       try {
         const data = await api.getSample(sampleIdx, selectedStation);
-        setSampleData(data);
+        if (isMounted) {
+          setSampleData(data);
+        }
       } catch (err) {
-        console.error(`Failed to fetch sample ${sampleIdx}:`, err);
+        console.error(`Failed to fetch sample ${sampleIdx} for station ${selectedStation}:`, err);
+        if (isMounted) {
+          setSampleData(null);
+        }
       } finally {
-        setIsLoadingSample(false);
+        if (isMounted) {
+          setIsLoadingSample(false);
+        }
       }
     }
     fetchSample();
+    return () => {
+      isMounted = false;
+    };
   }, [sampleIdx, selectedStation]);
 
   // Execute live model inference with progress feedback
@@ -234,11 +262,10 @@ export default function App() {
     setLiveLoading(true);
     setLiveStep('Preparing 24h sample tensor...');
     try {
-      await new Promise(r => setTimeout(r, 120)); // Brief visual step
+      await new Promise(r => setTimeout(r, 120));
       setLiveStep(`Applying ${liveMechanism.toUpperCase()} corruption (${Math.round(liveRate * 100)}%)...`);
       await new Promise(r => setTimeout(r, 150));
-      const modelLabel = selectedStation.toLowerCase().includes('keras') ? 'Keras 3' : 'PyTorch';
-      setLiveStep(`Executing ${modelLabel} CTDI Transformer forward pass...`);
+      setLiveStep('Preparing model inference...');
       
       const res = await api.liveImpute({
         sampleIdx,
@@ -248,145 +275,238 @@ export default function App() {
         station: selectedStation
       });
 
-      setLiveStep('Evaluating masked metrics...');
-      await new Promise(r => setTimeout(r, 100));
-      setLiveResult(res);
       setLiveStep('Complete');
+      setLiveResult(res);
     } catch (err) {
-      console.error('Live imputation failed:', err);
+      console.error('Live imputation execution state:', err);
+      setLiveStep('Model checkpoint unavailable.');
     } finally {
       setLiveLoading(false);
     }
   };
 
-  // Build chart dataset for the active trajectory view
-  const pData = sampleData?.pollutants?.[targetPollutant];
-  const chartData = sampleData?.hours?.map((hour, i) => {
-    const isObs = pData?.observed_mask?.[i] === 1;
-    const isEval = pData?.eval_mask?.[i] === 1;
-    const actualVal = pData?.actual?.[i];
-    const rawTimestamp = sampleData.timestamps?.[i] || '';
-    const clockTime = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[1] : hour;
-    const datePart = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[0] : '';
+  // Build chart dataset for the active trajectory view (memoized to prevent re-mapping on scroll)
+  const channelObj = useMemo(() => {
+    return CANONICAL_CHANNELS.find(c => c.name === targetPollutant || c.label === targetPollutant) || CANONICAL_CHANNELS[0];
+  }, [targetPollutant]);
+  const channelUnit = channelObj?.unit || 'µg/m³';
 
-    return {
-      hour: clockTime,
-      time: clockTime,
-      timeIndex: i,
-      stepOffset: `+${i}h`,
-      date: datePart,
-      timestamp: rawTimestamp,
-      actual: actualVal,
-      observed: isObs ? actualVal : null,
-      hiddenTarget: isEval ? actualVal : null,
-      transformer: pData?.transformer?.[i],
-      linear: pData?.linear?.[i],
-      knn: pData?.knn?.[i],
-      mlp: pData?.mlp?.[i],
-      mean: pData?.mean?.[i]
-    };
-  }) || [];
+  const chartData = useMemo(() => {
+    if (!sampleData?.hours) return [];
+    const pData = sampleData?.pollutants?.[targetPollutant];
+    return sampleData.hours.map((hour, i) => {
+      const isObs = pData?.observed_mask?.[i] === 1;
+      const isEval = pData?.eval_mask?.[i] === 1;
+      const actualVal = pData?.actual?.[i];
+      const rawTimestamp = sampleData.timestamps?.[i] || '';
+      const clockTime = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[1] : `H${hour}`;
+      const datePart = rawTimestamp.includes(' ') ? rawTimestamp.split(' ')[0] : '';
+
+      return {
+        hour: clockTime,
+        time: clockTime,
+        timeIndex: i,
+        stepOffset: `+${i}h`,
+        date: datePart,
+        timestamp: rawTimestamp,
+        unit: channelUnit,
+        pollutantName: targetPollutant,
+        actual: actualVal,
+        observed: isObs ? actualVal : null,
+        hiddenTarget: isEval ? actualVal : null,
+        naturalMissing: !isObs ? actualVal : null,
+        isNaturalMissing: !isObs,
+        transformer: pData?.transformer?.[i] ?? null,
+        linear: pData?.linear?.[i] ?? null,
+        knn: pData?.knn?.[i] ?? null,
+        mlp: pData?.mlp?.[i] ?? null
+      };
+    });
+  }, [sampleData, targetPollutant, channelUnit]);
 
   // Theme-aware Recharts styling tokens
-  const gridStroke = isDark ? '#3f3f46' : '#e2e8f0';
+  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
   const axisStroke = isDark ? '#71717a' : '#94a3b8';
 
-  // Curve series definitions for interactive legend chips
-  const curveSeries = [
-    { key: 'groundTruth', label: 'Ground Truth', dotColor: isDark ? 'bg-zinc-200' : 'bg-slate-900', activeStyle: isDark ? 'bg-zinc-800 text-zinc-100 border-zinc-700' : 'bg-slate-900 text-white border-slate-900 shadow-xs' },
+  // Curve series definitions for interactive legend chips (memoized by theme)
+  const curveSeries = useMemo(() => [
     { key: 'observed', label: 'Observed Points', dotColor: 'bg-blue-500', activeStyle: isDark ? 'bg-blue-950/60 text-blue-300 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200 shadow-xs' },
-    { key: 'hiddenTarget', label: 'Hidden Target', dotColor: 'bg-red-500', activeStyle: isDark ? 'bg-red-950/60 text-red-300 border-red-800' : 'bg-red-50 text-red-700 border-red-200 shadow-xs' },
-    { key: 'transformer', label: 'CTDI Transformer', dotColor: 'bg-emerald-500', activeStyle: isDark ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800 font-bold' : 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs' },
-    { key: 'linear', label: 'Linear Interp', dotColor: 'bg-amber-500', activeStyle: isDark ? 'bg-amber-950/60 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs' },
-    { key: 'knn', label: 'KNN', dotColor: 'bg-purple-500', activeStyle: isDark ? 'bg-purple-950/60 text-purple-300 border-purple-800' : 'bg-purple-50 text-purple-700 border-purple-200' },
-    { key: 'mlp', label: 'MLP', dotColor: 'bg-cyan-500', activeStyle: isDark ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-cyan-50 text-cyan-700 border-cyan-200' }
-  ];
+    { key: 'groundTruth', label: 'Ground Truth Line', dotColor: isDark ? 'bg-zinc-200' : 'bg-slate-900', activeStyle: isDark ? 'bg-zinc-800 text-zinc-100 border-zinc-700' : 'bg-slate-900 text-white border-slate-900 shadow-xs' },
+    { key: 'hiddenTarget', label: 'Natural Missing Dropout', dotColor: 'bg-red-500', activeStyle: isDark ? 'bg-red-950/60 text-red-300 border-red-800' : 'bg-red-50 text-red-700 border-red-200 shadow-xs' },
+    { key: 'transformer', label: 'CTDI Imputer', dotColor: 'bg-emerald-500', activeStyle: isDark ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800 font-bold' : 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs' },
+    { key: 'linear', label: 'Linear Baseline', dotColor: 'bg-amber-500', activeStyle: isDark ? 'bg-amber-950/60 text-amber-300 border-amber-800' : 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs' },
+    { key: 'knn', label: 'KNN Baseline', dotColor: 'bg-purple-500', activeStyle: isDark ? 'bg-purple-950/60 text-purple-300 border-purple-800' : 'bg-purple-50 text-purple-700 border-purple-200' },
+    { key: 'mlp', label: 'MLP Baseline', dotColor: 'bg-cyan-500', activeStyle: isDark ? 'bg-cyan-950/60 text-cyan-300 border-cyan-800' : 'bg-cyan-50 text-cyan-700 border-cyan-200' }
+  ], [isDark]);
 
   // View title helper
   const viewTitles = {
-    dashboard: 'Analytical Dashboard Overview',
-    explorer: '24-Hour Trajectory Explorer',
-    multigrid: 'Multi-Pollutant Small Multiples',
-    scoreboard: 'Benchmark Evaluation Scoreboard',
+    dashboard: 'Dashboard',
+    explorer: '24h Concentration Trajectory',
+    multigrid: 'Multi-Pollutant Workspace',
+    scoreboard: 'Benchmark Suite',
     station: 'Station Geographical Profile',
-    data_explorer: 'Raw Sequence Data Explorer',
+    data_explorer: 'Data Explorer',
     sandbox: 'Live Imputation Workspace',
-    experiments: 'Benchmark Experiment History',
+    comparison: 'Model Comparison',
+    experiments: 'Experiment History',
+    settings: 'Settings',
     model_config: 'Model Architecture & Configuration'
   };
+
+  // Content scroll depth state (Header scroll shadow)
+  const [isContentScrolled, setIsContentScrolled] = useState(false);
+  // Section identity currently active in header on scroll
+  const [activeSection, setActiveSection] = useState(null);
+  const mainContentRef = useRef(null);
+
+  const handleContentScroll = useCallback((e) => {
+    const container = e.currentTarget;
+    const scrollTop = container.scrollTop;
+    const scrolled = scrollTop > 4;
+    setIsContentScrolled(prev => (prev !== scrolled ? scrolled : prev));
+
+    // Dashboard is deliberately excluded per requirements
+    if (currentTab === 'dashboard') {
+      setActiveSection(prev => (prev !== null ? null : prev));
+      return;
+    }
+
+    const sectionElements = container.querySelectorAll('[data-section-title]');
+    if (!sectionElements || sectionElements.length === 0) {
+      setActiveSection(prev => (prev !== null ? null : prev));
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    // Threshold is less than 6% of viewport height (typically ~50px-65px, matching floating navbar)
+    const threshold = Math.max(48, window.innerHeight * 0.06);
+
+    let currentActive = null;
+    for (let i = 0; i < sectionElements.length; i++) {
+      const el = sectionElements[i];
+      const isHeading = el.hasAttribute('data-section-heading');
+      const rect = el.getBoundingClientRect();
+      const relativeTop = rect.top - containerRect.top;
+
+      if (relativeTop <= threshold) {
+        // Less than 6% threshold: hide heading in content page, activate in header
+        if (isHeading) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        }
+        currentActive = {
+          id: el.getAttribute('data-section-id') || `sec-${i}`,
+          title: el.getAttribute('data-section-title'),
+          iconName: el.getAttribute('data-section-icon') || null
+        };
+      } else {
+        // Above threshold: keep heading fully visible in content page
+        if (isHeading) {
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        }
+      }
+    }
+
+    setActiveSection(prev => {
+      if (!prev && !currentActive) return null;
+      if (prev && currentActive && prev.id === currentActive.id && prev.title === currentActive.title) {
+        return prev;
+      }
+      return currentActive;
+    });
+  }, [currentTab]);
 
   const handleSelectTab = (tabId) => {
     if (tabId === 'model_config') {
       setIsModelConfigOpen(true);
     } else {
       setCurrentTab(tabId);
+      setActiveSection(null);
+      if (mainContentRef.current) {
+        mainContentRef.current.scrollTop = 0;
+        const els = mainContentRef.current.querySelectorAll('[data-section-heading]');
+        els.forEach(el => {
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        });
+      }
+      setIsContentScrolled(false);
     }
   };
 
   const handleDrillDownToPollutant = (pollutant) => {
     setTargetPollutant(pollutant);
     setCurrentTab('explorer');
+    setActiveSection(null);
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+      const els = mainContentRef.current.querySelectorAll('[data-section-heading]');
+      els.forEach(el => {
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+      });
+    }
+    setIsContentScrolled(false);
   };
 
+  const availableChannels = metadata?.pollutants || CANONICAL_CHANNELS.map(c => c.name);
+  const totalWindowCount = metadata?.station_windows || 26281;
+
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200 select-none">
-      {/* Top Navigation Bar - Sticky z-20 */}
-      <TopNavbar
-        currentViewTitle={viewTitles[currentTab] || 'Analytics Studio'}
-        currentStation={selectedStation}
-        stations={stations}
-        onSelectStation={handleSelectStation}
-        activeModel={activeModel}
-        onSelectActiveModel={handleSelectActiveModel}
-        backendOnline={backendOnline}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenExport={() => setIsExportOpen(true)}
-        isPresentationMode={isPresentationMode}
-        onTogglePresentationMode={() => setIsPresentationMode(prev => !prev)}
-        onMobileMenuToggle={toggleSidebar}
-      />
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-zinc-100 flex font-sans transition-colors duration-200 select-none">
+      {/* 1. Full-Height Sidebar on the Left */}
+      {!isPresentationMode && (
+        <Sidebar
+          currentTab={currentTab}
+          onSelectTab={handleSelectTab}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenHelp={() => setIsHelpOpen(true)}
+        />
+      )}
 
-      {/* Main Workspace Layout (Fixed Sidebar + Independently Scrollable Viewport) */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Fixed h-full z-30 */}
-        {!isPresentationMode && (
-          <Sidebar
-            currentTab={currentTab}
-            onSelectTab={handleSelectTab}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={toggleSidebar}
+      {/* 2. Right Column: Content Header + Independently Scrollable Workspace */}
+      <div className="flex-1 min-w-0 h-full overflow-hidden relative">
+        {/* Main Viewport Content Area - Sticky Header + Scrollable Views */}
+        <main 
+          ref={mainContentRef}
+          onScroll={handleContentScroll}
+          className="h-full overflow-y-auto px-4 pb-6 sm:px-6 sm:pb-6 space-y-4 min-h-0 bg-transparent"
+        >
+          <TopNavbar
+            currentViewTitle={viewTitles[currentTab] || 'Analytics Studio'}
+            currentStation={selectedStation}
+            stations={stations}
+            onSelectStation={handleSelectStation}
             backendOnline={backendOnline}
-            modelName={healthInfo?.model_name || 'CTDI Transformer'}
-            modelStatus={healthInfo?.status_label || (backendOnline ? 'Ready' : 'Offline')}
-            framework={healthInfo?.framework || 'PyTorch'}
-          />
-        )}
-
-        {/* Main Viewport Content Area - Independently Scrollable */}
-        <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 space-y-6">
-          {/* Executive Dynamic KPI Row (Always backend-driven) */}
-          <KpiRow
-            metrics={metrics}
-            metadata={metadata}
-            sampleHiddenCount={pData?.hidden_count ?? null}
-            totalHours={24}
-            modelStatus={backendOnline ? (healthInfo?.status_label || 'Ready') : 'Offline'}
-            activeModel={healthInfo?.model_name || 'CTDI Transformer'}
-            targetPollutant={targetPollutant}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenExport={() => setIsExportOpen(true)}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            isScrolled={isContentScrolled}
+            activeSection={activeSection}
+            isDashboard={currentTab === 'dashboard'}
           />
 
           {/* Active View Router */}
           {currentTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Executive Dynamic KPI Row */}
+              <KpiRow />
+
               <TrajectoryExplorerView
+                isDashboard={true}
                 sampleIdx={sampleIdx}
                 setSampleIdx={setSampleIdx}
-                maxSamples={metadata?.num_samples || 1500}
+                maxSamples={totalWindowCount}
                 targetPollutant={targetPollutant}
                 setTargetPollutant={setTargetPollutant}
-                pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+                pollutants={availableChannels}
                 sampleData={sampleData}
                 chartData={chartData}
                 visibleModels={visibleModels}
@@ -395,8 +515,10 @@ export default function App() {
                 isDark={isDark}
                 gridStroke={gridStroke}
                 axisStroke={axisStroke}
+                isLoading={isLoadingSample}
               />
               <BenchmarkView
+                isDashboard={true}
                 metrics={metrics}
                 isDark={isDark}
                 gridStroke={gridStroke}
@@ -409,10 +531,10 @@ export default function App() {
             <TrajectoryExplorerView
               sampleIdx={sampleIdx}
               setSampleIdx={setSampleIdx}
-              maxSamples={metadata?.num_samples || 1500}
+              maxSamples={totalWindowCount}
               targetPollutant={targetPollutant}
               setTargetPollutant={setTargetPollutant}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+              pollutants={availableChannels}
               sampleData={sampleData}
               chartData={chartData}
               visibleModels={visibleModels}
@@ -421,13 +543,14 @@ export default function App() {
               isDark={isDark}
               gridStroke={gridStroke}
               axisStroke={axisStroke}
+              isLoading={isLoadingSample}
             />
           )}
 
           {currentTab === 'multigrid' && (
             <MultiPollutantView
               sampleData={sampleData}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+              pollutants={availableChannels}
               sampleIdx={sampleIdx}
               onDrillDown={handleDrillDownToPollutant}
               isDark={isDark}
@@ -453,6 +576,7 @@ export default function App() {
               onSelectStation={handleSelectStation}
               sampleIdx={sampleIdx}
               pollutantMetrics={pollutantMetrics}
+              onNavigateToTab={handleSelectTab}
               isDark={isDark}
               gridStroke={gridStroke}
               axisStroke={axisStroke}
@@ -463,7 +587,11 @@ export default function App() {
             <DataExplorerView
               sampleData={sampleData}
               sampleIdx={sampleIdx}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+              pollutants={availableChannels}
+              stationName={metadata?.station || selectedStation}
+              isDark={isDark}
+              gridStroke={gridStroke}
+              axisStroke={axisStroke}
             />
           )}
 
@@ -482,10 +610,10 @@ export default function App() {
               onRunLiveImpute={handleRunLiveImpute}
               targetPollutant={targetPollutant}
               setTargetPollutant={setTargetPollutant}
-              pollutants={metadata?.pollutants || ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3']}
+              pollutants={availableChannels}
               selectedStation={selectedStation}
-              framework={healthInfo?.framework || 'PyTorch'}
-              checkpoint={healthInfo?.checkpoint || 'checkpoints/delhi/best_temporal_transformer.pt'}
+              framework="PyTorch"
+              checkpoint={null}
               isDark={isDark}
               gridStroke={gridStroke}
               axisStroke={axisStroke}
@@ -505,10 +633,21 @@ export default function App() {
               experiments={experiments}
             />
           )}
+
+          {currentTab === 'settings' && (
+            <SettingsView
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onToggleSidebar={toggleSidebar}
+              onOpenModelModal={() => setIsModelConfigOpen(true)}
+              onNavigateToTab={handleSelectTab}
+            />
+          )}
         </main>
       </div>
 
-      {/* Global Modals - Neutral charcoal z-50 */}
+      {/* Global Modals */}
       <GlobalSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -523,8 +662,8 @@ export default function App() {
         onClose={() => setIsExportOpen(false)}
         sampleIdx={sampleIdx}
         targetPollutant={targetPollutant}
-        station={metadata?.station || selectedStation || 'Delhi'}
-        dataset={metadata?.dataset || 'Indian National Air Quality Dataset (CPCB)'}
+        station={metadata?.station || selectedStation || 'Central / Western'}
+        dataset={metadata?.dataset || 'CTDI Air Pollution Training Dataset v1.0'}
         chartData={chartData}
         metrics={metrics}
       />
@@ -533,6 +672,15 @@ export default function App() {
         isOpen={isModelConfigOpen}
         onClose={() => setIsModelConfigOpen(false)}
         modelConfig={modelConfig}
+      />
+
+      <HelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onNavigateToSettings={() => {
+          setIsHelpOpen(false);
+          setCurrentTab('settings');
+        }}
       />
     </div>
   );

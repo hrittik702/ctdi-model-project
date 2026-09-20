@@ -1,185 +1,276 @@
-import React from 'react';
-import { Chip } from '@heroui/react';
-import { ChevronDown, MapPin } from 'lucide-react';
-import ProjectIcon from './ui/ProjectIcon';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  ChevronDown, 
+  Download, 
+  Sun, 
+  Moon, 
+  Database, 
+  Server, 
+  Cpu, 
+  CheckCircle2, 
+  AlertCircle,
+  MapPin,
+  Activity,
+  Layers,
+  Target,
+  History,
+  Sliders,
+  BarChart2,
+  Compass
+} from 'lucide-react';
+import StationSelector from './StationSelector';
+
+const SECTION_ICONS = {
+  station: Compass,
+  trajectory: Activity,
+  multigrid: Layers,
+  benchmark: Target,
+  data: Database,
+  comparison: Cpu,
+  experiments: History,
+  settings: Sliders,
+  chart: BarChart2
+};
 
 export default function TopNavbar({
-  currentViewTitle,
-  currentStation = 'Delhi',
+  currentViewTitle = 'Analytical Dashboard',
+  currentStation = 'CW',
   stations = [],
   onSelectStation,
-  activeModel = 'delhi_ctdi_original',
-  onSelectActiveModel,
-  backendOnline,
-  theme,
+  backendOnline = false,
+  theme = 'dark',
   onToggleTheme,
-  onOpenSearch,
   onOpenExport,
-  isPresentationMode,
-  onTogglePresentationMode,
-  onMobileMenuToggle
+  isSidebarCollapsed = false,
+  onToggleSidebar,
+  isScrolled = false,
+  activeSection = null,
+  isDashboard = false,
+  // Optional backward-compatibility props
+  onMobileMenuToggle,
+  onOpenSearch
 }) {
   const isDark = theme === 'dark';
+  const [isSystemPopoverOpen, setIsSystemPopoverOpen] = useState(false);
+  const popoverRef = useRef(null);
+
+  // Close system popover on click outside or Escape
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setIsSystemPopoverOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsSystemPopoverOpen(false);
+      }
+    }
+
+    if (isSystemPopoverOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSystemPopoverOpen]);
+
+  const handleToggle = onToggleSidebar || onMobileMenuToggle;
+  const SectionIcon = activeSection?.iconName ? SECTION_ICONS[activeSection.iconName] : Compass;
 
   return (
-    <header className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-zinc-800 sticky top-0 z-20 h-16 px-4 sm:px-6 flex items-center justify-between shadow-2xs shrink-0">
-      {/* Left Section: Master Identity & Subtitle */}
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Sidebar collapse/expand trigger */}
-        <button
-          type="button"
-          onClick={onMobileMenuToggle}
-          title="Toggle Sidebar"
-          aria-label="Toggle sidebar navigation"
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0"
-        >
-          <ProjectIcon name="menu" size="md" className="w-5 h-5" />
-        </button>
+    <header className="sticky top-0 z-20 h-14 w-full flex items-center justify-between shrink-0 bg-transparent select-none pointer-events-none">
+      {/* Left Section: Compact Floating Station Selector Pill + Section Identity Pill */}
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 pointer-events-auto">
+        {/* Hong Kong EPD Station Selector */}
+        <StationSelector
+          currentStation={currentStation}
+          stations={stations}
+          onSelectStation={onSelectStation}
+        />
 
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs shrink-0">
-            <ProjectIcon name="ctdi-logo" size="md" className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-zinc-100 tracking-tight truncate">
-                CTDI Air Imputation Studio
-              </h1>
-              <Chip color="default" variant="soft" size="sm" className="hidden md:inline-flex h-5 text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
-                <Chip.Label>Indian AQI Network</Chip.Label>
-              </Chip>
-            </div>
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium truncate hidden sm:block">
-              Spatial-Temporal Air Quality Imputation & Analytics
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Center Section: Global Search Command Palette Bar */}
-      <div className="hidden lg:flex items-center flex-1 max-w-sm mx-6">
-        <button
-          type="button"
-          onClick={onOpenSearch}
-          aria-label="Open global search palette"
-          className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 text-slate-400 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-zinc-600 text-xs transition cursor-pointer shadow-2xs"
-        >
-          <div className="flex items-center gap-2 truncate">
-            <ProjectIcon name="search" size="sm" className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-400 shrink-0" />
-            <span className="truncate">Search pollutants, samples, views...</span>
-          </div>
-          <kbd className="px-1.5 py-0.5 rounded-md bg-white dark:bg-zinc-700 text-[10px] font-mono text-slate-500 dark:text-zinc-300 border border-slate-200 dark:border-zinc-600 shadow-2xs shrink-0">
-            Ctrl K
-          </kbd>
-        </button>
-      </div>
-
-      {/* Right Section: Station, Active Model Toggle, API Status, Export, Presentation, Theme */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        {/* Interactive Indian Station Selector */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-2xs hover:border-indigo-400 dark:hover:border-indigo-500 transition">
-          <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <div className="relative flex items-center">
-            <select
-              value={currentStation}
-              onChange={(e) => onSelectStation && onSelectStation(e.target.value)}
-              className="bg-transparent border-none outline-none cursor-pointer text-xs font-bold text-slate-800 dark:text-zinc-100 pr-4 appearance-none hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-              title="Select Indian Monitoring Station"
-              aria-label="Select Indian Monitoring Station"
-            >
-              {stations.length > 0 ? (
-                stations.map(stn => (
-                  <option key={stn.id} value={stn.id} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
-                    {stn.name} {stn.model_trained ? '★ (Trained City)' : `(${stn.state})`}
-                  </option>
-                ))
-              ) : (
-                <option value={currentStation} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
-                  {currentStation} (Active)
-                </option>
-              )}
-            </select>
-            <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-0" />
-          </div>
-        </div>
-
-        {/* Active Model Selector Pill for Delhi */}
-        {currentStation === 'Delhi' && (
-          <div className="hidden md:flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 text-[11px] font-semibold">
-            <button
-              type="button"
-              onClick={() => onSelectActiveModel && onSelectActiveModel('delhi_ctdi_original')}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                activeModel === 'delhi_ctdi_original' || !activeModel?.includes('keras')
-                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 font-bold shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-              }`}
-              title="Active Production Model: PyTorch (Original)"
-            >
-              PyTorch
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectActiveModel && onSelectActiveModel('delhi_ctdi_keras')}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                activeModel?.includes('keras')
-                  ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-              }`}
-              title="Active Production Model: Keras 3 (PyTorch Backend)"
-            >
-              Keras 3
-            </button>
+        {/* 1. Dashboard Mode: Retains original content indicator text behavior */}
+        {isDashboard && (
+          <div className={`items-center gap-3 overflow-hidden transition-all duration-300 ease-in-out ${
+            isScrolled 
+              ? 'opacity-0 max-w-0 pointer-events-none -translate-x-2 invisible' 
+              : 'opacity-100 max-w-[320px] translate-x-0 hidden sm:flex'
+          }`}>
+            <div className="h-3.5 w-px bg-slate-200 dark:bg-white/[0.08] shrink-0" />
+            <h1 className="font-semibold text-slate-800 dark:text-[#F4F4F5] tracking-tight truncate text-xs sm:text-[13px] whitespace-nowrap">
+              {currentViewTitle}
+            </h1>
           </div>
         )}
 
-        {/* API Status Chip */}
-        <Chip 
-          color={backendOnline ? "success" : "danger"} 
-          variant="soft" 
-          size="sm"
-          className="dark:bg-emerald-950/40 dark:text-emerald-300 font-medium h-7"
-        >
-          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 shrink-0 ${backendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-          <Chip.Label>{backendOnline ? 'FastAPI Connected' : 'FastAPI Offline'}</Chip.Label>
-        </Chip>
+        {/* 2. Analytical Pages: Compact Floating Section Identity Pill (Animated on Scroll) */}
+        {!isDashboard && (
+          <div 
+            className={`transition-all duration-200 ease-out flex items-center min-w-0 motion-reduce:transition-none ${
+              activeSection
+                ? 'opacity-100 translate-y-0 max-w-[200px] sm:max-w-[280px] visible'
+                : 'opacity-0 -translate-y-1 max-w-0 pointer-events-none invisible'
+            }`}
+          >
+            <div 
+              title={activeSection?.title || ''}
+              className="flex items-center gap-1.5 sm:gap-2 h-8 px-2.5 rounded-lg text-xs font-medium border select-none transition-colors bg-white/95 dark:bg-[#111113] border-slate-200/80 dark:border-white/[0.07] text-slate-800 dark:text-[#F4F4F5] shadow-sm shadow-black/5 dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] truncate"
+            >
+              {SectionIcon && (
+                <SectionIcon className="w-3.5 h-3.5 text-slate-500 dark:text-[#A1A1AA] shrink-0" />
+              )}
+              <span className="truncate font-semibold text-xs text-slate-800 dark:text-[#F4F4F5] tracking-tight">
+                {activeSection?.title}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
-        {/* Global Export Button */}
+      {/* Right Section: System Diagnostics Popover, Export, Theme Toggle */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 pointer-events-auto">
+        {/* Compact System Status Indicator Popover */}
+        <div className="relative" ref={popoverRef}>
+          <button
+            type="button"
+            onClick={() => setIsSystemPopoverOpen(prev => !prev)}
+            aria-expanded={isSystemPopoverOpen}
+            aria-haspopup="true"
+            aria-label="Toggle system diagnostic status"
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-medium transition cursor-pointer border select-none shadow-sm shadow-black/5 dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] ${
+              isSystemPopoverOpen
+                ? 'bg-slate-200/90 dark:bg-[#18181B] text-slate-900 dark:text-[#F4F4F5] border-slate-300 dark:border-white/[0.12]'
+                : 'bg-white/95 dark:bg-[#111113] border-slate-200/80 dark:border-white/[0.07] text-slate-700 dark:text-[#F4F4F5] hover:bg-slate-100 dark:hover:bg-[#18181B] hover:border-slate-300 dark:hover:border-white/[0.1]'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              backendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+            }`} />
+            <span className="hidden sm:inline text-xs font-medium text-slate-700 dark:text-[#F4F4F5]">System</span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 dark:text-[#B4B4BC] transition-transform duration-150 ${
+              isSystemPopoverOpen ? 'rotate-180 text-slate-600 dark:text-[#F4F4F5]' : ''
+            }`} />
+          </button>
+
+          {/* Diagnostic Popover Card */}
+          {isSystemPopoverOpen && (
+            <div className="absolute right-0 top-full mt-2 w-84 sm:w-92 bg-white dark:bg-[#111113] border border-slate-200/90 dark:border-white/[0.08] rounded-xl shadow-2xl p-4 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                <span className="font-semibold text-slate-900 dark:text-[#F4F4F5]">
+                  System Diagnostics
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-[#B4B4BC] border border-slate-200/60 dark:border-white/[0.08]">
+                  v1.0 Frozen Baseline
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* 1. Dataset State */}
+                <div className="flex items-start gap-2.5">
+                  <Database className="w-4 h-4 text-slate-700 dark:text-[#F4F4F5] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-800 dark:text-[#F4F4F5]">
+                        Frozen Dataset Contract
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Verified
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-[#85858F] mt-0.5 leading-snug">
+                      Hong Kong EPD (16 stations · 420,496 windows · 13 channels · 2019–2021)
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. API Backend State */}
+                <div className="flex items-start gap-2.5">
+                  <Server className="w-4 h-4 text-slate-700 dark:text-[#F4F4F5] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-800 dark:text-[#F4F4F5]">
+                        FastAPI Backend
+                      </span>
+                      <span className={`text-[10px] font-medium flex items-center gap-1 ${
+                        backendOnline 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
+                          : 'text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {backendOnline ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Connected
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-3 h-3" />
+                            Local Fallback Mode
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-[#85858F] mt-0.5 leading-snug">
+                      {backendOnline 
+                        ? 'Serving live endpoints on http://localhost:8000'
+                        : 'Backend offline. Frontend running from verified local baseline data.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Model Architecture */}
+                <div className="flex items-start gap-2.5">
+                  <Cpu className="w-4 h-4 text-slate-700 dark:text-[#F4F4F5] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-800 dark:text-[#F4F4F5]">
+                        Reconstruction Model
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">
+                        Specification Ready
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-[#85858F] mt-0.5 leading-snug">
+                      CTDI CNN-Transformer spatial-temporal reconstruction model (16 stations · 13 channels).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] text-[10px] text-slate-400 dark:text-[#85858F] flex items-center justify-between">
+                <span>Execution Engine: PyTorch 2.6 (CPU)</span>
+                <span>SHA-256: 46/46 Passed</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Global Quick Export Button */}
         <button
           type="button"
           onClick={onOpenExport}
           title="Export Workspace Data & Reports"
           aria-label="Export Workspace Data & Reports"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold transition border border-slate-200/70 dark:border-zinc-700/60 cursor-pointer h-7"
+          className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-slate-200/80 dark:border-white/[0.07] bg-white/95 dark:bg-[#111113] hover:bg-slate-100 dark:hover:bg-[#18181B] hover:border-slate-300 dark:hover:border-white/[0.1] text-slate-700 dark:text-[#F4F4F5] text-xs font-medium transition cursor-pointer select-none shadow-sm shadow-black/5 dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] shrink-0"
         >
-          <ProjectIcon name="export" size="sm" className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-          <span className="hidden sm:inline">Export</span>
+          <Download className="w-3.5 h-3.5 text-slate-700 dark:text-[#F4F4F5] shrink-0" />
+          <span className="hidden md:inline">Export</span>
         </button>
 
-        {/* Presentation Mode Toggle */}
-        <button
-          type="button"
-          onClick={onTogglePresentationMode}
-          title={isPresentationMode ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-          aria-label={isPresentationMode ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-          className={`p-1.5 rounded-xl border transition cursor-pointer h-7 w-7 flex items-center justify-center ${
-            isPresentationMode
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-              : 'border-slate-200/80 dark:border-zinc-700/80 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700'
-          }`}
-        >
-          <ProjectIcon name="presentation" size="sm" className="w-3.5 h-3.5 shrink-0" />
-        </button>
-
-        {/* Theme Toggle */}
+        {/* Theme Toggle Button */}
         <button
           type="button"
           onClick={onToggleTheme}
           title={`Switch to ${isDark ? 'Light' : 'Dark'} Theme`}
           aria-label={`Switch to ${isDark ? 'Light' : 'Dark'} Theme`}
-          className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer h-7 w-7 flex items-center justify-center"
+          className="h-8 w-8 rounded-lg border border-slate-200/80 dark:border-white/[0.07] bg-white/95 dark:bg-[#111113] hover:bg-slate-100 dark:hover:bg-[#18181B] hover:border-slate-300 dark:hover:border-white/[0.1] text-slate-700 dark:text-[#F4F4F5] transition cursor-pointer select-none shadow-sm shadow-black/5 dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] flex items-center justify-center shrink-0"
         >
-          {isDark ? <ProjectIcon name="sun" size="sm" className="w-3.5 h-3.5 text-amber-400 shrink-0" /> : <ProjectIcon name="moon" size="sm" className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+          {isDark ? (
+            <Sun className="w-3.5 h-3.5 text-[#F4F4F5] shrink-0" />
+          ) : (
+            <Moon className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+          )}
         </button>
       </div>
     </header>

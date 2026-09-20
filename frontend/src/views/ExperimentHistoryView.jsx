@@ -1,12 +1,22 @@
 import React from 'react';
 import { Card, Chip } from '@heroui/react';
 import { History, Download, ExternalLink, CheckCircle2, ShieldCheck } from 'lucide-react';
+import SectionHeading from '../components/ui/SectionHeading';
 
 export default function ExperimentHistoryView({ experiments = [] }) {
   return (
     <div className="space-y-6">
+      {/* Primary Section: Experiment History */}
+      <SectionHeading
+        id="experiment-history"
+        title="Experiment History"
+        icon="experiments"
+      />
+
       <Card className="bg-white dark:bg-zinc-900/90 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+        <div 
+          className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3"
+        >
           <div>
             <div className="flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -15,7 +25,7 @@ export default function ExperimentHistoryView({ experiments = [] }) {
               </h3>
             </div>
             <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-              Archived evaluation runs over Beijing Multi-Site Air Quality test distribution. Sourced from backend experiment logs.
+              Archived evaluation runs over Hong Kong EPD Air Quality Network (frozen test partition: 62,224 windows). Sourced from backend experiment logs.
             </p>
           </div>
 
@@ -72,8 +82,11 @@ export default function ExperimentHistoryView({ experiments = [] }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-slate-400 font-sans">
-                    No experiment logs loaded from backend.
+                  <td colSpan={8} className="py-8 text-center text-slate-400 dark:text-zinc-500 font-sans">
+                    <div className="max-w-md mx-auto space-y-1">
+                      <p className="font-semibold text-slate-600 dark:text-zinc-400">No evaluation logs recorded yet</p>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500">Benchmark evaluation runs and model checkpoint comparisons will be recorded here.</p>
+                    </div>
                   </td>
                 </tr>
               )}

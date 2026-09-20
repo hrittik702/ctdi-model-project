@@ -44,9 +44,9 @@ export default function LiveImputationView({
   targetPollutant,
   setTargetPollutant,
   pollutants = ['PM2.5', 'PM10', 'NO2', 'SO2', 'O3'],
-  selectedStation = 'Delhi',
+  selectedStation = 'Central / Western',
   framework = 'PyTorch',
-  checkpoint = 'checkpoints/delhi/best_temporal_transformer.pt',
+  checkpoint = null,
   isDark = false,
   gridStroke,
   axisStroke
@@ -104,7 +104,7 @@ export default function LiveImputationView({
       await new Promise(r => setTimeout(r, 150));
       setUploadImputeStep('Computing continuous linear prior...');
       await new Promise(r => setTimeout(r, 150));
-      setUploadImputeStep('Executing PyTorch CTDI Transformer forward pass...');
+      setUploadImputeStep('Executing CTDI CNN-Transformer forward pass...');
 
       const result = await api.uploadAndImputeCSV(selectedFile);
 
@@ -152,7 +152,7 @@ export default function LiveImputationView({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const outName = selectedFile ? selectedFile.name.replace(/\.csv$/i, '_imputed.csv') : 'delhi_imputed.csv';
+    const outName = selectedFile ? selectedFile.name.replace(/\.csv$/i, '_imputed.csv') : 'hk_epd_imputed.csv';
     a.download = outName;
     document.body.appendChild(a);
     a.click();
@@ -161,25 +161,25 @@ export default function LiveImputationView({
   };
 
   const handleGenerateSampleCSV = () => {
-    // Generates a verified 24-hour sample with realistic gaps
+    // Generates a verified 24-hour Hong Kong EPD sample with realistic gaps
     const headers = ['Datetime', 'PM2.5', 'PM10', 'NO2', 'SO2', 'O3', 'Temp_2m_C', 'Humidity_Percent', 'Wind_Speed_10m_kmh', 'Wind_Dir_10m', 'Precipitation_mm'];
     const rows = [];
-    const baseDate = new Date('2025-01-15T00:00:00');
+    const baseDate = new Date('2021-08-15T00:00:00');
 
     for (let h = 0; h < 24; h++) {
       const d = new Date(baseDate.getTime() + h * 3600 * 1000);
       const isoStr = d.toISOString().replace('T', ' ').substring(0, 19);
-      // Introduce realistic missing blocks at hours 8 to 11
+      // Realistic missing blocks at hours 8 to 11
       const isMissing = (h >= 8 && h <= 11);
-      const pm25 = isMissing ? '' : (115.0 + Math.sin(h / 3) * 35).toFixed(1);
-      const pm10 = isMissing ? '' : (195.0 + Math.sin(h / 3) * 50).toFixed(1);
-      const no2 = (48.0 + Math.cos(h / 4) * 15).toFixed(1);
-      const so2 = (18.0 + Math.sin(h / 5) * 6).toFixed(1);
-      const o3 = (32.0 + Math.cos(h / 3) * 12).toFixed(1);
-      const temp = (18.5 + Math.sin(h / 6) * 7).toFixed(1);
-      const hum = (65 + Math.cos(h / 6) * 20).toFixed(0);
-      const wspd = (8.5 + Math.sin(h / 4) * 4).toFixed(1);
-      const wdir = 210;
+      const pm25 = isMissing ? '' : (18.4 + Math.sin(h / 3) * 8).toFixed(1);
+      const pm10 = isMissing ? '' : (31.2 + Math.sin(h / 3) * 12).toFixed(1);
+      const no2 = (43.7 + Math.cos(h / 4) * 15).toFixed(1);
+      const so2 = (4.9 + Math.sin(h / 5) * 2).toFixed(1);
+      const o3 = (51.5 + Math.cos(h / 3) * 20).toFixed(1);
+      const temp = (28.5 + Math.sin(h / 6) * 4).toFixed(1);
+      const hum = (78 + Math.cos(h / 6) * 12).toFixed(0);
+      const wspd = (3.5 + Math.sin(h / 4) * 1.5).toFixed(1);
+      const wdir = 116;
       const rain = 0.0;
 
       rows.push([isoStr, pm25, pm10, no2, so2, o3, temp, hum, wspd, wdir, rain].join(','));
@@ -190,7 +190,7 @@ export default function LiveImputationView({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'delhi_sensor_sample_with_gaps.csv';
+    a.download = 'hk_epd_sample_with_gaps.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -252,7 +252,7 @@ export default function LiveImputationView({
             <h2 className="font-bold text-slate-900 dark:text-zinc-100 text-base flex items-center gap-2">
               CTDI Neural Imputation Studio
               <Chip size="sm" color="accent" variant="soft" className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px]">
-                {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch v1.0') : 'PyTorch v1.0'}
+                {framework || 'PyTorch'}
               </Chip>
             </h2>
             <p className="text-xs text-slate-400 dark:text-zinc-500">
@@ -316,7 +316,7 @@ export default function LiveImputationView({
                 className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-medium"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download Sample Delhi CSV</span>
+                <span>Download Sample Hong Kong EPD CSV</span>
               </button>
             </div>
 
@@ -484,7 +484,7 @@ export default function LiveImputationView({
                       className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
                         targetPollutant === p
                           ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50'
+                          : 'bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700'
                       }`}
                     >
                       {p}
@@ -628,7 +628,7 @@ export default function LiveImputationView({
                 Interactive Neural Imputation Sandbox
               </h4>
               <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm">
-                Configure corruption pattern, missingness rate, and reproducibility seed below, then click <strong>Execute Live Imputation</strong> to test real-time {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch') : 'PyTorch'} reconstruction.
+                Configure corruption pattern, missingness rate, and reproducibility seed below, then click <strong>Execute Live Imputation</strong> to test real-time {framework || 'CTDI CNN-Transformer'} reconstruction.
               </p>
             </Card>
           )}
@@ -667,7 +667,7 @@ export default function LiveImputationView({
                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                         targetPollutant === p
                           ? 'bg-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
                       }`}
                     >
                       {p}
@@ -742,7 +742,7 @@ export default function LiveImputationView({
             {/* Execution Button Row */}
             <div className="pt-2 flex items-center justify-between gap-4">
               <span className="text-xs text-slate-400 hidden sm:inline">
-                FastAPI server executes {framework ? (framework.includes('Keras') ? 'Keras 3' : 'PyTorch') : 'PyTorch'} checkpoint <code className="text-slate-600 dark:text-zinc-300 font-mono">{checkpoint ? checkpoint.split('/').pop() : 'best_temporal_transformer.pt'}</code>
+                FastAPI service executes {framework || 'CTDI CNN-Transformer'} neural imputation pipeline
               </span>
               <Button
                 variant="primary"

@@ -1,247 +1,223 @@
 import React from 'react';
-import { Card, Chip } from '@heroui/react';
-import ProjectIcon from './ui/ProjectIcon';
-import InfoTooltip from './ui/InfoTooltip';
 
 /**
- * High-density Executive KPI Bar.
- * All scientific values are sourced dynamically from the backend evaluation cache.
- * Strictly avoids hardcoding any metrics.
+ * Custom line-based SVG icons matching research-oriented minimal design language.
+ * Standard 24x24 viewBox, stroke-based, no background boxes, no filled containers.
  */
-export default function KpiRow({ 
-  metrics = [],
-  metadata = null,
-  sampleHiddenCount = null,
-  totalHours = 24,
-  modelStatus = 'Loading...',
-  activeModel = 'CTDI Transformer',
-  targetPollutant = 'PM2.5',
-  isLoading = false
-}) {
-  // Extract real benchmark results from backend metrics table
-  const transformerRow = metrics.find(m => 
-    m.Model === 'CTDI_Temporal_Transformer' || 
-    m.Model === 'Temporal_Transformer' || 
-    m.Model?.toLowerCase().includes('transformer')
-  );
-  const linearRow = metrics.find(m => 
-    m.Model === 'Linear_Interpolation' || 
-    m.Model === 'Linear_Interp' || 
-    m.Model?.toLowerCase().includes('linear')
-  );
 
-  const ctdiMae = transformerRow ? parseFloat(transformerRow['MAE (Original Units)'] ?? transformerRow['MAE (ug/m3)']) : null;
-  const ctdiRmse = transformerRow ? parseFloat(transformerRow['RMSE (Original Units)'] ?? transformerRow['RMSE (ug/m3)']) : null;
-  const linearMae = linearRow ? parseFloat(linearRow['MAE (Original Units)'] ?? linearRow['MAE (ug/m3)']) : null;
-  const evalPoints = metadata?.total_eval_points ?? transformerRow?.eval_points ?? null;
-
-  // Calculate dynamic error reduction relative to linear baseline
-  const maeReduction = (linearMae !== null && ctdiMae !== null && linearMae > 0)
-    ? Math.round(((linearMae - ctdiMae) / linearMae) * 100)
-    : null;
-
-  const linearRmse = linearRow ? parseFloat(linearRow['RMSE (Original Units)'] ?? linearRow['RMSE (ug/m3)']) : null;
-  const rmseReduction = (linearRmse !== null && ctdiRmse !== null && linearRmse > 0)
-    ? Math.round(((linearRmse - ctdiRmse) / linearRmse) * 100)
-    : null;
-
-  const hiddenPercent = sampleHiddenCount !== null && totalHours > 0
-    ? Math.round((sampleHiddenCount / totalHours) * 100)
-    : null;
-
+function SpatialNetworkIcon({ className = "w-5 h-5", ...props }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-      {/* 1. CTDI Transformer MAE */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        {/* Header: Title + Info Tooltip on Left, Domain Icon Badge on Right */}
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              CTDI MAE
-            </span>
-            <InfoTooltip term="MAE" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      {/* Central monitoring station pin */}
+      <path d="M12 2a4.5 4.5 0 0 0-4.5 4.5c0 3.2 4.5 7.5 4.5 7.5s4.5-4.3 4.5-7.5A4.5 4.5 0 0 0 12 2z" />
+      <circle cx="12" cy="6.5" r="1.5" />
+      {/* Connected station network nodes */}
+      <circle cx="4.5" cy="19.5" r="2" />
+      <circle cx="19.5" cy="19.5" r="2" />
+      <circle cx="12" cy="20" r="1.5" />
+      {/* Network lattice connections */}
+      <path d="M6.5 19.5h4" />
+      <path d="M13.5 20h4" />
+      <path d="M12 14v4.5" />
+    </svg>
+  );
+}
+
+function TemporalSpanIcon({ className = "w-5 h-5", ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15.5 14" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M20 12h2" />
+      <path d="M2 12h2" />
+    </svg>
+  );
+}
+
+function FeatureChannelsIcon({ className = "w-5 h-5", ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 12l10 5 10-5" />
+      <path d="M2 17l10 5 10-5" />
+    </svg>
+  );
+}
+
+function CorpusWindowsIcon({ className = "w-5 h-5", ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      {/* Primary 24h sequence window frame */}
+      <rect x="3" y="7" width="13" height="14" rx="2" />
+      {/* Offset sliding successor window */}
+      <path d="M8 7V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3" />
+      {/* Sequence partition tracks */}
+      <line x1="3" y1="12" x2="16" y2="12" />
+      <line x1="8.5" y1="7" x2="8.5" y2="21" />
+    </svg>
+  );
+}
+
+function BenchmarkScenariosIcon({ className = "w-5 h-5", ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      {/* Benchmark evaluation target with validation check */}
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12l2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
+
+/**
+ * Authoritative 5-card dataset specification for research overview cards.
+ * Represents dataset characteristics exclusively; model runtime state is decoupled.
+ */
+const RESEARCH_OVERVIEW_CARDS = [
+  {
+    id: 'spatial-network',
+    title: 'Spatial Network',
+    primaryValue: '16',
+    primaryUnit: 'stations',
+    supportingLine1: 'Hong Kong EPD',
+    supportingLine2: '13 general · 3 roadside',
+    Icon: SpatialNetworkIcon
+  },
+  {
+    id: 'temporal-span',
+    title: 'Temporal Span',
+    primaryValue: '26,304',
+    primaryUnit: 'hours',
+    supportingLine1: '2019–2021',
+    supportingLine2: '1,096 days · Hourly resolution',
+    Icon: TemporalSpanIcon
+  },
+  {
+    id: 'feature-channels',
+    title: 'Feature Channels',
+    primaryValue: '13',
+    primaryUnit: 'channels',
+    supportingLine1: '5 air quality · 6 meteorology',
+    supportingLine2: '2 traffic context',
+    Icon: FeatureChannelsIcon
+  },
+  {
+    id: 'corpus-windows',
+    title: 'Corpus Windows',
+    primaryValue: '420,496',
+    primaryUnit: 'windows',
+    supportingLine1: '24-hour sequences',
+    supportingLine2: '294k train · 62.6k val · 62.2k test',
+    Icon: CorpusWindowsIcon
+  },
+  {
+    id: 'benchmark-scenarios',
+    title: 'Benchmark Scenarios',
+    primaryValue: '12',
+    primaryUnit: 'scenarios',
+    supportingLine1: 'Synthetic missingness',
+    supportingLine2: 'MCAR · Block · Station outage',
+    Icon: BenchmarkScenariosIcon
+  }
+];
+
+/**
+ * Seamless Research Overview Information Cards.
+ * Single coherent information system spanning 5 equal-height, aligned cards.
+ */
+export default function KpiRow() {
+  return (
+    <section 
+      aria-label="Dataset and Research Corpus Overview"
+      className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-200/70 dark:bg-zinc-800/70 p-[1px] shadow-2xs overflow-hidden"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-[1px] bg-slate-200/70 dark:bg-zinc-800/70">
+        {RESEARCH_OVERVIEW_CARDS.map(card => (
+          <div
+            key={card.id}
+            className="bg-white dark:bg-zinc-900/95 p-3.5 sm:p-4 flex flex-col justify-between h-full transition-colors hover:bg-slate-50/90 dark:hover:bg-zinc-800/80"
+          >
+            {/* Header: Custom SVG Icon + Title on the SAME line */}
+            <div className="flex items-center gap-2 min-w-0">
+              <card.Icon className="w-5 h-5 text-slate-600 dark:text-[#E4E4E7] shrink-0" />
+              <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
+                {card.title}
+              </span>
+            </div>
+
+            {/* Primary Metric */}
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight font-display">
+                {card.primaryValue}
+              </span>
+              <span className="text-xs font-normal text-slate-400 dark:text-zinc-500 font-sans">
+                {card.primaryUnit}
+              </span>
+            </div>
+
+            {/* Supporting Context (Aligned 2-line metadata) */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] leading-relaxed">
+              <div className="font-medium text-slate-700 dark:text-zinc-300 truncate">
+                {card.supportingLine1}
+              </div>
+              <div className="text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                {card.supportingLine2}
+              </div>
+            </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/50 dark:border-emerald-800/50 shadow-2xs">
-            <ProjectIcon name="mae" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* Value */}
-        <div className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
-          {ctdiMae !== null ? (
-            <>
-              {ctdiMae.toFixed(2)} <span className="text-xs font-normal text-slate-400 dark:text-zinc-500 font-sans">µg/m³</span>
-            </>
-          ) : (
-            <span className="text-base font-medium text-slate-400 font-sans">Unavailable</span>
-          )}
-        </div>
-
-        {/* Subtitle / Context */}
-        <div className="mt-2.5 flex items-center gap-1.5 min-w-0 text-xs">
-          {maeReduction !== null ? (
-            <Chip color={maeReduction > 0 ? "success" : "default"} variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
-              <Chip.Label>{maeReduction > 0 ? `↓ ${maeReduction}%` : `${maeReduction}%`}</Chip.Label>
-            </Chip>
-          ) : null}
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
-            Hidden values only
-          </span>
-        </div>
-      </Card>
-
-      {/* 2. CTDI Transformer RMSE */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              CTDI RMSE
-            </span>
-            <InfoTooltip term="RMSE" />
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/50 dark:border-emerald-800/50 shadow-2xs">
-            <ProjectIcon name="rmse" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
-          {ctdiRmse !== null ? (
-            <>
-              {ctdiRmse.toFixed(2)} <span className="text-xs font-normal text-slate-400 dark:text-zinc-500 font-sans">µg/m³</span>
-            </>
-          ) : (
-            <span className="text-base font-medium text-slate-400 font-sans">Unavailable</span>
-          )}
-        </div>
-
-        <div className="mt-2.5 flex items-center gap-1.5 min-w-0 text-xs">
-          {rmseReduction !== null ? (
-            <Chip color={rmseReduction > 0 ? "success" : "default"} variant="soft" size="sm" className="h-5 text-[10px] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold shrink-0">
-              <Chip.Label>{rmseReduction > 0 ? `↓ ${rmseReduction}%` : `${rmseReduction}%`}</Chip.Label>
-            </Chip>
-          ) : null}
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
-            vs Linear baseline
-          </span>
-        </div>
-      </Card>
-
-      {/* 3. Linear Baseline MAE */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              Linear MAE
-            </span>
-            <InfoTooltip term="Linear Interpolation" />
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/50 dark:border-amber-800/50 shadow-2xs">
-            <ProjectIcon name="linear-interp" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
-          {linearMae !== null ? (
-            <>
-              {linearMae.toFixed(2)} <span className="text-xs font-normal text-slate-400 dark:text-zinc-500 font-sans">µg/m³</span>
-            </>
-          ) : (
-            <span className="text-base font-medium text-slate-400 font-sans">Unavailable</span>
-          )}
-        </div>
-
-        <div className="mt-2.5 text-xs">
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate block">
-            1D Temporal Interpolation
-          </span>
-        </div>
-      </Card>
-
-      {/* 4. Evaluation Points */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              Eval Test Points
-            </span>
-            <InfoTooltip term="Evaluation Points" />
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-200/50 dark:border-indigo-800/50 shadow-2xs">
-            <ProjectIcon name="layers" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight font-mono">
-          {evalPoints !== null ? (
-            evalPoints.toLocaleString()
-          ) : (
-            <span className="text-base font-medium text-slate-400 font-sans">Unavailable</span>
-          )}
-        </div>
-
-        <div className="mt-2.5 text-xs">
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate block">
-            {metadata?.missing_rate_percent ? `${metadata.missing_rate_percent}% Artificial Mask` : 'Evaluation mask'}
-          </span>
-        </div>
-      </Card>
-
-      {/* 5. Sequence Missingness */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              Sample Masked
-            </span>
-            <InfoTooltip term="Hidden Target" />
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200/50 dark:border-rose-800/50 shadow-2xs">
-            <ProjectIcon name="hidden-target" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight font-mono">
-          {sampleHiddenCount !== null ? (
-            `${sampleHiddenCount} / ${totalHours}h`
-          ) : (
-            <span className="text-base font-medium text-slate-400 font-sans">Unavailable</span>
-          )}
-        </div>
-
-        <div className="mt-2.5 text-xs">
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono truncate block">
-            {hiddenPercent !== null ? `${hiddenPercent}% hidden target` : '24h sequence'}
-          </span>
-        </div>
-      </Card>
-
-      {/* 6. Active Model Status */}
-      <Card className="bg-white dark:bg-zinc-900/90 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md transition duration-200 flex flex-col justify-between">
-        <div className="flex flex-row items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider truncate">
-              Model Status
-            </span>
-            <InfoTooltip term="CTDI" />
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/50 dark:border-emerald-800/50 shadow-2xs">
-            <ProjectIcon name="cpu" size="sm" className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${modelStatus === 'Ready' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-          <span className="text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight truncate">
-            {modelStatus}
-          </span>
-        </div>
-
-        <div className="mt-2.5 text-xs">
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate block">
-            {activeModel}
-          </span>
-        </div>
-      </Card>
-    </div>
+        ))}
+      </div>
+    </section>
   );
 }

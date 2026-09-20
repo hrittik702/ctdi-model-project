@@ -55,7 +55,7 @@ export const TERMINOLOGY = {
     short: "The primary spatial-temporal neural model. Projects multivariate features with 1×1 Conv1D and models dependencies across the 24-hour window using multi-head self-attention.",
     interpretation: "State-of-the-art imputation that leverages cross-pollutant correlations to infer missing values.",
     unit: null,
-    caveat: "Current V0.1 single-station implementation uses temporal attention with cross-channel convolutional mixing."
+    caveat: "16-station spatial-temporal CNN-Transformer with station metadata and temporal context conditioning."
   },
   "Linear Interpolation": {
     term: "Linear Interpolation",
@@ -95,7 +95,7 @@ export const TERMINOLOGY = {
     term: "1×1 CNN",
     name: "Pointwise 1D Convolution",
     short: "A convolution with kernel size 1 that mixes cross-pollutant features and masks at each hour without altering the 24-hour sequence length.",
-    interpretation: "Enables inter-channel feature communication (e.g. PM2.5 correlating with PM10 and CO).",
+    interpretation: "Enables inter-channel feature communication (e.g. PM2.5 correlating with PM10 and meteorological channels).",
     unit: null,
     caveat: null
   },
@@ -177,7 +177,7 @@ export const TERMINOLOGY = {
     term: "Evaluation Points",
     name: "Count of Hidden Test Coordinates",
     short: "The exact number of withheld ground-truth observations across the test set over which metrics are computed.",
-    interpretation: "For the default 30% benchmark, 26,708 distinct hidden coordinates were evaluated.",
+    interpretation: "For the frozen test benchmark, 62,224 test windows across 12 pre-computed benchmark masks are evaluated.",
     unit: "Count",
     caveat: "Observed values are never counted in the evaluation loss or metrics."
   },
@@ -185,7 +185,7 @@ export const TERMINOLOGY = {
     term: "Normalization",
     name: "StandardScaler Feature Scaling",
     short: "Transforms each pollutant channel to zero mean and unit variance ($Z = \\frac{X - \\mu}{\\sigma}$) using training-set statistics strictly.",
-    interpretation: "Prevents high-magnitude pollutants (like CO in hundreds of µg/m³) from dominating loss over smaller ones (like SO2).",
+    interpretation: "Prevents high-magnitude channels (like Pressure in hPa or PM10) from dominating loss over smaller ones (like SO2 or Precipitation).",
     unit: "Standard deviations (Z-score)",
     caveat: "Scaler parameters are fitted strictly on the training set to prevent test data leakage."
   },

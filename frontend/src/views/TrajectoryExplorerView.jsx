@@ -1,7 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Card } from '@heroui/react';
-import { Layers, ChevronDown, Wind } from 'lucide-react';
-import ProjectIcon from '../components/ui/ProjectIcon';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Layers, ChevronDown, Wind, ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -14,63 +12,21 @@ import {
 
 import ChartWidget from '../components/ChartWidget';
 import GlassmorphicTooltip from '../components/GlassmorphicTooltip';
-import MissingnessBar from '../components/MissingnessBar';
+import ProjectIcon from '../components/ui/ProjectIcon';
+import { CANONICAL_CHANNELS } from '../constants/datasetContract';
+import SectionHeading from '../components/ui/SectionHeading';
 
-// Custom SVG renderer for evaluation points: dynamic hue, saturation, and radius based on pointwise error
-const DynamicErrorDot = (props) => {
-  const { cx, cy, payload } = props;
-  if (!cx || !cy || payload?.hiddenTarget == null) return null;
-
-  const actual = payload.actual;
-  const pred = payload.transformer;
-  const error = (actual != null && pred != null) ? Math.abs(pred - actual) : 0;
-
-  // Continuous mapping: error 0 to 25+ µg/m³
-  const norm = Math.min(error / 25, 1);
-  const hue = Math.max(0, Math.round(36 - norm * 36));
-  const sat = Math.min(100, Math.round(45 + norm * 55));
-  const light = Math.max(44, Math.round(58 - norm * 14));
-
-  let r = 4;
-  if (error >= 15) r = 7.5;
-  else if (error >= 5) r = 5.5;
-
-  const color = `hsl(${hue}, ${sat}%, ${light}%)`;
-  const isHighError = error >= 15;
-
-  return (
-    <g key={`err-dot-${cx}-${cy}`}>
-      {isHighError && (
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r + 3.5}
-          fill="none"
-          stroke={color}
-          strokeWidth={1.5}
-          strokeOpacity={0.45}
-          className="animate-pulse"
-        />
-      )}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill={color}
-        stroke="#ffffff"
-        strokeWidth={1.5}
-      >
-        <title>{`Hour ${payload.hour}: Actual ${actual} µg/m³, Imputed ${pred} µg/m³, Error Δ=${error.toFixed(2)} µg/m³`}</title>
-      </circle>
-    </g>
-  );
-};
+// Static channel categories grouped once at module level
+const CRITERIA_POLLUTANTS = CANONICAL_CHANNELS.filter(c => c.category === 'air_quality');
+const METEOROLOGY_CHANNELS = CANONICAL_CHANNELS.filter(c => c.category === 'meteorology');
+const TRAFFIC_CHANNELS = CANONICAL_CHANNELS.filter(c => c.category === 'traffic');
 
 export default function TrajectoryExplorerView({
+  isDashboard = false,
   sampleIdx,
   setSampleIdx,
-  maxSamples = 1500,
-  targetPollutant,
+  maxSamples = 26281,
+  targetPollutant = 'PM2.5',
   setTargetPollutant,
   pollutants = [],
   sampleData,
@@ -80,434 +36,855 @@ export default function TrajectoryExplorerView({
   curveSeries = [],
   isDark = false,
   gridStroke,
-  axisStroke
+  axisStroke,
+  isLoading = false
 }) {
-  const [isCurvesDropdownOpen, setIsCurvesDropdownOpen] = useState(false);
-  const [stepHours, setStepHours] = useState(24);
-  const curvesDropdownRef = useRef(null);
+  const [isSeriesDropdownOpen, setIsSeriesDropdownOpen] = useState(false);
+  const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
+  const seriesDropdownRef = useRef(null);
+  const channelDropdownRef = useRef(null);
 
-  // Dynamically calculate 4-hour interval tick marks from the active sliding window's real hours
-  const fourHourTicks = [0, 4, 8, 12, 16, 20, 23]
-    .map(idx => chartData[idx]?.hour)
-    .filter(Boolean);
-
-  // Close dropdown on outside click
+  // Close dropdowns on click outside or Escape
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (curvesDropdownRef.current && !curvesDropdownRef.current.contains(e.target)) {
-        setIsCurvesDropdownOpen(false);
+      if (seriesDropdownRef.current && !seriesDropdownRef.current.contains(e.target)) {
+        setIsSeriesDropdownOpen(false);
+      }
+      if (channelDropdownRef.current && !channelDropdownRef.current.contains(e.target)) {
+        setIsChannelDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsSeriesDropdownOpen(false);
+        setIsChannelDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const pData = sampleData?.pollutants?.[targetPollutant];
+  const channelObj = CANONICAL_CHANNELS.find(c => c.name === targetPollutant || c.label === targetPollutant) || CANONICAL_CHANNELS[0];
+  const channelUnit = channelObj?.unit || 'µg/m³';
 
-  // Safe metrics extraction
-  const tfMae = pData?.sample_mae?.transformer ?? null;
-  const linMae = pData?.sample_mae?.linear ?? null;
-  const hiddenCount = pData?.hidden_count ?? null;
-  const activeCurvesCount = Object.values(visibleModels).filter(Boolean).length;
+  // Group channels for organized selection (module-level reference)
+  const criteriaPollutants = CRITERIA_POLLUTANTS;
+  const meteorologyChannels = METEOROLOGY_CHANNELS;
+  const trafficChannels = TRAFFIC_CHANNELS;
 
-  // Day vs Hour stepping calculations
-  const isDayMode = stepHours === 24;
-  const totalDays = Math.floor(maxSamples / 24); // 62 days
-  const currentStep = isDayMode ? Math.floor(sampleIdx / 24) : sampleIdx;
-  const maxStep = isDayMode ? totalDays - 1 : maxSamples - 1;
-  const denominatorLabel = isDayMode ? `${totalDays}` : `${maxSamples - 1}`;
+  // Format contextual date from sample timestamps (e.g. '17 Apr 2021')
+  const rawFirstTimestamp = sampleData?.timestamps?.[0] || '';
+  let formattedDate = 'Historical Sequence';
+  if (rawFirstTimestamp) {
+    try {
+      const d = new Date(rawFirstTimestamp.replace(' ', 'T') + 'Z');
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      }
+    } catch {
+      formattedDate = rawFirstTimestamp.split(' ')[0] || 'Historical Sequence';
+    }
+  }
 
-  // Integrated Graph Header Controls (Window Slider/Stepper + Pollutant select + Curves Dropdown Checkbox)
-  const headerControls = (
-    <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-      {/* 24-Hour Sequence Window Slider & Stepper */}
-      <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/70 dark:border-zinc-700/70 text-xs shadow-2xs">
-        <button
-          type="button"
-          onClick={() => {
-            if (isDayMode) {
-              setSampleIdx(prev => Math.max(0, prev - 24));
-            } else {
-              setSampleIdx(prev => Math.max(0, prev - 1));
-            }
-          }}
-          disabled={sampleIdx <= 0}
-          title={isDayMode ? 'Previous Day (-24h)' : 'Previous Hour (-1h)'}
-          aria-label={isDayMode ? 'Previous Day (-24h)' : 'Previous Hour (-1h)'}
-          className="p-1 rounded-lg text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-        >
-          <ProjectIcon name="chevron-left" size="sm" className="w-3.5 h-3.5" />
-        </button>
+  const stationDisplayName = sampleData?.station || 'Central / Western';
 
-        <span
-          className="text-xs font-bold font-mono text-slate-800 dark:text-zinc-200 min-w-8 text-center"
-          title={isDayMode ? `Day ${currentStep + 1} of ${totalDays} (Window #${sampleIdx})` : `Window #${sampleIdx} of ${maxSamples - 1}`}
-        >
-          #{currentStep}
-        </span>
+  // 4-hour tick marks along 24h trajectory: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00, 23:00
+  const fourHourTicks = useMemo(() => {
+    return [0, 4, 8, 12, 16, 20, 23]
+      .map(idx => chartData[idx]?.hour)
+      .filter(Boolean);
+  }, [chartData]);
 
-        <button
-          type="button"
-          onClick={() => {
-            if (isDayMode) {
-              setSampleIdx(prev => Math.min((totalDays - 1) * 24, prev + 24));
-            } else {
-              setSampleIdx(prev => Math.min(maxSamples - 1, prev + 1));
-            }
-          }}
-          disabled={isDayMode ? sampleIdx >= (totalDays - 1) * 24 : sampleIdx >= maxSamples - 1}
-          title={isDayMode ? 'Next Day (+24h)' : 'Next Hour (+1h)'}
-          aria-label={isDayMode ? 'Next Day (+24h)' : 'Next Hour (+1h)'}
-          className="p-1 rounded-lg text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-        >
-          <ProjectIcon name="chevron-right" size="sm" className="w-3.5 h-3.5" />
-        </button>
+  // Missingness counts for current 24-hour window
+  const totalPoints = chartData.length || 24;
+  const { observedCount, naturalMissingCount, observedPct } = useMemo(() => {
+    const obs = chartData.filter(d => d.observed !== null).length;
+    return {
+      observedCount: obs,
+      naturalMissingCount: totalPoints - obs,
+      observedPct: Math.round((obs / totalPoints) * 100)
+    };
+  }, [chartData, totalPoints]);
 
-        <input
-          type="range"
-          min={0}
-          max={maxStep}
-          step={1}
-          value={currentStep}
-          onChange={(e) => {
-            const val = parseInt(e.target.value, 10);
-            setSampleIdx(isDayMode ? val * 24 : val);
-          }}
-          title={isDayMode ? `Day ${currentStep + 1} of ${totalDays} (Window #${currentStep * 24})` : `Window #${sampleIdx} / ${maxSamples - 1}`}
-          aria-label="24H Sequence Window Slider"
-          className="w-16 sm:w-24 md:w-28 accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg"
-        />
+  // Active series count (only counting series that have actual data)
+  const availableSeries = useMemo(() => [
+    { key: 'observed', label: 'Observed Measurements', type: 'observed', hasData: true, color: 'bg-blue-500' },
+    { key: 'hiddenTarget', label: 'Natural Missing Dropout', type: 'missing', hasData: true, color: 'border border-red-500 bg-transparent' },
+    { key: 'groundTruth', label: 'Ground Truth Line', type: 'reference', hasData: true, color: isDark ? 'bg-zinc-200' : 'bg-slate-800' },
+    { key: 'transformer', label: 'CTDI Imputer', type: 'model', hasData: false, statusText: 'Unavailable', color: 'bg-emerald-500' },
+    { key: 'linear', label: 'Linear Baseline', type: 'baseline', hasData: false, statusText: 'Not Evaluated', color: 'bg-amber-500' },
+    { key: 'knn', label: 'KNN Baseline', type: 'baseline', hasData: false, statusText: 'Not Evaluated', color: 'bg-purple-500' },
+    { key: 'mlp', label: 'MLP Baseline', type: 'baseline', hasData: false, statusText: 'Not Evaluated', color: 'bg-cyan-500' }
+  ], [isDark]);
 
-        <button
-          type="button"
-          onClick={() => setStepHours(prev => prev === 24 ? 1 : 24)}
-          title={`Click to switch step mode (currently ${isDayMode ? '±24h Daily' : '±1h Hourly'})`}
-          className="px-1.5 py-0.5 rounded-md font-mono text-[10px] font-bold bg-indigo-100/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900 border border-indigo-200/80 dark:border-indigo-800/80 transition cursor-pointer shrink-0"
-        >
-          ±{stepHours}h
-        </button>
+  const activeSeriesCount = useMemo(() => {
+    return availableSeries.filter(s => s.hasData && visibleModels[s.key]).length;
+  }, [availableSeries, visibleModels]);
 
-        <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 hidden sm:inline min-w-7">
-          /{denominatorLabel}
-        </span>
+  // LAYER 2: Unified Single-Row Controls Bar (memoized)
+  const renderControlsBar = useCallback(({
+    showGrid,
+    setShowGrid,
+    zoomLevel,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    isFullscreen,
+    setIsFullscreen,
+    handleExportAnalyticalPNG,
+    handleExportCSV,
+    handleExportJSON,
+    dropdownOpen,
+    setDropdownOpen,
+    dropdownRef
+  }) => (
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+      {/* Window Stepper & Navigation Slider */}
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        {/* Segmented Stepper Pill */}
+        <div className="inline-flex items-center rounded-lg border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100 dark:bg-zinc-800/90 p-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setSampleIdx(prev => Math.max(0, prev - 1))}
+            disabled={sampleIdx <= 0}
+            title="Previous Window (-1h)"
+            aria-label="Previous Window"
+            className="p-1 rounded-md text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <span 
+            className="px-2 py-0.5 font-mono font-bold text-slate-800 dark:text-zinc-200 text-xs whitespace-nowrap min-w-[124px] text-center select-none"
+            title={`Station-local Window index ${sampleIdx + 1} of ${maxSamples.toLocaleString()}`}
+          >
+            Window {(sampleIdx + 1).toLocaleString()} / {maxSamples.toLocaleString()}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setSampleIdx(prev => Math.min(maxSamples - 1, prev + 1))}
+            disabled={sampleIdx >= maxSamples - 1}
+            title="Next Window (+1h)"
+            aria-label="Next Window"
+            className="p-1 rounded-md text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Timeline Slider */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-[90px] max-w-[140px] sm:max-w-[180px]">
+          <input
+            type="range"
+            min={0}
+            max={maxSamples - 1}
+            step={1}
+            value={sampleIdx}
+            onChange={(e) => setSampleIdx(Number(e.target.value))}
+            title={`Slide across all ${maxSamples.toLocaleString()} station windows (Current: ${sampleIdx + 1})`}
+            aria-label="Station Window Navigation Slider"
+            className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg"
+          />
+        </div>
+
+        {/* Quick Day Step Buttons */}
+        <div className="inline-flex items-center rounded-lg border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100 dark:bg-zinc-800/90 p-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setSampleIdx(prev => Math.max(0, prev - 24))}
+            disabled={sampleIdx < 24}
+            title="Step backward 24 hours (1 calendar day)"
+            className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 transition cursor-pointer"
+          >
+            -24h
+          </button>
+          <div className="w-px h-3 bg-slate-200 dark:bg-zinc-700" />
+          <button
+            type="button"
+            onClick={() => setSampleIdx(prev => Math.min(maxSamples - 1, prev + 24))}
+            disabled={sampleIdx >= maxSamples - 24}
+            title="Step forward 24 hours (1 calendar day)"
+            className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 transition cursor-pointer"
+          >
+            +24h
+          </button>
+        </div>
       </div>
 
-      {/* Pollutant Channel Selector Dropdown */}
-      <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/70 dark:border-zinc-700/70 text-xs font-semibold text-slate-800 dark:text-zinc-200 shadow-2xs">
-        <Wind className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-        <select
-          value={targetPollutant}
-          onChange={(e) => setTargetPollutant(e.target.value)}
-          className="bg-transparent border-none outline-none cursor-pointer text-xs font-bold text-slate-800 dark:text-zinc-100 pr-1"
-          title="Select Pollutant Channel"
-          aria-label="Select Pollutant Channel"
-        >
-          {pollutants.map(p => (
-            <option key={p} value={p} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">
-              {p}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Right: Channel Selector, Series Menu, and Utility Action Group */}
+      <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0 justify-end">
+        {/* Modern 13-Channel Selector Dropdown */}
+        <div className="relative" ref={channelDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsChannelDropdownOpen(prev => !prev);
+              setIsSeriesDropdownOpen(false);
+            }}
+            aria-expanded={isChannelDropdownOpen}
+            aria-haspopup="true"
+            title="Select Atmospheric Feature (13 Canonical Channels)"
+            aria-label="Select Atmospheric Feature"
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition cursor-pointer shadow-2xs ${
+              isChannelDropdownOpen
+                ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700'
+                : 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border-slate-200/80 dark:border-zinc-700/80 hover:bg-slate-200 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <Wind className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="font-bold text-slate-800 dark:text-zinc-100">{channelObj.name}</span>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-400 hidden sm:inline">
+              ({channelUnit})
+            </span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 shrink-0 transition-transform duration-150 ${isChannelDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-      {/* Active Curve Selection Dropdown Checkbox Menu */}
-      <div className="relative" ref={curvesDropdownRef}>
+          {isChannelDropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-64 sm:w-72 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-zinc-800 p-2 z-50 text-xs space-y-2 animate-in fade-in zoom-in-95 duration-100">
+              <div className="flex items-center justify-between pb-1.5 px-1 border-b border-slate-100 dark:border-zinc-800">
+                <span className="font-bold text-slate-900 dark:text-zinc-100 text-[11px] uppercase tracking-wider">
+                  Atmospheric Channels
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  13 Channels
+                </span>
+              </div>
+
+              {/* Criteria Pollutants (5) */}
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5">
+                  Criteria Air Pollutants
+                </div>
+                {criteriaPollutants.map(c => {
+                  const isSelected = c.name === targetPollutant;
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        setTargetPollutant(c.name);
+                        setIsChannelDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-left cursor-pointer transition ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-semibold'
+                          : 'hover:bg-slate-50 dark:hover:bg-zinc-800/70 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span>{c.name}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono">({c.unit})</span>
+                      </div>
+                      {isSelected && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Meteorology (6) */}
+              <div className="pt-1 border-t border-slate-100 dark:border-zinc-800 space-y-0.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5">
+                  Meteorological Context
+                </div>
+                {meteorologyChannels.map(c => {
+                  const isSelected = c.name === targetPollutant;
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        setTargetPollutant(c.name);
+                        setIsChannelDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-left cursor-pointer transition ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-semibold'
+                          : 'hover:bg-slate-50 dark:hover:bg-zinc-800/70 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span>{c.name}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono">({c.unit})</span>
+                      </div>
+                      {isSelected && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Traffic Context (2) */}
+              <div className="pt-1 border-t border-slate-100 dark:border-zinc-800 space-y-0.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5">
+                  Traffic Context
+                </div>
+                {trafficChannels.map(c => {
+                  const isSelected = c.name === targetPollutant;
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        setTargetPollutant(c.name);
+                        setIsChannelDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-left cursor-pointer transition ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-semibold'
+                          : 'hover:bg-slate-50 dark:hover:bg-zinc-800/70 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span>{c.name}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono">({c.unit})</span>
+                      </div>
+                      {isSelected && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Series Selector Dropdown */}
+        <div className="relative" ref={seriesDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSeriesDropdownOpen(prev => !prev);
+              setIsChannelDropdownOpen(false);
+            }}
+            aria-expanded={isSeriesDropdownOpen}
+            aria-haspopup="true"
+            title="Select Visible Series on Chart"
+            aria-label="Select Visible Series"
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition cursor-pointer shadow-2xs ${
+              isSeriesDropdownOpen
+                ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700'
+                : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200/80 dark:border-zinc-700/80 hover:bg-slate-200 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span>Series</span>
+            <span className="px-1.5 py-0.2 rounded-md bg-white dark:bg-zinc-700 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 border border-slate-200/60 dark:border-zinc-600">
+              {activeSeriesCount}
+            </span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 shrink-0 transition-transform duration-150 ${isSeriesDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isSeriesDropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-72 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-zinc-800 p-2.5 z-50 text-xs space-y-2 animate-in fade-in zoom-in-95 duration-100">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <span className="font-bold text-slate-900 dark:text-zinc-100 text-[11px] uppercase tracking-wider">
+                  Active Series
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {activeSeriesCount} Visible
+                </span>
+              </div>
+
+              {/* Data-backed Series (Active & Toggleable) */}
+              <div className="space-y-1">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Dataset Observations
+                </div>
+                {availableSeries.filter(s => s.hasData).map(series => {
+                  const isChecked = !!visibleModels[series.key];
+                  return (
+                    <label
+                      key={series.key}
+                      className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/70 cursor-pointer transition select-none"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setVisibleModels(prev => ({
+                              ...prev,
+                              [series.key]: !prev[series.key]
+                            }));
+                          }}
+                          className="rounded accent-indigo-600 cursor-pointer"
+                        />
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${series.color}`} />
+                        <span className={`text-xs ${isChecked ? 'font-semibold text-slate-900 dark:text-zinc-100' : 'text-slate-400'}`}>
+                          {series.label}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Model Imputations */}
+              <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800 space-y-1">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Imputation Models
+                </div>
+                {availableSeries.filter(s => !s.hasData).map(series => (
+                  <div
+                    key={series.key}
+                    className="flex items-center justify-between px-2 py-1.5 rounded-xl opacity-60 cursor-not-allowed select-none bg-slate-50/50 dark:bg-zinc-800/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        disabled={true}
+                        className="rounded cursor-not-allowed opacity-50"
+                      />
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${series.color}`} />
+                      <span className="text-xs text-slate-500 dark:text-zinc-400">
+                        {series.label}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100/70 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
+                      {series.statusText}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Subtle Divider (Desktop only) */}
+        <div className="h-4 w-px bg-slate-200 dark:bg-zinc-700/80 mx-0.5 hidden xl:block" />
+
+        {/* Tertiary Controls: Zoom (Desktop only, collapsed to More menu on smaller screens) */}
+        <div className="hidden xl:flex items-center gap-0.5 p-0.5 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60">
+          <button
+            type="button"
+            title="Zoom In (+)"
+            aria-label="Zoom In"
+            onClick={handleZoomIn}
+            className="p-1 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer"
+          >
+            <ProjectIcon name="zoom-in" size="sm" className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            title="Zoom Out (-)"
+            aria-label="Zoom Out"
+            onClick={handleZoomOut}
+            className="p-1 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer"
+          >
+            <ProjectIcon name="zoom-out" size="sm" className="w-3 h-3" />
+          </button>
+          {zoomLevel !== 1 && (
+            <div className="flex items-center gap-0.5">
+              <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 px-1">
+                {zoomLevel.toFixed(2).replace(/\.?0+$/, '')}×
+              </span>
+              <button
+                type="button"
+                title="Reset Zoom (1:1)"
+                aria-label="Reset Zoom"
+                onClick={handleResetZoom}
+                className="p-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer"
+              >
+                <ProjectIcon name="reset-zoom" size="sm" className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Grid Toggle Button (Desktop only, collapsed to More menu on smaller screens) */}
         <button
           type="button"
-          onClick={() => setIsCurvesDropdownOpen(prev => !prev)}
-          title="Active Curve Visibility Selection"
-          aria-label="Active Curve Selection"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-semibold transition cursor-pointer shadow-2xs ${
-            isCurvesDropdownOpen
-              ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700'
-              : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200/70 dark:border-zinc-700/70 hover:bg-slate-200/70 dark:hover:bg-zinc-700'
+          title={showGrid ? 'Hide Gridlines' : 'Show Gridlines'}
+          aria-label="Toggle Gridlines"
+          onClick={() => setShowGrid(!showGrid)}
+          className={`hidden xl:flex h-8 w-8 items-center justify-center rounded-lg border text-xs transition cursor-pointer shrink-0 ${
+            showGrid 
+              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' 
+              : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 border-slate-200/70 dark:border-zinc-700'
           }`}
         >
-          <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-          <span className="hidden sm:inline">Curves</span>
-          <span className="px-1.5 py-0.2 rounded-md bg-white dark:bg-zinc-700 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 border border-slate-200/60 dark:border-zinc-600">
-            {activeCurvesCount}/{curveSeries.length}
-          </span>
-          <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+          <ProjectIcon name="grid" size="sm" className="w-3.5 h-3.5" />
         </button>
 
-        {isCurvesDropdownOpen && (
-          <div className="absolute right-0 mt-1.5 w-64 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-zinc-800 p-2.5 z-40 text-xs space-y-2 animate-in fade-in zoom-in-95 duration-100">
-            {/* Dropdown Header with Quick Actions */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
-              <span className="font-bold text-slate-900 dark:text-zinc-100 text-[11px] uppercase tracking-wider">
-                Visible Curves ({activeCurvesCount})
-              </span>
-              <div className="flex items-center gap-1">
+        {/* Secondary Action: Export Figure Button */}
+        <button
+          type="button"
+          title="Export Research-Grade Analytical Figure (PNG)"
+          aria-label="Export Research Figure"
+          onClick={handleExportAnalyticalPNG}
+          className="h-8 flex items-center gap-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition shadow-2xs cursor-pointer shrink-0"
+        >
+          <ProjectIcon name="camera" size="sm" className="w-3.5 h-3.5 text-white shrink-0" />
+          <span>Export</span>
+        </button>
+
+        {/* Fullscreen Toggle */}
+        <button
+          type="button"
+          title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand Fullscreen'}
+          aria-label="Toggle Fullscreen"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer shrink-0"
+        >
+          {isFullscreen ? (
+            <ProjectIcon name="minimize" size="sm" className="w-3.5 h-3.5 text-indigo-600" />
+          ) : (
+            <ProjectIcon name="fullscreen" size="sm" className="w-3.5 h-3.5" />
+          )}
+        </button>
+
+        {/* Overflow Menu (⋯) */}
+        <div className="relative shrink-0" ref={dropdownRef}>
+          <button
+            type="button"
+            title="Additional Chart & Data Actions"
+            aria-label="Additional Actions"
+            onClick={() => {
+              setDropdownOpen(!dropdownOpen);
+              setIsChannelDropdownOpen(false);
+              setIsSeriesDropdownOpen(false);
+            }}
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer"
+          >
+            <ProjectIcon name="more" size="sm" className="w-3.5 h-3.5" />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-zinc-800 p-1.5 z-50 text-xs space-y-1">
+              {/* Responsive actions for smaller screens */}
+              <div className="xl:hidden border-b border-slate-100 dark:border-zinc-800 pb-1 mb-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    const allOn = {};
-                    curveSeries.forEach(s => { allOn[s.key] = true; });
-                    setVisibleModels(allOn);
-                  }}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition cursor-pointer"
+                  onClick={() => setShowGrid(!showGrid)}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
                 >
-                  All
+                  <ProjectIcon name="grid" size="sm" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>{showGrid ? 'Hide Gridlines' : 'Show Gridlines'}</span>
                 </button>
-                <span className="text-slate-300 dark:text-zinc-700">•</span>
+                <div className="flex items-center justify-between px-2.5 py-1 text-slate-500 dark:text-zinc-400">
+                  <span>Zoom</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handleZoomIn}
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 font-bold"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleZoomOut}
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 font-bold"
+                    >
+                      -
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Data & Export Options
+              </div>
+              <button
+                type="button"
+                onClick={handleExportAnalyticalPNG}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+              >
+                <ProjectIcon name="camera" size="sm" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span>Analytical PNG Figure</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+              >
+                <ProjectIcon name="database" size="sm" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>Raw CSV Telemetry</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportJSON}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+              >
+                <ProjectIcon name="export" size="sm" className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span>Structured JSON Payload</span>
+              </button>
+              <div className="border-t border-slate-100 dark:border-zinc-800 pt-1">
                 <button
                   type="button"
                   onClick={() => {
-                    setVisibleModels({
-                      groundTruth: true,
-                      observed: true,
-                      hiddenTarget: true,
-                      transformer: true,
-                      linear: true,
-                      knn: false,
-                      mlp: false
-                    });
+                    handleResetZoom();
+                    setShowGrid(true);
+                    setDropdownOpen(false);
                   }}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition text-left cursor-pointer"
                 >
-                  Default
-                </button>
-                <span className="text-slate-300 dark:text-zinc-700">•</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const allOff = {};
-                    curveSeries.forEach(s => { allOff[s.key] = false; });
-                    setVisibleModels(allOff);
-                  }}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                >
-                  Clear
+                  <ProjectIcon name="refresh" size="sm" className="w-3.5 h-3.5 shrink-0" />
+                  <span>Reset Chart View</span>
                 </button>
               </div>
             </div>
-
-            {/* Checkbox Series List (Show Only Selected) */}
-            <div className="space-y-1 max-h-60 overflow-y-auto pr-0.5">
-              {curveSeries.map(series => {
-                const isChecked = !!visibleModels[series.key];
-                return (
-                  <div
-                    key={series.key}
-                    className={`group flex items-center justify-between px-2 py-1.5 rounded-xl transition select-none ${
-                      isChecked
-                        ? 'bg-slate-50 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 font-medium'
-                        : 'text-slate-400 dark:text-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-800/40'
-                    }`}
-                  >
-                    <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          setVisibleModels(prev => ({ ...prev, [series.key]: !prev[series.key] }));
-                        }}
-                        className="rounded accent-indigo-600 w-3.5 h-3.5 cursor-pointer shrink-0"
-                      />
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${series.dotColor || 'bg-slate-500'}`} />
-                      <span className="truncate text-xs">{series.label}</span>
-                    </label>
-
-                    {/* Quick "Only" action on hover to show only this selected curve */}
-                    <button
-                      type="button"
-                      title={`Show only ${series.label}`}
-                      onClick={() => {
-                        const onlyThis = {};
-                        curveSeries.forEach(s => { onlyThis[s.key] = (s.key === series.key); });
-                        setVisibleModels(onlyThis);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 py-0.5 rounded transition cursor-pointer"
-                    >
-                      Only
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
-  );
+  ), [
+    sampleIdx,
+    setSampleIdx,
+    maxSamples,
+    isChannelDropdownOpen,
+    isSeriesDropdownOpen,
+    channelObj,
+    channelUnit,
+    criteriaPollutants,
+    targetPollutant,
+    setTargetPollutant,
+    meteorologyChannels,
+    trafficChannels,
+    activeSeriesCount,
+    availableSeries,
+    visibleModels,
+    setVisibleModels
+  ]);
+
+  // LAYER 4: Footer Legend & Observation Summary Bar (memoized)
+  const footer = useMemo(() => (
+    <div className="space-y-2.5">
+      {/* Legend and Summary Statistics */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Scientific Legend */}
+        <div className="flex items-center gap-4 text-[11px] text-slate-600 dark:text-zinc-400">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+            <span className="font-medium text-slate-800 dark:text-zinc-200">Observed Measurement</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-red-500 bg-transparent shrink-0" />
+            <span className="font-medium text-slate-800 dark:text-zinc-200">Natural Missing (Sensor Dropout)</span>
+          </div>
+          {visibleModels.groundTruth && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 border-t-2 border-dashed border-slate-400 dark:border-zinc-500 shrink-0" />
+              <span className="font-medium text-slate-500 dark:text-zinc-400">Ground Truth Baseline</span>
+            </div>
+          )}
+        </div>
+
+        {/* Observation Quality Statistics */}
+        <div className="flex items-center gap-2 font-mono text-[11px]">
+          <span className="text-slate-700 dark:text-zinc-300 font-semibold">
+            {observedCount}/{totalPoints} Hours Observed ({observedPct}%)
+          </span>
+          {naturalMissingCount > 0 ? (
+            <span className="text-amber-600 dark:text-amber-400 font-semibold">
+              • {naturalMissingCount} Missing Dropout{naturalMissingCount > 1 ? 's' : ''}
+            </span>
+          ) : (
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+              • 100% Sensor Completeness
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Segmented 24-Hour Timeline Bar */}
+      <div className="flex items-center gap-0.5 w-full h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-zinc-800 p-0.5">
+        {chartData.map((pt, idx) => {
+          const isObs = pt.observed !== null;
+          return (
+            <div
+              key={idx}
+              className={`flex-1 h-full rounded-xs transition-opacity hover:opacity-80 cursor-help ${
+                isObs ? 'bg-blue-500' : 'bg-red-400 dark:bg-red-500'
+              }`}
+              title={`Hour ${pt.hour} (${pt.timestamp}): ${isObs ? `Observed (${pt.observed} ${channelUnit})` : 'Natural Missing (Sensor Dropout)'}`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  ), [visibleModels.groundTruth, observedCount, totalPoints, observedPct, naturalMissingCount, chartData, channelUnit]);
 
   return (
-    <div className="space-y-5">
-      {/* Main 24H Trajectory Chart Container */}
+    <div className={`space-y-5 select-none ${isDashboard ? '' : 'pb-6'}`}>
+      {/* 1. Primary Page Identity with Scroll Morphed Section Header */}
+      {!isDashboard && (
+        <div>
+          <SectionHeading
+            id="trajectory-explorer"
+            title="24-Hour Concentration Trajectory"
+            shortTitle="24h Trajectory"
+            icon="trajectory"
+          />
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400 mt-1 pl-0.5 flex-wrap">
+            <strong className="text-slate-800 dark:text-zinc-200 font-semibold">{stationDisplayName}</strong>
+            <span className="text-slate-300 dark:text-zinc-700">·</span>
+            <span>Hong Kong EPD</span>
+            <span className="text-slate-300 dark:text-zinc-700">·</span>
+            <span>{formattedDate}</span>
+            <span className="text-slate-300 dark:text-zinc-700">·</span>
+            <span>00:00–23:00</span>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Trajectory Hero Workspace */}
       <ChartWidget
-        title={`24-Hour Concentration Trajectory: ${targetPollutant}`}
-        subtitle={`Window #${sampleIdx} (Day ${Math.floor(sampleIdx / 24) + 1} of ${totalDays}) • ${sampleData?.timestamps?.[0] || '00:00'} → ${sampleData?.timestamps?.[23] || '23:00'}`}
+        showHeader={false}
+        title={null}
         data={chartData}
+        station={stationDisplayName}
+        dataset="Hong Kong EPD Air Quality Network (2019–2021)"
         sampleIdx={sampleIdx}
         pollutant={targetPollutant}
         isDark={isDark}
-        headerControls={headerControls}
-        badges={[
-          { 
-            label: hiddenCount !== null ? `Masked: ${hiddenCount} / 24 hrs (${Math.round((hiddenCount / 24) * 100)}%)` : 'Masked: N/A', 
-            color: (hiddenCount ?? 0) > 0 ? 'danger' : 'default',
-            variant: 'soft' 
-          },
-          { 
-            label: tfMae !== null ? `Transformer MAE: ${tfMae.toFixed(2)} µg/m³` : 'Transformer MAE: N/A', 
-            color: 'success',
-            variant: 'soft' 
-          },
-          { 
-            label: linMae !== null ? `Linear MAE: ${linMae.toFixed(2)} µg/m³` : 'Linear MAE: N/A', 
-            color: 'warning',
-            variant: 'soft' 
-          }
-        ]}
-        height="h-[430px]"
+        controlsBar={renderControlsBar}
+        footer={footer}
+        height="h-[480px]"
+        isLoading={isLoading}
       >
-        {({ showGrid }) => (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
-              {showGrid && (
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke={gridStroke} 
-                  horizontal={true}
-                  vertical={true}
-                  verticalValues={fourHourTicks}
+        {({ showGrid, zoomLevel = 1 }) => {
+          let yDomain = ['auto', 'auto'];
+          if (zoomLevel && zoomLevel !== 1 && Array.isArray(chartData) && chartData.length > 0) {
+            const validVals = chartData
+              .map(d => d.actual)
+              .filter(v => v !== null && v !== undefined && !isNaN(v));
+
+            if (validVals.length > 0) {
+              const minVal = Math.min(...validVals);
+              const maxVal = Math.max(...validVals);
+              const center = (minVal + maxVal) / 2;
+              const span = Math.max(maxVal - minVal, 1.0);
+
+              const zoomedSpan = span / zoomLevel;
+              const yMin = Math.max(0, Math.floor((center - zoomedSpan / 2) * 10) / 10);
+              const yMax = Math.ceil((center + zoomedSpan / 2) * 10) / 10;
+              yDomain = [yMin, yMax];
+            }
+          }
+
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 18, right: 28, left: 10, bottom: 6 }}>
+                {showGrid && (
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke={gridStroke} 
+                    horizontal={true} 
+                    vertical={true}
+                    verticalValues={fourHourTicks}
+                  />
+                )}
+
+                {/* X-Axis: Clean 4-Hour Hourly Intervals */}
+                <XAxis 
+                  dataKey="hour" 
+                  ticks={fourHourTicks}
+                  stroke={axisStroke} 
+                  fontSize={11} 
+                  tickLine={true} 
+                  tickFormatter={(val) => {
+                    if (typeof val === 'string' && val.includes(':')) {
+                      return val.slice(0, 5);
+                    }
+                    return val;
+                  }}
                 />
-              )}
 
-              <XAxis 
-                dataKey="hour" 
-                ticks={fourHourTicks}
-                stroke={axisStroke} 
-                fontSize={12} 
-                tickLine={true} 
+                {/* Y-Axis: Channel-Specific Unit */}
+                <YAxis 
+                  stroke={axisStroke} 
+                  fontSize={11} 
+                  tickLine={true} 
+                  unit={` ${channelUnit}`} 
+                  domain={yDomain}
+                  allowDataOverflow={true}
+                />
+
+              <Tooltip 
+                content={<GlassmorphicTooltip isDark={isDark} unit={channelUnit} />} 
               />
-              <YAxis stroke={axisStroke} fontSize={12} tickLine={true} unit=" µg/m³" />
-              <Tooltip content={<GlassmorphicTooltip isDark={isDark} />} />
 
-              {/* Ground Truth reference curve */}
+              {/* 1. Ground Truth Reference (Dashed baseline) */}
               {visibleModels.groundTruth && (
                 <Line 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="actual" 
-                  stroke={isDark ? '#e4e4e7' : '#0f172a'} 
-                  strokeWidth={2.5} 
+                  stroke={isDark ? '#52525b' : '#cbd5e1'} 
+                  strokeWidth={1.5} 
+                  strokeDasharray="3 3" 
                   dot={false} 
                   name="Ground Truth" 
+                  isAnimationActive={false}
                 />
               )}
 
-              {/* Observed Points given to model */}
+              {/* 2. Observed Points: Scientifically honest - line breaks on NaNs (connectNulls=false) */}
               {visibleModels.observed && (
                 <Line 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="observed" 
-                  stroke="transparent" 
-                  dot={{ stroke: '#3b82f6', strokeWidth: 2, fill: '#3b82f6', r: 4 }} 
-                  name="Observed Points" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2.2} 
+                  dot={{ stroke: '#3b82f6', strokeWidth: 2, fill: isDark ? '#18181b' : '#ffffff', r: 4 }} 
+                  connectNulls={false} 
+                  name="Observed Measurements" 
+                  isAnimationActive={false}
                 />
               )}
 
-              {/* Hidden Target evaluation points with dynamic error-based hue & saturation */}
+              {/* 3. Natural Missingness: Distinct hollow marker dots without drawing lines through missing intervals */}
               {visibleModels.hiddenTarget && (
                 <Line 
-                  type="monotone" 
-                  dataKey="hiddenTarget" 
+                  type="linear" 
+                  dataKey="naturalMissing" 
                   stroke="transparent" 
-                  dot={<DynamicErrorDot />} 
-                  name="Hidden Target (Error Scaled)" 
+                  dot={{ stroke: '#ef4444', strokeWidth: 2, fill: isDark ? '#18181b' : '#ffffff', r: 5 }} 
+                  isAnimationActive={false} 
+                  name="Natural Missing Dropout" 
                 />
               )}
 
-              {/* CTDI Transformer reconstructed curve */}
+              {/* 4. Model Imputation (Only renders when non-null) */}
               {visibleModels.transformer && (
                 <Line 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="transformer" 
                   stroke="#10b981" 
-                  strokeWidth={2.8} 
+                  strokeWidth={2.5} 
                   dot={false} 
+                  connectNulls={false}
                   name="CTDI Transformer" 
+                  isAnimationActive={false}
                 />
               )}
 
-              {/* Linear baseline */}
+              {/* 5. Baselines (When evaluated) */}
               {visibleModels.linear && (
                 <Line 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="linear" 
                   stroke="#f59e0b" 
-                  strokeWidth={1.8} 
+                  strokeWidth={1.5} 
                   strokeDasharray="4 4" 
                   dot={false} 
-                  name="Linear Interpolation" 
-                />
-              )}
-
-              {/* KNN Baseline */}
-              {visibleModels.knn && (
-                <Line 
-                  type="monotone" 
-                  dataKey="knn" 
-                  stroke="#a855f7" 
-                  strokeWidth={1.5} 
-                  strokeDasharray="2 2" 
-                  dot={false} 
-                  name="KNN Imputer" 
-                />
-              )}
-
-              {/* MLP Baseline */}
-              {visibleModels.mlp && (
-                <Line 
-                  type="monotone" 
-                  dataKey="mlp" 
-                  stroke="#06b6d4" 
-                  strokeWidth={1.5} 
-                  strokeDasharray="2 2" 
-                  dot={false} 
-                  name="MLP Imputer" 
+                  connectNulls={false}
+                  name="Linear Baseline" 
+                  isAnimationActive={false}
                 />
               )}
             </LineChart>
           </ResponsiveContainer>
-        )}
+        )}}
       </ChartWidget>
-
-      {/* 24-Hour Observation Distribution Card */}
-      <Card className="bg-white dark:bg-zinc-900/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:shadow-sm transition space-y-3">
-        <MissingnessBar
-          observedMask={pData?.observed_mask || []}
-          evalMask={pData?.eval_mask || []}
-          hours={sampleData?.hours || []}
-        />
-
-        {/* Dynamic Error Interpretability Scale Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-slate-100 dark:border-zinc-800/80 text-[11px]">
-          <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400">
-            <span className="font-semibold text-slate-700 dark:text-zinc-300">
-              Pointwise Error Interpretability:
-            </span>
-            <span className="hidden sm:inline text-slate-400 dark:text-zinc-500">
-              Evaluation dot radius & color dynamically scale with |y - ŷ|
-            </span>
-          </div>
-          <div className="flex items-center gap-3.5 text-slate-600 dark:text-zinc-400 font-medium">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-1 ring-amber-300" />
-              <span>Minimal (&lt;5 µg/m³)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 ring-1 ring-orange-400" />
-              <span>Moderate (5–15 µg/m³)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full bg-red-600 ring-2 ring-red-400 animate-pulse" />
-              <span className="text-red-600 dark:text-red-400 font-bold">High (&gt;15 µg/m³)</span>
-            </div>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

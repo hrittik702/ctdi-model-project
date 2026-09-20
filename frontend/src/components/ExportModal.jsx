@@ -7,8 +7,8 @@ export default function ExportModal({
   onClose,
   sampleIdx = 0,
   targetPollutant = 'PM2.5',
-  station = 'Aotizhongxin',
-  dataset = 'Beijing Multi-Site Air Quality Dataset',
+  station = 'Central / Western',
+  dataset = 'CTDI Air Pollution Training Dataset v1.0 (Hong Kong EPD)',
   chartData = [],
   metrics = []
 }) {
@@ -22,6 +22,7 @@ export default function ExportModal({
   if (!isOpen) return null;
 
   const handleExecuteExport = () => {
+    const cleanStn = (station || 'Station').replace(/[^a-zA-Z0-9_-]/g, '_');
     if (exportFormat === 'csv') {
       if (!chartData || chartData.length === 0) return;
       const headers = ['hour', 'timestamp', 'actual', 'observed', 'hiddenTarget', 'transformer', 'linear', 'knn', 'mlp'];
@@ -44,7 +45,7 @@ export default function ExportModal({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `CTDI_Analysis_Sample_${sampleIdx}_${targetPollutant}.csv`;
+      a.download = `CTDI_Analysis_Sample_${sampleIdx}_${cleanStn}_${targetPollutant}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -75,7 +76,7 @@ export default function ExportModal({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `CTDI_Analysis_Sample_${sampleIdx}_${targetPollutant}.json`;
+      a.download = `CTDI_Analysis_Sample_${sampleIdx}_${cleanStn}_${targetPollutant}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

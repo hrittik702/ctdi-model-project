@@ -13,6 +13,7 @@ import {
   History,
   CornerDownLeft
 } from 'lucide-react';
+import { HONG_KONG_STATIONS, CANONICAL_CHANNELS, DATASET_METADATA } from '../constants/datasetContract';
 
 export default function GlobalSearchModal({
   isOpen,
@@ -26,49 +27,52 @@ export default function GlobalSearchModal({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
 
-  // Pollutants from metadata
-  const pollutants = metadata?.pollutants || ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3'];
-  const totalSamples = metadata?.num_samples || 625;
+  const totalSamples = metadata?.num_samples || DATASET_METADATA.splits.test.windows;
 
   // Build searchable items
   const searchItems = [];
 
   // 1. Views
   const views = [
-    { id: 'explorer', title: '24h Trajectory Explorer', category: 'Views', icon: Activity, action: () => onSelectTab('explorer') },
-    { id: 'multigrid', title: 'Multi-Pollutant Small Multiples', category: 'Views', icon: Layers, action: () => onSelectTab('multigrid') },
-    { id: 'scoreboard', title: 'Benchmark Evaluation Scoreboard', category: 'Views', icon: BarChart3, action: () => onSelectTab('scoreboard') },
+    { id: 'dashboard', title: 'Dashboard', category: 'Views', icon: Layers, action: () => onSelectTab('dashboard') },
+    { id: 'explorer', title: '24h Concentration Trajectory', category: 'Views', icon: Activity, action: () => onSelectTab('explorer') },
+    { id: 'multigrid', title: 'Multi-Pollutant Workspace', category: 'Views', icon: Layers, action: () => onSelectTab('multigrid') },
+    { id: 'scoreboard', title: 'Benchmark Suite', category: 'Views', icon: BarChart3, action: () => onSelectTab('scoreboard') },
+    { id: 'comparison', title: 'Model Comparison', category: 'Experiments', icon: BarChart3, action: () => onSelectTab('comparison') },
     { id: 'sandbox', title: 'Live Imputation Workspace', category: 'Experiments', icon: Sparkles, action: () => onSelectTab('sandbox') },
     { id: 'station', title: 'Station Geographical Profile', category: 'Stations', icon: MapPin, action: () => onSelectTab('station') },
-    { id: 'data_explorer', title: 'Raw Sequence Data Explorer', category: 'Datasets', icon: Database, action: () => onSelectTab('data_explorer') },
-    { id: 'experiments', title: 'Benchmark Experiment History', category: 'Experiments', icon: History, action: () => onSelectTab('experiments') },
-    { id: 'model_config', title: 'Model Architecture & Checkpoint', category: 'Models', icon: Cpu, action: () => onSelectTab('model_config') }
+    { id: 'data_explorer', title: 'Data Explorer', category: 'Datasets', icon: Database, action: () => onSelectTab('data_explorer') },
+    { id: 'experiments', title: 'Experiment History', category: 'Experiments', icon: History, action: () => onSelectTab('experiments') },
+    { id: 'settings', title: 'Settings', category: 'Settings', icon: Cpu, action: () => onSelectTab('settings') },
+    { id: 'model_config', title: 'Model Architecture & Configuration', category: 'Models', icon: Cpu, action: () => onSelectTab('model_config') }
   ];
   searchItems.push(...views);
 
-  // 2. Pollutants
-  pollutants.forEach(p => {
+  // 2. Canonical Continuous Channels (All 13)
+  CANONICAL_CHANNELS.forEach(ch => {
     searchItems.push({
-      id: `pollutant_${p}`,
-      title: `${p} Pollutant Channel`,
-      subtitle: `Switch focus channel to ${p}`,
-      category: 'Pollutants',
+      id: `channel_${ch.id}`,
+      title: `${ch.name} (${ch.group})`,
+      subtitle: `${ch.desc} · Unit: ${ch.unit}`,
+      category: ch.group,
       icon: Activity,
       action: () => {
-        onSelectPollutant(p);
+        onSelectPollutant(ch.name);
         onSelectTab('explorer');
       }
     });
   });
 
-  // 3. Station
-  searchItems.push({
-    id: 'station_aotizhongxin',
-    title: 'Aotizhongxin Monitoring Station',
-    subtitle: 'Coordinates: 39.982° N, 116.397° E • Elevation: 43m',
-    category: 'Stations',
-    icon: MapPin,
-    action: () => onSelectTab('station')
+  // 3. Hong Kong EPD Monitoring Stations (All 16)
+  HONG_KONG_STATIONS.forEach(stn => {
+    searchItems.push({
+      id: `station_${stn.code.toLowerCase()}`,
+      title: `${stn.name} (${stn.code})`,
+      subtitle: `${stn.type} Station · ${stn.district} · ${stn.lat.toFixed(4)}° N, ${stn.lng.toFixed(4)}° E (${stn.height_m}m)`,
+      category: 'Stations',
+      icon: MapPin,
+      action: () => onSelectTab('station')
+    });
   });
 
   // 4. Sample Jump if query contains integer
@@ -223,7 +227,7 @@ export default function GlobalSearchModal({
             })
           ) : (
             <div className="p-8 text-center text-xs text-slate-400 dark:text-zinc-500">
-              No results found for "{query}". Try searching "PM2.5", "Aotizhongxin", or sample number like "42".
+              No results found for "{query}". Try searching "PM2.5", "Central / Western", or sample number like "42".
             </div>
           )}
         </div>

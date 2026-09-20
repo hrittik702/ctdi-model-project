@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Card, Chip, Button } from '@heroui/react';
+import { Chip, Button } from '@heroui/react';
+import SectionHeading from '../components/ui/SectionHeading';
 import {
   Play,
   RefreshCw,
@@ -9,6 +10,7 @@ import {
   Zap,
   Trophy,
   ShieldCheck,
+  ShieldAlert,
   Sliders,
   ArrowUpDown,
   CheckCircle2,
@@ -36,7 +38,9 @@ import {
   SlidersHorizontal,
   Table as TableIcon,
   BarChart2,
-  HelpCircle
+  HelpCircle,
+  Database,
+  MapPin
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -59,7 +63,8 @@ import ProjectIcon from '../components/ui/ProjectIcon';
 import InfoTooltip from '../components/ui/InfoTooltip';
 
 const MODEL_COLORS = {
-  delhi_ctdi_original: '#6366f1',  // Indigo
+  ctdi_cnn_transformer: '#6366f1', // Indigo (Canonical CTDI)
+  delhi_ctdi_original: '#6366f1',  // Indigo (Legacy)
   ctdi_transformer: '#6366f1',     // Indigo
   delhi_ctdi_keras: '#ec4899',     // Pink / Rose
   ctdi_keras: '#ec4899',           // Pink
@@ -80,14 +85,14 @@ export default function ModelComparisonLabView({
 }) {
   // 1. Geographic & Catalog State
   const [cities, setCities] = useState([]);
-  const [selectedCity, setSelectedCity] = useState('Delhi');
+  const [selectedCity, setSelectedCity] = useState('Hong Kong');
   const [datasets, setDatasets] = useState([]);
   const [registeredModels, setRegisteredModels] = useState([]);
-  const [selectedDataset, setSelectedDataset] = useState('delhi_test_benchmark');
+  const [selectedDataset, setSelectedDataset] = useState('hk_epd_test_benchmark');
   const [selectedModels, setSelectedModels] = useState([
-    'delhi_ctdi_original',
-    'delhi_ctdi_keras',
-    'simple_mlp'
+    'ctdi_cnn_transformer',
+    'linear_interpolation',
+    'knn'
   ]);
 
   // 2. Missingness & Execution Parameters
@@ -118,6 +123,7 @@ export default function ModelComparisonLabView({
   const [chartModelVisibility, setChartModelVisibility] = useState({
     ground_truth: true,
     observed: true,
+    ctdi_cnn_transformer: true,
     delhi_ctdi_original: true,
     delhi_ctdi_keras: true,
     ctdi_transformer: true,
@@ -145,8 +151,8 @@ export default function ModelComparisonLabView({
       try {
         const [cList, dList, mList, hList] = await Promise.all([
           api.getComparisonCities(),
-          api.getComparisonDatasets('Delhi'),
-          api.getComparisonModels('Delhi'),
+          api.getComparisonDatasets('Hong Kong'),
+          api.getComparisonModels('Hong Kong'),
           api.getComparisonHistory()
         ]);
         setCities(cList || []);
@@ -155,14 +161,11 @@ export default function ModelComparisonLabView({
         setHistoryList(hList || []);
 
         if (hList && hList.length > 0) {
-          // Check if EXP-LAB-7840 exists in history
-          const targetExp = hList.find(h => h.experiment_id === 'EXP-LAB-7840') || hList[0];
+          const targetExp = hList[0];
           const latest = await api.getComparisonExperiment(targetExp.experiment_id);
           setExperimentResult(latest);
           if (latest?.dataset_id) setSelectedDataset(latest.dataset_id);
           if (latest?.models_evaluated) setSelectedModels(latest.models_evaluated);
-        } else {
-          executeBenchmarkWithCity('Delhi', ['delhi_ctdi_original', 'delhi_ctdi_keras', 'simple_mlp']);
         }
       } catch (err) {
         console.error('Error initializing comparison lab:', err);
@@ -187,7 +190,7 @@ export default function ModelComparisonLabView({
       const defaultSelected = mList
         .filter(m => m.is_available && (m.category === 'trained' || m.id === 'simple_mlp'))
         .map(m => m.id);
-      setSelectedModels(defaultSelected.length > 0 ? defaultSelected : ['delhi_ctdi_original', 'delhi_ctdi_keras']);
+      setSelectedModels(defaultSelected.length > 0 ? defaultSelected : ['ctdi_cnn_transformer', 'linear_interpolation']);
     } catch (err) {
       console.error('Failed to change comparison city:', err);
     }
@@ -243,7 +246,7 @@ export default function ModelComparisonLabView({
 
     try {
       const stageTimer1 = setTimeout(() => {
-        setProgressStage('Executing PyTorch, Keras 3 & baseline runners under invariant mask...');
+        setProgressStage('Executing CTDI CNN-Transformer & baseline runners under invariant mask...');
       }, 400);
 
       const stageTimer2 = setTimeout(() => {
@@ -353,7 +356,7 @@ export default function ModelComparisonLabView({
   };
 
   const clearSelection = () => {
-    setSelectedModels(['delhi_ctdi_original', 'delhi_ctdi_keras']);
+    setSelectedModels(['ctdi_cnn_transformer', 'linear_interpolation']);
   };
 
   // Toggle curve visibility in chart
@@ -481,19 +484,20 @@ export default function ModelComparisonLabView({
   const categorizedModels = useMemo(() => {
     const trained = [];
     const baselines = [];
-    const future = [];
+    const unavailable = [];
 
     registeredModels.forEach(m => {
-      if (m.category === 'trained' || (m.city === selectedCity && m.category !== 'future')) {
+      const cat = m.category || (m.status === 'Baseline' || m.id === 'linear_interpolation' || m.id === 'knn_imputer' || m.id === 'mean_imputer' ? 'baseline' : (m.id === 'ctdi_cnn_transformer' && m.is_available ? 'trained' : 'unavailable'));
+      if (cat === 'trained' || (m.city === selectedCity && cat !== 'unavailable')) {
         trained.push(m);
-      } else if (m.category === 'baseline') {
+      } else if (cat === 'baseline') {
         baselines.push(m);
       } else {
-        future.push(m);
+        unavailable.push(m);
       }
     });
 
-    return { trained, baselines, future };
+    return { trained, baselines, unavailable };
   }, [registeredModels, selectedCity]);
 
   // Model Agreement data
@@ -507,79 +511,103 @@ export default function ModelComparisonLabView({
   }, [experimentResult, selectedPollutantTab, selectedSamePointTimestamp]);
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
-              <ProjectIcon name="benchmark" size="lg" />
+    <div className="space-y-5 pb-16">
+      {/* 1. Primary Page Identity with Scroll Morphed Section Header */}
+      <div>
+        <SectionHeading
+          id="model-comparison-lab"
+          title="Model Comparison"
+          icon="comparison"
+        />
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400 mt-1 pl-0.5 flex-wrap">
+          <strong className="text-slate-800 dark:text-zinc-200 font-semibold">{selectedCity}</strong>
+          <span className="text-slate-300 dark:text-zinc-700">·</span>
+          <span>Hong Kong EPD</span>
+          <span className="text-slate-300 dark:text-zinc-700">·</span>
+          <span className="text-indigo-600 dark:text-indigo-400 font-medium">Invariant Mask Protocol</span>
+          <span className="text-slate-300 dark:text-zinc-700">·</span>
+          <span>16 Stations · 13 Channels</span>
+        </div>
+      </div>
+
+      {/* 2. Window / Benchmark Summary Strip (4 Truthful Derived Cards) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Active Network */}
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+              Active Network
+            </span>
+            <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+          </div>
+          <div className="mt-2.5">
+            <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-slate-900 dark:text-zinc-100 truncate">
+              {selectedCity}
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 flex-wrap">
-                Model Comparison & Benchmarking Lab
-                <Chip size="sm" variant="flat" color="primary" className="text-xs font-semibold">
-                  {selectedCity} • Invariant Mask Protocol
-                </Chip>
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Direct head-to-head evaluation of trained neural architectures (PyTorch & Keras 3) vs baselines under identical hidden test conditions.
-              </p>
-            </div>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 truncate">
+              Hong Kong EPD (16 Stations)
+            </p>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            size="sm"
-            variant="flat"
-            onPress={() => setShowHistoryDrawer(!showHistoryDrawer)}
-            startContent={<History className="w-4 h-4 text-slate-500" />}
-            className="text-xs font-semibold text-slate-700 dark:text-zinc-300"
-          >
-            History ({historyList.length})
-          </Button>
-
-          {experimentResult && (
-            <div className="flex items-center gap-1.5">
-              <a
-                href={api.getComparisonExportUrl(experimentResult.experiment_id, 'csv')}
-                download
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 transition-colors"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
-                CSV
-              </a>
-              <a
-                href={api.getComparisonExportUrl(experimentResult.experiment_id, 'json')}
-                download
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5 text-indigo-500" />
-                JSON
-              </a>
-              <a
-                href={api.getComparisonExportUrl(experimentResult.experiment_id, 'pdf')}
-                download
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5 text-rose-500" />
-                PDF Report
-              </a>
+        {/* Card 2: Sequence Windows */}
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+              Evaluation Windows
+            </span>
+            <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+          </div>
+          <div className="mt-2.5">
+            <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-slate-900 dark:text-zinc-100">
+              {numWindows} {numWindows === 1 ? 'Window' : 'Windows'}
             </div>
-          )}
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 truncate">
+              24-Hour Invariant Sequences
+            </p>
+          </div>
+        </div>
 
-          <Button
-            size="sm"
-            color="primary"
-            isLoading={isRunning}
-            onPress={executeBenchmark}
-            startContent={!isRunning && <Play className="w-3.5 h-3.5 fill-current" />}
-            className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-          >
-            {isRunning ? 'Benchmarking...' : 'Run Benchmark'}
-          </Button>
+        {/* Card 3: Missingness Dropout */}
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+              Missingness Dropout
+            </span>
+            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+          </div>
+          <div className="mt-2.5">
+            <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-amber-600 dark:text-amber-400">
+              {strategy === 'contiguous' ? `${blockLength} hrs` : `${Math.round(missingRate * 100)}%`}
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 truncate">
+              {strategy === 'contiguous'
+                ? 'Contiguous Blackout Gap'
+                : strategy === 'single_pollutant'
+                ? 'Single Outage'
+                : strategy === 'multi_pollutant'
+                ? 'Multi-Channel Sensor Failure'
+                : 'MCAR Random Mask'}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 4: Model Candidates */}
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
+              Model Candidates
+            </span>
+            <Layers className="w-4 h-4 text-purple-500 shrink-0" />
+          </div>
+          <div className="mt-2.5">
+            <div className="text-xl sm:text-2xl font-extrabold font-mono tracking-tight text-slate-900 dark:text-zinc-100">
+              {selectedModels.length} Selected
+            </div>
+            <p className={`mt-0.5 text-xs font-semibold truncate ${selectedModels.length >= 2 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              {selectedModels.length >= 2 ? 'Ready for Benchmark' : 'Minimum 2 Required'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -619,207 +647,341 @@ export default function ModelComparisonLabView({
         </div>
       )}
 
-      {/* 2. CONFIGURATION CONTROL PANEL: CITY -> DATASET -> MECHANISM -> MODELS */}
-      <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
-        <div className="flex items-center justify-between mb-3.5 border-b border-slate-100 dark:border-zinc-800 pb-2.5">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
-            <Sliders className="w-4 h-4 text-indigo-500" />
-            <span>Experiment Configuration Matrix</span>
-            <InfoTooltip content="All models are evaluated on identical test windows with the exact same pseudo-random mask tensor. Observed cells are strictly locked." />
+      {/* 3. Anchor Card: Experiment Configuration & Benchmark Execution */}
+      <div className="bg-white dark:bg-zinc-900/95 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-4">
+        {/* Header Row: Lab identity + Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center shrink-0">
+              <ProjectIcon name="benchmark" size="lg" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-zinc-100">
+                  Model Comparison & Benchmarking Lab
+                </h3>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60">
+                  {selectedCity}
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60">
+                  Invariant Mask Protocol
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Direct head-to-head evaluation of trained neural architectures vs baselines under identical hidden test conditions.
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
-            <span>Evaluation Scope:</span>
-            <Chip size="sm" variant="dot" color={isGroundTruthMode ? 'success' : 'warning'} className="text-[10px]">
-              {isGroundTruthMode ? 'Hidden Ground-Truth Cells Only' : 'Reconstruction Mode'}
-            </Chip>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => setShowHistoryDrawer(!showHistoryDrawer)}
+              startContent={<History className="w-3.5 h-3.5 text-slate-400" />}
+              className="text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 cursor-pointer"
+            >
+              History ({historyList.length})
+            </Button>
+
+            {experimentResult && (
+              <div className="flex items-center gap-1.5">
+                <a
+                  href={api.getComparisonExportUrl(experimentResult.experiment_id, 'csv')}
+                  download
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 transition-colors"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                  CSV
+                </a>
+                <a
+                  href={api.getComparisonExportUrl(experimentResult.experiment_id, 'json')}
+                  download
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                  JSON
+                </a>
+                <a
+                  href={api.getComparisonExportUrl(experimentResult.experiment_id, 'pdf')}
+                  download
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 transition-colors"
+                >
+                  <Printer className="w-3.5 h-3.5 text-rose-500" />
+                  PDF Report
+                </a>
+              </div>
+            )}
+
+            <Button
+              size="sm"
+              color="primary"
+              isLoading={isRunning}
+              isDisabled={selectedModels.length < 2 || isRunning}
+              onPress={executeBenchmark}
+              startContent={!isRunning && <Play className="w-3.5 h-3.5 fill-current" />}
+              className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isRunning ? 'Benchmarking...' : 'Run Benchmark'}
+            </Button>
           </div>
         </div>
 
-        {/* Step 1: City, Dataset, Mechanism, Sliders */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* City Selector */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5 flex items-center justify-between">
-              <span>1. City / Territory</span>
+        {/* Protocol Context Compact Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-indigo-500 shrink-0" />
+            <div>
+              <strong className="text-slate-800 dark:text-zinc-200 font-semibold mr-1">Evaluation Protocol:</strong>
+              <span>All models evaluated on identical test windows with exact same pseudo-random mask tensor. Observed cells strictly locked.</span>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-1.5">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+              isGroundTruthMode
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isGroundTruthMode ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {isGroundTruthMode ? 'Hidden Ground-Truth Cells Only' : 'Reconstruction Mode'}
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Logical Groups: DATA | MISSINGNESS | EXECUTION */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* GROUP 1: DATA */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 space-y-2.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-indigo-500" />
+                Data Source
+              </span>
               <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-normal">
                 {cities.find(c => c.city === selectedCity)?.trained_models_count || 0} Models
               </span>
-            </label>
-            <select
-              value={selectedCity}
-              onChange={(e) => handleCityChange(e.target.value)}
-              className="w-full text-xs font-semibold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {cities.map(c => (
-                <option key={c.city} value={c.city}>
-                  {c.city} {c.has_trained_models ? '★ (Trained)' : '(No Models)'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Dataset Selector */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">
-              2. Test Dataset
-            </label>
-            <select
-              value={selectedDataset}
-              onChange={(e) => setSelectedDataset(e.target.value)}
-              className="w-full text-xs font-medium bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {datasets.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-              <option value="upload_custom">+ Upload Custom CSV</option>
-            </select>
-
-            {selectedDataset === 'upload_custom' && (
-              <div className="mt-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept=".csv"
-                  onChange={(e) => setCustomFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-1 px-2 border border-dashed border-indigo-400 dark:border-indigo-600 rounded-lg text-indigo-600 dark:text-indigo-400 text-[10px] font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-50/40"
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  CITY / TERRITORY
+                </label>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => handleCityChange(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                 >
-                  <UploadCloud className="w-3 h-3" />
-                  {customFile ? customFile.name : 'Select CSV File'}
-                </button>
+                  {cities.map(c => (
+                    <option key={c.city} value={c.city} className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
+                      {c.city} {c.has_trained_models ? '★ (Trained)' : '(No Models)'}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  TEST DATASET
+                </label>
+                <select
+                  value={selectedDataset}
+                  onChange={(e) => setSelectedDataset(e.target.value)}
+                  className="w-full text-xs font-medium bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  {datasets.map(d => (
+                    <option key={d.id} value={d.id} className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
+                      {d.name}
+                    </option>
+                  ))}
+                  <option value="upload_custom" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
+                    + Upload Custom CSV
+                  </option>
+                </select>
+
+                {selectedDataset === 'upload_custom' && (
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".csv"
+                      onChange={(e) => setCustomFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full py-1.5 px-2 border border-dashed border-indigo-400 dark:border-indigo-600 rounded-lg text-indigo-600 dark:text-indigo-400 text-[10px] font-medium flex items-center justify-center gap-1.5 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                    >
+                      <UploadCloud className="w-3 h-3" />
+                      {customFile ? customFile.name : 'Select CSV File'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Missingness Strategy */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">
-              3. Missingness Mask
-            </label>
-            <select
-              value={strategy}
-              onChange={(e) => setStrategy(e.target.value)}
-              className="w-full text-xs font-medium bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="random">Random Missingness (MCAR)</option>
-              <option value="contiguous">Contiguous Gap (Blackout)</option>
-              <option value="single_pollutant">Single Pollutant Outage</option>
-              <option value="multi_pollutant">Multi-Channel Sensor Failure</option>
-            </select>
-          </div>
-
-          {/* Missing Rate & Gap Length */}
-          <div>
-            <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">
-              <span>{strategy === 'contiguous' ? 'Gap Duration' : 'Missing Rate'}</span>
-              <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+          {/* GROUP 2: MISSINGNESS */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 space-y-2.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                Missingness Dropout
+              </span>
+              <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-[11px]">
                 {strategy === 'contiguous' ? `${blockLength} hrs` : `${Math.round(missingRate * 100)}%`}
               </span>
             </div>
-            {strategy === 'contiguous' ? (
-              <input
-                type="range"
-                min={1}
-                max={24}
-                step={1}
-                value={blockLength}
-                onChange={(e) => setBlockLength(Number(e.target.value))}
-                className="w-full accent-indigo-600 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
-              />
-            ) : (
-              <input
-                type="range"
-                min={0.05}
-                max={0.70}
-                step={0.05}
-                value={missingRate}
-                onChange={(e) => setMissingRate(Number(e.target.value))}
-                className="w-full accent-indigo-600 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
-              />
-            )}
+
+            <div className="space-y-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  DROPOUT STRATEGY
+                </label>
+                <select
+                  value={strategy}
+                  onChange={(e) => setStrategy(e.target.value)}
+                  className="w-full text-xs font-medium bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="random" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">Random Missingness (MCAR)</option>
+                  <option value="contiguous" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">Contiguous Gap (Blackout)</option>
+                  <option value="single_pollutant" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">Single Pollutant Outage</option>
+                  <option value="multi_pollutant" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">Multi-Channel Sensor Failure</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  <span>{strategy === 'contiguous' ? 'GAP DURATION' : 'MISSING RATE'}</span>
+                </div>
+                <div className="pt-1 pb-0.5">
+                  {strategy === 'contiguous' ? (
+                    <input
+                      type="range"
+                      min={1}
+                      max={24}
+                      step={1}
+                      value={blockLength}
+                      onChange={(e) => setBlockLength(Number(e.target.value))}
+                      className="w-full accent-indigo-600 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
+                    />
+                  ) : (
+                    <input
+                      type="range"
+                      min={0.05}
+                      max={0.70}
+                      step={0.05}
+                      value={missingRate}
+                      onChange={(e) => setMissingRate(Number(e.target.value))}
+                      className="w-full accent-indigo-600 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Windows & Seed Lock */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">
-                Windows
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={25}
-                value={numWindows}
-                onChange={(e) => setNumWindows(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full text-xs font-mono bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200"
-              />
+          {/* GROUP 3: EXECUTION */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 space-y-2.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1.5">
+              <Play className="w-3.5 h-3.5 text-emerald-500" />
+              Execution Parameters
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">
-                Seed Lock
-              </label>
-              <input
-                type="number"
-                value={randomSeed}
-                onChange={(e) => setRandomSeed(parseInt(e.target.value) || 0)}
-                className="w-full text-xs font-mono bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200"
-              />
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  WINDOWS
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={25}
+                  value={numWindows}
+                  onChange={(e) => setNumWindows(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full text-xs font-mono bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <span className="block text-[10px] text-slate-400 dark:text-zinc-500 mt-1">24h sequences</span>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                  SEED LOCK
+                </label>
+                <input
+                  type="number"
+                  value={randomSeed}
+                  onChange={(e) => setRandomSeed(parseInt(e.target.value) || 0)}
+                  className="w-full text-xs font-mono bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <span className="block text-[10px] text-slate-400 dark:text-zinc-500 mt-1">Reproducibility</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Step 2: Categorized Model Selection */}
-        <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-zinc-800/80">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-            <div className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Available Trained & Baseline Models ({selectedModels.length} Selected):</span>
-              <span className="text-[10px] text-slate-400 font-normal">(Minimum 2 required)</span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={selectAllTrained}
-                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100"
-              >
-                Select Trained
-              </button>
-              <button
-                type="button"
-                onClick={selectBaselines}
-                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200"
-              >
-                Select Baselines
-              </button>
-              <button
-                type="button"
-                onClick={selectAllAvailable}
-                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200"
-              >
-                Select All
-              </button>
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="px-2 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
-              >
-                Reset
-              </button>
-            </div>
+      {/* 4. AVAILABLE MODELS SELECTION PANEL */}
+      <div className="bg-white dark:bg-zinc-900/95 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-zinc-800/80 pb-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Layers className="w-4 h-4 text-indigo-500" />
+            <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-zinc-100">
+              Candidate Model Portfolio
+            </h4>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+              selectedModels.length >= 2
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+            }`}>
+              {selectedModels.length} selected · Minimum 2 required
+            </span>
           </div>
 
-          {/* Group 1: Trained Deep Models */}
-          <div className="space-y-2">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5 flex items-center gap-1.5">
-                <Cpu className="w-3 h-3" />
-                <span>Trained Neural Checkpoints ({selectedCity}):</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          {/* Quick Selection Actions */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={selectAllTrained}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+            >
+              Select Trained
+            </button>
+            <button
+              type="button"
+              onClick={selectBaselines}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            >
+              Select Baselines
+            </button>
+            <button
+              type="button"
+              onClick={selectAllAvailable}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            >
+              Select All
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Group 1: Trained Deep Models */}
+        <div className="space-y-4">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-2.5 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>Neural Models ({selectedCity})</span>
+            </div>
+
+            {categorizedModels.trained.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                 {categorizedModels.trained.map(m => {
                   const isSelected = selectedModels.includes(m.id);
                   const color = MODEL_COLORS[m.id] || '#6366f1';
@@ -827,10 +989,10 @@ export default function ModelComparisonLabView({
                     <div
                       key={m.id}
                       onClick={() => toggleModelSelection(m.id)}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                         isSelected
-                          ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800 shadow-2xs'
-                          : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 opacity-75 hover:opacity-100'
+                          ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-700 shadow-2xs'
+                          : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200/80 dark:border-zinc-800 opacity-85 hover:opacity-100 hover:border-slate-300 dark:hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -841,14 +1003,14 @@ export default function ModelComparisonLabView({
                         <div className="truncate">
                           <div className="font-bold text-xs text-slate-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
                             <span>{m.name}</span>
-                            {isSelected && <Check className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />}
+                            {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
                           </div>
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
+                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5">
                             <span className="font-semibold text-slate-700 dark:text-zinc-300">{m.framework}</span>
                             <span>•</span>
                             <span className="font-mono">{m.param_count ? `${(m.param_count / 1000).toFixed(0)}k params` : '0 params'}</span>
                             <span>•</span>
-                            <span className="text-emerald-600 font-medium">● {m.status || 'Ready'}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">● {m.status || 'Ready'}</span>
                           </div>
                         </div>
                       </div>
@@ -859,7 +1021,7 @@ export default function ModelComparisonLabView({
                           setAuditModel(m);
                         }}
                         title="Inspect Architecture & Checkpoint Metadata"
-                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ml-2 shrink-0"
+                        className="p-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ml-2 shrink-0 cursor-pointer"
                       >
                         <Search className="w-3.5 h-3.5" />
                       </button>
@@ -867,100 +1029,137 @@ export default function ModelComparisonLabView({
                   );
                 })}
               </div>
-            </div>
-
-            {/* Group 2: Baselines & Future */}
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
-                Statistical & Classical Baselines:
+            ) : (
+              <div className="p-3 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-xs text-slate-500 dark:text-zinc-400 bg-slate-50/50 dark:bg-zinc-800/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-3.5 h-3.5 text-indigo-400/70" />
+                  <span>No trained model checkpoints are currently loaded for {selectedCity}.</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200/60 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">Not Available</span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {categorizedModels.baselines.map(m => {
-                  const isSelected = selectedModels.includes(m.id);
-                  const color = MODEL_COLORS[m.id] || '#94a3b8';
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => toggleModelSelection(m.id)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 border ${
-                        isSelected
-                          ? 'bg-slate-100 dark:bg-zinc-800 border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-semibold shadow-2xs'
-                          : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-500 hover:border-slate-300'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span>{m.name}</span>
-                      {isSelected && <Check className="w-3 h-3 text-emerald-600" />}
-                    </button>
-                  );
-                })}
+            )}
+          </div>
 
-                {categorizedModels.future.map(m => (
+          {/* Group 2: Baselines & Other Models */}
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">
+              Statistical & Classical Baselines
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {categorizedModels.baselines.map(m => {
+                const isSelected = selectedModels.includes(m.id);
+                const color = MODEL_COLORS[m.id] || '#94a3b8';
+                return (
                   <div
                     key={m.id}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border border-dashed border-slate-200 dark:border-zinc-800 text-slate-400 bg-slate-50/50 dark:bg-zinc-800/20 cursor-not-allowed opacity-60"
+                    onClick={() => toggleModelSelection(m.id)}
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-700 shadow-2xs'
+                        : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200/80 dark:border-zinc-800 opacity-85 hover:opacity-100 hover:border-slate-300 dark:hover:border-zinc-700'
+                    }`}
                   >
-                    <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-zinc-700" />
-                    <span>{m.name}</span>
-                    <span className="text-[9px] bg-slate-200 dark:bg-zinc-800 px-1 py-0.2 rounded font-mono">In Dev</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center justify-center w-4 h-4 rounded-full shrink-0">
+                        {isSelected ? (
+                          <div className="w-4 h-4 rounded-full bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600" />
+                        )}
+                      </div>
+                      <div className="truncate">
+                        <div className="font-semibold text-xs text-slate-900 dark:text-zinc-100 truncate">
+                          {m.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span>{m.framework || 'Baseline'}</span>
+                          <span>•</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">Ready</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+
+              {categorizedModels.unavailable.map(m => (
+                <div
+                  key={m.id}
+                  className="p-2.5 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/30 dark:bg-zinc-800/20 opacity-60 cursor-not-allowed flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-3.5 h-3.5 rounded-full border border-dashed border-slate-300 dark:border-zinc-700 shrink-0" />
+                    <div className="truncate">
+                      <div className="font-semibold text-xs text-slate-500 dark:text-zinc-400 truncate">
+                        {m.name}
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                        {m.framework || 'Neural Arch'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] bg-slate-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono text-slate-500 dark:text-zinc-400 shrink-0 ml-1.5">
+                    Unavailable
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* 3. DATASET QUALITY & SAMPLING INTERVAL PANEL */}
+      {/* 5. DATASET QUALITY & SAMPLING INTERVAL PANEL */}
       {dataQuality.total_cells && (
-        <Card className="p-4 bg-slate-50/60 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800">
-          <div className="flex items-center justify-between mb-2.5 border-b border-slate-200/60 dark:border-zinc-800 pb-2">
+        <div className="p-4 sm:p-5 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-2.5">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
               <TableIcon className="w-3.5 h-3.5 text-indigo-500" />
               <span>Dataset Quality & Sampling Characteristics</span>
             </div>
-            <span className="text-[11px] font-mono text-slate-500">
+            <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
               Time Span: {dataQuality.time_range}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs font-mono">
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Total Cells</span>
               <div className="font-bold text-slate-900 dark:text-zinc-100 mt-0.5">{dataQuality.total_cells}</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Observed (Locked)</span>
-              <div className="font-bold text-emerald-600 mt-0.5">{dataQuality.observed_cells}</div>
+              <div className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{dataQuality.observed_cells}</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Evaluated Cells</span>
-              <div className="font-bold text-indigo-600 mt-0.5">{dataQuality.evaluated_cells}</div>
+              <div className="font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{dataQuality.evaluated_cells}</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Missing Rate</span>
               <div className="font-bold text-slate-800 dark:text-zinc-200 mt-0.5">{dataQuality.missing_rate_pct}%</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Sampling Interval</span>
-              <div className="font-bold text-indigo-600 mt-0.5 font-sans">{dataQuality.sampling_interval}</div>
+              <div className="font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 font-sans">{dataQuality.sampling_interval}</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Timesteps</span>
               <div className="font-bold text-slate-800 dark:text-zinc-200 mt-0.5">{dataQuality.total_timesteps}</div>
             </div>
-            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800">
               <span className="text-[10px] text-slate-400 uppercase font-sans">Ground Truth</span>
-              <div className="font-bold text-emerald-600 font-sans mt-0.5">Available</div>
+              <div className="font-bold text-emerald-600 dark:text-emerald-400 font-sans mt-0.5">Available</div>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* 4. DIRECT MODEL-TO-MODEL AGREEMENT & IMPLEMENTATION EQUIVALENCE */}
       {modelAgreement && (
-        <Card className="p-5 bg-white dark:bg-zinc-900 border-2 border-indigo-500/30 dark:border-indigo-500/20 shadow-sm relative overflow-hidden">
+        <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-indigo-500/30 dark:border-indigo-500/30 rounded-2xl shadow-2xs relative overflow-hidden space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-zinc-800">
             <div>
               <div className="flex items-center gap-2">
@@ -1046,41 +1245,45 @@ export default function ModelComparisonLabView({
                       type="number"
                       dataKey="original_pred"
                       name={modelAgreement.model_a?.name || 'PyTorch'}
-                      unit=" µg"
+                      unit=" µg/m³"
                       stroke={axisStroke}
-                      tick={{ fontSize: 10 }}
-                      domain={['auto', 'auto']}
+                      fontSize={10}
+                      tickLine={false}
                     />
                     <YAxis
                       type="number"
-                      dataKey="keras_pred"
-                      name={modelAgreement.model_b?.name || 'Keras'}
-                      unit=" µg"
+                      dataKey="exported_pred"
+                      name={modelAgreement.model_b?.name || 'SavedModel'}
+                      unit=" µg/m³"
                       stroke={axisStroke}
-                      tick={{ fontSize: 10 }}
-                      domain={['auto', 'auto']}
+                      fontSize={10}
+                      tickLine={false}
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: '3 3' }}
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
-                        const pt = payload[0].payload;
+                        const pt = payload[0]?.payload;
                         return (
-                          <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-lg text-[11px]">
-                            <div className="font-bold text-slate-900 dark:text-zinc-100">{pt.pollutant} • {pt.time}</div>
-                            <div className="font-mono space-y-0.5 text-slate-600 dark:text-zinc-400 mt-1">
-                              <div>Original: <span className="font-bold text-indigo-600">{pt.original_pred} µg/m³</span></div>
-                              <div>Keras 3: <span className="font-bold text-pink-600">{pt.keras_pred} µg/m³</span></div>
-                              <div>Diff: <span className="font-semibold text-rose-500">{pt.abs_diff} µg/m³</span></div>
+                          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-lg p-2.5 rounded-xl text-xs space-y-1">
+                            <div className="font-bold text-slate-900 dark:text-zinc-100">{pt.pollutant}</div>
+                            <div className="text-indigo-600 dark:text-indigo-400">
+                              {modelAgreement.model_a?.name}: {pt.original_pred} µg/m³
+                            </div>
+                            <div className="text-pink-600 dark:text-pink-400">
+                              {modelAgreement.model_b?.name}: {pt.exported_pred} µg/m³
+                            </div>
+                            <div className="text-slate-400 font-mono text-[10px]">
+                              Abs Diff: {Math.abs(pt.original_pred - pt.exported_pred).toFixed(3)} µg/m³
                             </div>
                           </div>
                         );
                       }}
                     />
                     <Scatter
-                      data={modelAgreement.scatter_points || []}
-                      fill="#8b5cf6"
-                      opacity={0.8}
+                      data={modelAgreement.scatter_data || []}
+                      fill="#6366F1"
+                      opacity={0.6}
                     />
                   </ScatterChart>
                 </ResponsiveContainer>
@@ -1124,14 +1327,37 @@ export default function ModelComparisonLabView({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* 5. EXECUTIVE METRIC SUMMARY CARDS */}
+      {/* EMPTY BENCHMARK STATE */}
+      {!experimentResult && !isRunning && (
+        <div className="p-6 sm:p-8 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs text-center rounded-2xl space-y-3.5">
+          <div className="max-w-xl mx-auto space-y-3">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/50">
+              <GitCompare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-zinc-100">
+                Model Comparison
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed max-w-lg mx-auto">
+                Model comparison is unavailable because no trained checkpoints are currently available. Select available baseline methods or run evaluation on test sequences to compare reconstruction accuracy.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 text-slate-600 dark:text-zinc-400 text-xs font-mono">
+              <Clock className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Evaluation Partition: Hong Kong EPD Test Set (62,224 windows)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. EXECUTIVE METRIC SUMMARY CARDS */}
       {experimentResult && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Top Overall */}
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs relative overflow-hidden">
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/95 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-bl-full pointer-events-none" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
@@ -1154,10 +1380,10 @@ export default function ModelComparisonLabView({
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Rank 1 across {experimentResult.windows_evaluated} test window(s)</span>
             </div>
-          </Card>
+          </div>
 
           {/* Peak Pollution Specialist */}
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs relative overflow-hidden">
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/95 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-bl-full pointer-events-none" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
@@ -1180,10 +1406,10 @@ export default function ModelComparisonLabView({
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Evaluated on top-10% diurnal spike concentrations</span>
             </div>
-          </Card>
+          </div>
 
           {/* Long Gap Champion */}
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs relative overflow-hidden">
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/95 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-bl-full pointer-events-none" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
@@ -1206,10 +1432,10 @@ export default function ModelComparisonLabView({
               <Clock className="w-3.5 h-3.5 text-cyan-500" />
               <span>Resilient against sensor power blackout outages</span>
             </div>
-          </Card>
+          </div>
 
           {/* Fastest Model */}
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs relative overflow-hidden">
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/95 shadow-2xs relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full pointer-events-none" />
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-zinc-500">
@@ -1232,13 +1458,13 @@ export default function ModelComparisonLabView({
               <Activity className="w-3.5 h-3.5 text-emerald-500" />
               <span>Total benchmark compute: {experimentResult.total_experiment_time_ms} ms</span>
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* 6. MASTER BENCHMARK RANKING TABLE WITH ↓/↑ INDICATORS & 95% CI */}
       {experimentResult && (
-        <Card className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-indigo-500" />
@@ -1252,7 +1478,7 @@ export default function ModelComparisonLabView({
               <button
                 type="button"
                 onClick={() => handleReRunExperiment(experimentResult.experiment_id)}
-                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold"
+                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold cursor-pointer"
                 title="Re-run exact experiment"
               >
                 <RefreshCw className="w-3 h-3" /> Re-run Experiment
@@ -1273,12 +1499,6 @@ export default function ModelComparisonLabView({
                   </th>
                   <th className="py-2.5 px-3 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('RMSE')}>
                     <div className="flex items-center gap-1">RMSE ↓ <ArrowUpDown className="w-3 h-3" /></div>
-                  </th>
-                  <th className="py-2.5 px-3 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('MAPE')}>
-                    <div className="flex items-center gap-1">MAPE (%) ↓ <ArrowUpDown className="w-3 h-3" /></div>
-                  </th>
-                  <th className="py-2.5 px-3 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('R2')}>
-                    <div className="flex items-center gap-1">R² Score ↑ <ArrowUpDown className="w-3 h-3" /></div>
                   </th>
                   <th className="py-2.5 px-3 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('Correlation')}>
                     <div className="flex items-center gap-1">Pearson r ↑ <ArrowUpDown className="w-3 h-3" /></div>
@@ -1371,12 +1591,12 @@ export default function ModelComparisonLabView({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* 7. MODEL WIN MATRIX: POLLUTANT BY POLLUTANT */}
+      {/* 8. MODEL WIN MATRIX: POLLUTANT BY POLLUTANT */}
       {experimentResult?.evaluation?.model_win_matrix && (
-        <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+        <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-500" />
@@ -1419,25 +1639,39 @@ export default function ModelComparisonLabView({
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 font-mono text-xs">
                 {experimentResult.models_evaluated?.map(mId => {
                   const runner = registeredModels.find(m => m.id === mId);
+                  const color = MODEL_COLORS[mId] || '#64748b';
+                  const rowData = experimentResult.evaluation.model_win_matrix[mId] || {};
+
                   return (
                     <tr key={mId} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
-                      <td className="py-2.5 px-3 text-left font-sans font-semibold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: MODEL_COLORS[mId] || '#64748b' }} />
-                        <span>{runner ? runner.name : mId}</span>
+                      <td className="py-2.5 px-3 text-left font-sans font-semibold text-slate-800 dark:text-zinc-200">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span>{runner ? runner.name : mId}</span>
+                        </div>
                       </td>
                       {POLLUTANTS.map(p => {
-                        const cell = experimentResult.evaluation.model_win_matrix[winMatrixMetric]?.[mId]?.[p];
-                        const rank = cell?.rank;
-                        const val = cell?.value;
+                        const cell = rowData[p];
+                        if (!cell) return <td key={p} className="py-2 px-3 text-slate-400">—</td>;
+                        const rank = cell.ranks?.[winMatrixMetric];
+                        const val = cell.metrics?.[winMatrixMetric];
+
                         return (
-                          <td key={p} className="py-2.5 px-3">
-                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-bold ${
-                              rank === 1 ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800' :
-                              rank === 2 ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300' :
-                              'text-slate-400'
-                            }`}>
-                              #{rank || '-'} ({val !== null && val !== undefined ? val.toFixed(1) : 'N/A'})
-                            </span>
+                          <td key={p} className="py-2 px-3">
+                            <div className="flex flex-col items-center">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                rank === 1
+                                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-extrabold'
+                                  : rank === 2
+                                  ? 'bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                                  : 'text-slate-500'
+                              }`}>
+                                #{rank}
+                              </span>
+                              <span className="text-[10px] text-slate-500 mt-0.5">
+                                {typeof val === 'number' ? val.toFixed(2) : '—'}
+                              </span>
+                            </div>
                           </td>
                         );
                       })}
@@ -1447,12 +1681,12 @@ export default function ModelComparisonLabView({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* 8. SYNCHRONIZED TIME-SERIES RECONSTRUCTION & MODEL DELTA VIEW */}
+      {/* 9. SYNCHRONIZED TIME-SERIES RECONSTRUCTION & MODEL DELTA VIEW */}
       {experimentResult && (
-        <Card className="p-5 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+        <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
             <div>
               <div className="flex items-center gap-2">
@@ -1524,10 +1758,10 @@ export default function ModelComparisonLabView({
               <button
                 type="button"
                 onClick={() => handleSelectPeak(null)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeZoomPeakId === null
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100'
+                    : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
                 }`}
               >
                 Full Window
@@ -1538,10 +1772,10 @@ export default function ModelComparisonLabView({
                   key={pk.peak_id || pk.id}
                   type="button"
                   onClick={() => handleSelectPeak(pk)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeZoomPeakId === (pk.peak_id || pk.id)
                       ? 'bg-rose-600 text-white shadow-xs'
-                      : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-rose-300'
+                      : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-700 hover:bg-slate-50 dark:hover:bg-zinc-800'
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -1689,12 +1923,12 @@ export default function ModelComparisonLabView({
               )}
             </ResponsiveContainer>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* 9. ADVANCED PEAK RECONSTRUCTION & 1-CLICK PEAK EXPLORER */}
+      {/* 10. ADVANCED PEAK RECONSTRUCTION & 1-CLICK PEAK EXPLORER */}
       {experimentResult?.evaluation?.peak_analysis && (
-        <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+        <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-4">
           <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-zinc-800 pb-2">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-rose-500" />
@@ -1749,8 +1983,8 @@ export default function ModelComparisonLabView({
                       <th className="py-2 px-3">Event</th>
                       <th className="py-2 px-2">Pollutant</th>
                       <th className="py-2 px-2">True Peak</th>
-                      <th className="py-2 px-2">Original Pred</th>
-                      <th className="py-2 px-2">Keras Pred</th>
+                      <th className="py-2 px-2">CTDI Pred</th>
+                      <th className="py-2 px-2">Baseline Pred</th>
                       <th className="py-2 px-2">Action</th>
                     </tr>
                   </thead>
@@ -1760,13 +1994,13 @@ export default function ModelComparisonLabView({
                         <td className="py-2 px-3 font-sans font-bold text-slate-800 dark:text-zinc-200">{pk.time || pk.timestamp}</td>
                         <td className="py-2 px-2 font-sans font-semibold text-indigo-600">{pk.pollutant}</td>
                         <td className="py-2 px-2 font-bold text-emerald-600">{pk.ground_truth}</td>
-                        <td className="py-2 px-2 text-indigo-600">{pk.predictions?.delhi_ctdi_original ?? '-'}</td>
-                        <td className="py-2 px-2 text-pink-600">{pk.predictions?.delhi_ctdi_keras ?? '-'}</td>
+                        <td className="py-2 px-2 text-indigo-600">{pk.predictions?.ctdi_cnn_transformer ?? pk.predictions?.delhi_ctdi_original ?? '-'}</td>
+                        <td className="py-2 px-2 text-amber-600">{pk.predictions?.linear_interpolation ?? pk.predictions?.delhi_ctdi_keras ?? '-'}</td>
                         <td className="py-2 px-2">
                           <button
                             type="button"
                             onClick={() => handleSelectPeak(pk)}
-                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 font-sans"
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-sans transition-colors cursor-pointer"
                           >
                             Zoom
                           </button>
@@ -1778,14 +2012,14 @@ export default function ModelComparisonLabView({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* 10. GAP-LENGTH DEGRADATION & MISSINGNESS ROBUSTNESS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 11. GAP-LENGTH DEGRADATION & MISSINGNESS ROBUSTNESS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Gap Length Analysis */}
         {experimentResult?.evaluation?.gap_analysis && (
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+          <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-3">
             <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-cyan-500" />
@@ -1833,12 +2067,12 @@ export default function ModelComparisonLabView({
                 );
               })}
             </div>
-          </Card>
+          </div>
         )}
 
         {/* Latency vs Accuracy Pareto Frontier */}
         {experimentResult?.evaluation?.model_rankings && (
-          <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+          <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-3">
             <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-emerald-500" />
@@ -1900,13 +2134,13 @@ export default function ModelComparisonLabView({
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </div>
         )}
       </div>
 
-      {/* 11. FAILURE CASE EXPLORER & SAME-POINT COMPARISON */}
+      {/* 12. FAILURE CASE EXPLORER & SAME-POINT COMPARISON */}
       {experimentResult?.failure_cases && experimentResult.failure_cases.length > 0 && (
-        <Card className="p-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs">
+        <div className="p-5 sm:p-6 bg-white dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 shadow-2xs rounded-2xl space-y-4">
           <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-zinc-800 pb-2">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-amber-500" />
@@ -1963,7 +2197,7 @@ export default function ModelComparisonLabView({
                           setSelectedPollutantTab(f.pollutant);
                           setSelectedSamePointTimestamp(f.timestamp);
                         }}
-                        className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-sans"
+                        className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-sans transition-colors cursor-pointer"
                       >
                         Inspect
                       </button>
@@ -1973,7 +2207,7 @@ export default function ModelComparisonLabView({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* 12. MODEL ARCHITECTURE & AUDIT MODAL */}
@@ -2176,7 +2410,7 @@ export default function ModelComparisonLabView({
                         <span className="text-[10px] font-mono text-slate-400">{h.created_at}</span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
-                        {h.city || 'Delhi'} • {h.dataset_id} • {h.missingness?.strategy} ({h.missingness?.missing_rate_pct}% missing)
+                        {h.city || 'Hong Kong'} • {h.dataset_id} • {h.missingness?.strategy} ({h.missingness?.missing_rate_pct}% missing)
                       </div>
                     </div>
                     <div className="text-right font-mono text-xs">

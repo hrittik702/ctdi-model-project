@@ -7,10 +7,10 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
 
   const configs = [
     { label: 'Model Architecture', value: modelConfig?.architecture || '1×1 Conv1d + Temporal Transformer Encoder' },
-    { label: 'Model Version', value: modelConfig?.version || 'v0.1 Prototype' },
+    { label: 'Model Version', value: modelConfig?.version || 'CTDI CNN-Transformer v1.0' },
     { label: 'Sequence Length (Window)', value: `${modelConfig?.window_size || 24} Hours (Continuous sliding)` },
-    { label: 'Input Feature Channels (F)', value: `${modelConfig?.in_features || 6} Pollutants (PM2.5, PM10, SO2, NO2, CO, O3)` },
-    { label: 'Concatenated Channels (2*F)', value: `${(modelConfig?.in_features || 6) * 2} (Observations + Binary Masks)` },
+    { label: 'Input Feature Channels (F)', value: `${modelConfig?.in_features || 13} Channels (5 Criteria Pollutants + 6 Meteorology + 2 Traffic)` },
+    { label: 'Concatenated Channels (2*F)', value: `${(modelConfig?.in_features || 13) * 2} Channels (13 Observations + 13 Binary Masks)` },
     { label: 'Embedding Dimension (d_model)', value: `${modelConfig?.d_model || 64} dimensions` },
     { label: 'Multi-Head Attention (n_head)', value: `${modelConfig?.nhead || 4} attention heads` },
     { label: 'Transformer Encoder Layers', value: `${modelConfig?.num_layers || 2} layers` },
@@ -20,7 +20,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
     { label: 'Loss Function', value: modelConfig?.loss_function || 'Masked L1 Loss (artificially hidden points only)' },
     { label: 'Execution Framework', value: modelConfig?.framework || 'PyTorch' },
     { label: 'Execution Device', value: (modelConfig?.device || 'cpu').toUpperCase() },
-    { label: 'Loaded Checkpoint', value: modelConfig?.checkpoint_path || 'checkpoints/transformer/best_temporal_transformer.pt' }
+    { label: 'Loaded Checkpoint', value: modelConfig?.checkpoint_path || 'Unavailable' }
   ];
 
   return (
@@ -44,10 +44,10 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">Model Architecture & Hyperparameters</h3>
                 <Chip color="success" variant="soft" size="sm" className="h-5 text-[10px] font-bold">
-                  <Chip.Label>{modelConfig?.status === 'ready' ? 'Online' : 'Loaded'}</Chip.Label>
+                  <Chip.Label>{modelConfig?.status === 'ready' ? 'Online' : 'Specification'}</Chip.Label>
                 </Chip>
               </div>
-              <p className="text-xs text-slate-400 dark:text-zinc-500">CTDI {modelConfig?.framework || 'PyTorch'} Spatial-Temporal Attention Specification</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500">CTDI CNN-Transformer Spatial-Temporal Attention Specification (Hong Kong EPD)</p>
             </div>
           </div>
           <button
@@ -73,7 +73,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
         {/* Verification Footer */}
         <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Zero leakage: Preprocessing standard scaler fitted strictly on train split observations.</span>
+          <span>Zero leakage: Preprocessing standard scaler fitted strictly on train split observations across 16 stations.</span>
         </div>
 
         <div className="flex justify-end pt-1">
