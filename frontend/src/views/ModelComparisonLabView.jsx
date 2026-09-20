@@ -721,7 +721,7 @@ export default function ModelComparisonLabView({
               isDisabled={selectedModels.length < 2 || isRunning}
               onPress={executeBenchmark}
               startContent={!isRunning && <Play className="w-3.5 h-3.5 fill-current" />}
-              className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer motion-press"
             >
               {isRunning ? 'Benchmarking...' : 'Run Benchmark'}
             </Button>
@@ -944,28 +944,28 @@ export default function ModelComparisonLabView({
             <button
               type="button"
               onClick={selectAllTrained}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer motion-press"
             >
               Select Trained
             </button>
             <button
               type="button"
               onClick={selectBaselines}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer motion-press"
             >
               Select Baselines
             </button>
             <button
               type="button"
               onClick={selectAllAvailable}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer motion-press"
             >
               Select All
             </button>
             <button
               type="button"
               onClick={clearSelection}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer motion-press"
             >
               Reset
             </button>
@@ -989,7 +989,7 @@ export default function ModelComparisonLabView({
                     <div
                       key={m.id}
                       onClick={() => toggleModelSelection(m.id)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between motion-card-interactive motion-press ${
                         isSelected
                           ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-700 shadow-2xs'
                           : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200/80 dark:border-zinc-800 opacity-85 hover:opacity-100 hover:border-slate-300 dark:hover:border-zinc-700'
@@ -1053,7 +1053,7 @@ export default function ModelComparisonLabView({
                   <div
                     key={m.id}
                     onClick={() => toggleModelSelection(m.id)}
-                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between motion-card-interactive motion-press ${
                       isSelected
                         ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-700 shadow-2xs'
                         : 'bg-slate-50/50 dark:bg-zinc-800/40 border-slate-200/80 dark:border-zinc-800 opacity-85 hover:opacity-100 hover:border-slate-300 dark:hover:border-zinc-700'

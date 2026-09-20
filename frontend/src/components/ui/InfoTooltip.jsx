@@ -164,7 +164,7 @@ export default function InfoTooltip({
           onClick={handleToggle}
           aria-label={`Information: ${displayTitle}`}
           aria-expanded={isOpen}
-          className="w-5 h-5 rounded-full inline-flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/80 dark:hover:bg-zinc-800 transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
+          className="w-5 h-5 rounded-full inline-flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/80 dark:hover:bg-zinc-800 transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0 motion-press"
         >
           <ProjectIcon name="info" size={size === 'sm' ? 14 : 12} />
         </button>
@@ -185,7 +185,7 @@ export default function InfoTooltip({
             transform: coords.showBelow ? 'none' : 'translateY(-100%)',
             zIndex: 99999
           }}
-          className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 p-3.5 rounded-2xl border border-slate-200/90 dark:border-zinc-700/80 shadow-2xl shadow-slate-900/15 dark:shadow-black/70 text-left pointer-events-auto transition-opacity duration-150 animate-in fade-in zoom-in-95"
+          className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 p-3.5 rounded-2xl border border-slate-200/90 dark:border-zinc-700/80 shadow-2xl shadow-slate-900/15 dark:shadow-black/70 text-left pointer-events-auto motion-fade-enter"
         >
           {/* Indicator Arrow */}
           <div

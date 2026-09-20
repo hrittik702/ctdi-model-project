@@ -14,11 +14,32 @@
   --color-zinc-500: #9a9aa0;
   --color-zinc-750: #2b2b30;
   --color-zinc-850: #202024;
+
+  /* Global Motion Tokens */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-standard: 220ms;
+  --duration-emphasis: 320ms;
+
+  --ease-out-subtle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-subtle: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out-subtle: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root {
+  --motion-instant: 100ms;
+  --motion-fast: 150ms;
+  --motion-standard: 220ms;
+  --motion-emphasis: 320ms;
+
+  --ease-out-subtle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-subtle: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out-subtle: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
   font-family: var(--font-sans);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--motion-standard) var(--ease-in-out-subtle), color var(--motion-standard) var(--ease-in-out-subtle);
 }
 
 html.dark,
@@ -74,5 +95,217 @@ html.dark ::-webkit-scrollbar-track {
 }
 
 /* Floating header canvas is 100% transparent; individual floating pills sit above scrolling content */
+
+/* ==========================================================================
+   Global Motion System Primitives (Phase 1)
+   ========================================================================== */
+
+/* Page-level cross-view fade and micro-rise */
+@keyframes motionPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.motion-page-enter {
+  animation: motionPageEnter var(--motion-standard) var(--ease-out-subtle) both;
+  will-change: opacity, transform;
+}
+
+/* Subtle dropdown and popover menu entrance */
+@keyframes motionPopoverEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.motion-popover-enter {
+  animation: motionPopoverEnter var(--motion-fast) var(--ease-out-subtle) both;
+  transform-origin: top;
+}
+
+/* Pure opacity fade for overlays with existing complex translate transforms */
+@keyframes motionFadeEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.motion-fade-enter {
+  animation: motionFadeEnter var(--motion-fast) var(--ease-out-subtle) both;
+}
+
+/* Modal dialog backdrop fade */
+@keyframes motionBackdropEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.motion-modal-backdrop {
+  animation: motionBackdropEnter var(--motion-fast) var(--ease-out-subtle) both;
+}
+
+/* Modal dialog card entrance (subtle scale 0.98 to 1 with micro-translate) */
+@keyframes motionModalContentEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.motion-modal-content {
+  animation: motionModalContentEnter var(--motion-standard) var(--ease-out-subtle) both;
+}
+
+/* Tactile micro-press feedback for interactive buttons & triggers */
+.motion-press {
+  transition: transform var(--motion-instant) var(--ease-out-subtle),
+              background-color var(--motion-fast) var(--ease-out-subtle),
+              border-color var(--motion-fast) var(--ease-out-subtle),
+              color var(--motion-fast) var(--ease-out-subtle);
+}
+
+.motion-press:active {
+  transform: scale(0.98);
+}
+
+/* Interactive Cards: Subtle elevation on hover and gentle compression on active */
+.motion-card-interactive {
+  transition: transform var(--motion-fast) var(--ease-out-subtle),
+              background-color var(--motion-fast) var(--ease-out-subtle),
+              border-color var(--motion-fast) var(--ease-out-subtle),
+              box-shadow var(--motion-fast) var(--ease-out-subtle);
+}
+
+.motion-card-interactive:hover {
+  transform: translateY(-1px);
+}
+
+.motion-card-interactive:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Segmented Tabs & Filter Controls */
+.motion-tab-active {
+  transition: background-color var(--motion-fast) var(--ease-out-subtle),
+              color var(--motion-fast) var(--ease-out-subtle),
+              border-color var(--motion-fast) var(--ease-out-subtle),
+              box-shadow var(--motion-fast) var(--ease-out-subtle);
+}
+
+/* Smooth Expandable/Collapsible Panels */
+.motion-expandable {
+  transition: max-height var(--motion-standard) var(--ease-out-subtle),
+              opacity var(--motion-standard) var(--ease-out-subtle);
+}
+
+/* ==========================================================================
+   Chart & Graph Motion System: Curve-Only Motion on Sequence Window Change
+   ========================================================================== */
+
+/* Directional curve motion when advancing forward in time (+1h / +24h / slider right) */
+@keyframes motionCurveSlideLeft {
+  0% {
+    transform: translateX(20px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Directional curve motion when moving backward in time (-1h / -24h / slider left) */
+@keyframes motionCurveSlideRight {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Initial curve entrance on website start / mount */
+@keyframes motionCurveInitial {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scoped strictly to the SVG line curves & dots — axes and grid remain 100% stationary */
+.motion-curve-slide-forward-0 .recharts-line,
+.motion-curve-slide-forward-1 .recharts-line {
+  animation: motionCurveSlideLeft var(--motion-standard) var(--ease-out-subtle) both;
+}
+
+.motion-curve-slide-backward-0 .recharts-line,
+.motion-curve-slide-backward-1 .recharts-line {
+  animation: motionCurveSlideRight var(--motion-standard) var(--ease-out-subtle) both;
+}
+
+.motion-curve-initial .recharts-line {
+  animation: motionCurveInitial var(--motion-emphasis) var(--ease-out-subtle) both;
+}
+
+/* Ensure axes and grid are explicitly stationary under all circumstances */
+.recharts-cartesian-grid,
+.recharts-xAxis,
+.recharts-yAxis {
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Full Accessibility: System Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .motion-page-enter,
+  .motion-popover-enter,
+  .motion-fade-enter,
+  .motion-modal-backdrop,
+  .motion-modal-content,
+  .motion-curve-slide-forward-0 .recharts-line,
+  .motion-curve-slide-forward-1 .recharts-line,
+  .motion-curve-slide-backward-0 .recharts-line,
+  .motion-curve-slide-backward-1 .recharts-line,
+  .motion-curve-initial .recharts-line {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .motion-press:active,
+  .motion-card-interactive:hover,
+  .motion-card-interactive:active {
+    transform: none !important;
+  }
+}
 
 

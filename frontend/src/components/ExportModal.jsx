@@ -117,13 +117,13 @@ export default function ExportModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none motion-modal-backdrop"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.55)',
         backdropFilter: 'blur(8px)'
       }}
     >
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 space-y-5 motion-modal-content">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
           <div className="flex items-center gap-2.5">
@@ -143,7 +143,7 @@ export default function ExportModal({
             type="button"
             onClick={onClose}
             aria-label="Close export dialog"
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer motion-press"
           >
             <X className="w-4 h-4" />
           </button>
@@ -163,7 +163,7 @@ export default function ExportModal({
                   key={f.id}
                   type="button"
                   onClick={() => setExportFormat(f.id)}
-                  className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  className={`p-3 rounded-2xl border text-left cursor-pointer flex flex-col justify-between motion-card-interactive motion-press ${
                     isSelected
                       ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 shadow-xs'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/40 text-slate-600 dark:text-zinc-400'
@@ -240,7 +240,7 @@ export default function ExportModal({
             variant="secondary"
             size="md"
             onPress={onClose}
-            className="rounded-xl font-medium cursor-pointer"
+            className="rounded-xl font-medium cursor-pointer motion-press"
           >
             Cancel
           </Button>
@@ -248,7 +248,7 @@ export default function ExportModal({
             variant="primary"
             size="md"
             onPress={handleExecuteExport}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 motion-press"
           >
             <Download className="w-4 h-4" />
             <span>Generate Export</span>

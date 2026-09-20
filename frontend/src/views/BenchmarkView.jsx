@@ -143,6 +143,10 @@ export default function BenchmarkView({
   const [sortKey, setSortKey] = useState('MAE (Original Units)');
   const [sortAsc, setSortAsc] = useState(true);
 
+  const prefersReducedMotion = typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
   // Active family object
   const activeFamily = useMemo(() => {
     return MASKING_FAMILIES.find(f => f.id === selectedFamily) || MASKING_FAMILIES[0];
@@ -307,7 +311,7 @@ export default function BenchmarkView({
                   key={family.id}
                   type="button"
                   onClick={() => setSelectedFamily(family.id)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer shrink-0 motion-tab-active motion-press ${
                     isSelected
                       ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-2xs'
                       : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -419,10 +423,26 @@ export default function BenchmarkView({
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                 {(selectedMetric === 'both' || selectedMetric === 'mae') && (
-                  <Bar dataKey="MAE (Original Units)" name="MAE (µg/m³)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="MAE (Original Units)" 
+                    name="MAE (µg/m³)" 
+                    fill="#10b981" 
+                    radius={[4, 4, 0, 0]} 
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={300}
+                    animationEasing="ease-out"
+                  />
                 )}
                 {(selectedMetric === 'both' || selectedMetric === 'rmse') && (
-                  <Bar dataKey="RMSE (Original Units)" name="RMSE (µg/m³)" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="RMSE (Original Units)" 
+                    name="RMSE (µg/m³)" 
+                    fill="#6366f1" 
+                    radius={[4, 4, 0, 0]} 
+                    isAnimationActive={!prefersReducedMotion}
+                    animationDuration={300}
+                    animationEasing="ease-out"
+                  />
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -458,7 +478,7 @@ export default function BenchmarkView({
             return (
               <div 
                 key={m.id}
-                className="p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:from-zinc-900/90 dark:to-zinc-900/40 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col justify-between group"
+                className="p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:from-zinc-900/90 dark:to-zinc-900/40 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col justify-between group motion-card-interactive"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -510,7 +530,7 @@ export default function BenchmarkView({
  */
 function ScenarioCard({ scenario }) {
   return (
-    <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 shadow-2xs hover:bg-white dark:hover:bg-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between space-y-2 group">
+    <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 shadow-2xs hover:bg-white dark:hover:bg-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between space-y-2 group motion-card-interactive">
       <div className="flex items-center justify-between gap-1.5">
         <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-zinc-100 tracking-tight truncate" title={scenario.name}>
           {scenario.name}

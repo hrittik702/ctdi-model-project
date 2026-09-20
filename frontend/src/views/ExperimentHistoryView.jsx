@@ -51,7 +51,7 @@ export default function ExperimentHistoryView({ experiments = [] }) {
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80 font-mono">
               {experiments.length > 0 ? (
                 experiments.map(exp => (
-                  <tr key={exp.id} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40">
+                  <tr key={exp.id} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition-colors duration-fast ease-out-subtle">
                     <td className="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400 font-sans">
                       {exp.id}
                     </td>

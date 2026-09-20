@@ -266,7 +266,7 @@ export default function LiveImputationView({
           <button
             type="button"
             onClick={() => setActiveMode('upload')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition cursor-pointer motion-press motion-tab-active ${
               activeMode === 'upload'
                 ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -278,7 +278,7 @@ export default function LiveImputationView({
           <button
             type="button"
             onClick={() => setActiveMode('sandbox')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition cursor-pointer motion-press motion-tab-active ${
               activeMode === 'sandbox'
                 ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -418,7 +418,7 @@ export default function LiveImputationView({
                     size="md"
                     onPress={handleExecuteUploadImputation}
                     isDisabled={isImputingUpload}
-                    className="px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 py-2.5 rounded-xl shadow-xs cursor-pointer ml-auto"
+                    className="px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 py-2.5 rounded-xl shadow-xs cursor-pointer ml-auto motion-press"
                   >
                     {isImputingUpload ? <Spinner size="sm" color="current" /> : <Sparkles className="w-4 h-4 text-white" />}
                     <span>{isImputingUpload ? (uploadImputeStep || 'Imputing...') : 'Run CTDI Imputation'}</span>
@@ -749,7 +749,7 @@ export default function LiveImputationView({
                 size="md"
                 onPress={onRunLiveImpute}
                 isDisabled={liveLoading}
-                className="w-full sm:w-auto px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center justify-center gap-2 py-2.5 rounded-xl shadow-xs cursor-pointer ml-auto"
+                className="w-full sm:w-auto px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center justify-center gap-2 py-2.5 rounded-xl shadow-xs cursor-pointer ml-auto motion-press"
               >
                 {liveLoading ? <Spinner size="sm" color="current" /> : <ProjectIcon name="sandbox" size="sm" className="w-4 h-4 text-white" />}
                 <span>

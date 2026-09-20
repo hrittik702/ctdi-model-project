@@ -356,7 +356,7 @@ export default function ChartWidget({
               title={showGrid ? 'Hide Gridlines' : 'Show Gridlines'}
               aria-label="Toggle Gridlines"
               onClick={() => setShowGrid(!showGrid)}
-              className={`p-1.5 rounded-lg border text-xs transition cursor-pointer shrink-0 ${
+              className={`p-1.5 rounded-lg border text-xs transition cursor-pointer shrink-0 motion-press ${
                 showGrid 
                   ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' 
                   : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 border-slate-200/70 dark:border-zinc-700'
@@ -371,7 +371,7 @@ export default function ChartWidget({
               title="Export Research-Grade Analytical Figure (PNG)"
               aria-label="Export Research Figure"
               onClick={handleExportAnalyticalPNG}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0 motion-press"
             >
               <ProjectIcon name="camera" size="sm" className="w-3.5 h-3.5 text-white shrink-0" />
               <span>Export</span>
@@ -383,7 +383,7 @@ export default function ChartWidget({
               title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand Fullscreen'}
               aria-label="Toggle Fullscreen"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer shrink-0"
+              className="p-1.5 rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer shrink-0 motion-press"
             >
               {isFullscreen ? (
                 <ProjectIcon name="minimize" size="sm" className="w-3.5 h-3.5 text-indigo-600" />
@@ -399,20 +399,20 @@ export default function ChartWidget({
                 title="Additional Chart & Data Actions"
                 aria-label="Additional Actions"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="p-1.5 rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer"
+                className="p-1.5 rounded-lg border border-slate-200/70 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer motion-press"
               >
                 <ProjectIcon name="more" size="sm" className="w-3.5 h-3.5" />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-zinc-800 p-1.5 z-40 text-xs space-y-1">
+                <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-zinc-800 p-1.5 z-40 text-xs space-y-1 motion-popover-enter">
                   <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Data & Export Options
                   </div>
                   <button
                     type="button"
                     onClick={handleExportAnalyticalPNG}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer motion-press"
                   >
                     <ProjectIcon name="camera" size="sm" className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                     <span>Analytical PNG Figure</span>
@@ -420,7 +420,7 @@ export default function ChartWidget({
                   <button
                     type="button"
                     onClick={handleExportCSV}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer motion-press"
                   >
                     <ProjectIcon name="database" size="sm" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>Raw CSV Telemetry</span>
@@ -428,7 +428,7 @@ export default function ChartWidget({
                   <button
                     type="button"
                     onClick={handleExportJSON}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition text-left cursor-pointer motion-press"
                   >
                     <ProjectIcon name="export" size="sm" className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                     <span>Structured JSON Payload</span>
@@ -441,7 +441,7 @@ export default function ChartWidget({
                         setShowGrid(true);
                         setDropdownOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition text-left cursor-pointer"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition text-left cursor-pointer motion-press"
                     >
                       <ProjectIcon name="refresh" size="sm" className="w-3.5 h-3.5 shrink-0" />
                       <span>Reset Chart View</span>

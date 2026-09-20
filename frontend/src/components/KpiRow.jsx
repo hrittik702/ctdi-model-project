@@ -186,7 +186,7 @@ export default function KpiRow() {
         {RESEARCH_OVERVIEW_CARDS.map(card => (
           <div
             key={card.id}
-            className="bg-white dark:bg-zinc-900/95 p-3.5 sm:p-4 flex flex-col justify-between h-full transition-colors hover:bg-slate-50/90 dark:hover:bg-zinc-800/80"
+            className="bg-white dark:bg-zinc-900/95 p-3.5 sm:p-4 flex flex-col justify-between h-full transition-colors duration-fast ease-out-subtle hover:bg-slate-50/90 dark:hover:bg-zinc-800/80"
           >
             {/* Header: Custom SVG Icon + Title on the SAME line */}
             <div className="flex items-center gap-2 min-w-0">

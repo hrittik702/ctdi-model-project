@@ -148,7 +148,7 @@ export default function GlobalSearchModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 select-none"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 select-none motion-modal-backdrop"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.55)',
         backdropFilter: 'blur(8px)'
@@ -157,7 +157,7 @@ export default function GlobalSearchModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+      <div className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden motion-modal-content flex flex-col max-h-[80vh]">
         {/* Search Input Bar */}
         <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center gap-3 shrink-0">
           <Search className="w-5 h-5 text-slate-400 dark:text-zinc-500 shrink-0" />

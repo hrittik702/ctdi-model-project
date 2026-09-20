@@ -520,7 +520,7 @@ export default function DataExplorerView({
                 key={group.id}
                 type="button"
                 onClick={() => handleSelectPreset(group.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer motion-press motion-tab-active ${
                   isSelected
                     ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-xs'
                     : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -546,7 +546,7 @@ export default function DataExplorerView({
             <button
               type="button"
               onClick={() => setIsColumnPickerOpen(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer motion-press ${
                 customVisibleChannels 
                   ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
                   : 'bg-white dark:bg-zinc-900/90 border-slate-200/80 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 shadow-2xs'
@@ -559,7 +559,7 @@ export default function DataExplorerView({
             </button>
 
             {isColumnPickerOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-xl p-3 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-xl p-3 z-50 text-xs motion-popover-enter">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-zinc-800">
                   <span className="font-bold text-slate-900 dark:text-zinc-100">
                     Visible Channels
@@ -614,7 +614,7 @@ export default function DataExplorerView({
             <button
               type="button"
               onClick={() => setFilterMode('all')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer motion-press motion-tab-active ${
                 filterMode === 'all'
                   ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-xs'
                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -625,7 +625,7 @@ export default function DataExplorerView({
             <button
               type="button"
               onClick={() => setFilterMode('observed')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer motion-press motion-tab-active ${
                 filterMode === 'observed'
                   ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 font-bold shadow-xs'
                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -636,7 +636,7 @@ export default function DataExplorerView({
             <button
               type="button"
               onClick={() => setFilterMode('missing')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer motion-press motion-tab-active ${
                 filterMode === 'missing'
                   ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -650,7 +650,7 @@ export default function DataExplorerView({
           <button
             type="button"
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold transition cursor-pointer border border-slate-200/80 dark:border-zinc-800 shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold transition cursor-pointer border border-slate-200/80 dark:border-zinc-800 shadow-2xs motion-press"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span className="hidden sm:inline">Export CSV</span>

@@ -216,7 +216,7 @@ export default function StationAnalysisView({
                 <button
                   type="button"
                   onClick={() => onNavigateToTab('explorer')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer shadow-xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer shadow-xs motion-press"
                 >
                   <span>Open in 24h Trajectory</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -224,7 +224,7 @@ export default function StationAnalysisView({
                 <button
                   type="button"
                   onClick={() => onNavigateToTab('multigrid')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition cursor-pointer border border-slate-200/70 dark:border-zinc-700/60"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition cursor-pointer border border-slate-200/70 dark:border-zinc-700/60 motion-press"
                 >
                   <span>Multi-Pollutant Grid</span>
                   <Layers className="w-3.5 h-3.5" />
@@ -384,7 +384,7 @@ export default function StationAnalysisView({
                   );
                 }}
               />
-              <Bar dataKey="baseline" name="Station Baseline" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+              <Bar dataKey="baseline" name="Station Baseline" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={450} animationEasing="ease-out">
                 {complianceData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.barColor} />
                 ))}
@@ -397,7 +397,9 @@ export default function StationAnalysisView({
                 strokeWidth={1.5} 
                 strokeDasharray="3 3" 
                 radius={[4, 4, 0, 0]} 
-                isAnimationActive={false} 
+                isAnimationActive={true}
+                animationDuration={450}
+                animationEasing="ease-out"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -408,7 +410,7 @@ export default function StationAnalysisView({
           {complianceData.map(item => (
             <div 
               key={item.pollutant} 
-              className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-800 text-[11px] space-y-2 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-800 text-[11px] space-y-2 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800 motion-card-interactive"
             >
               <div className="flex items-center justify-between font-bold text-slate-900 dark:text-zinc-100">
                 <span className="font-mono text-xs font-extrabold">{item.pollutant}</span>

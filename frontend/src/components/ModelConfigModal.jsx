@@ -25,7 +25,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none motion-modal-backdrop"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.55)',
         backdropFilter: 'blur(8px)'
@@ -34,7 +34,7 @@ export default function ModelConfigModal({ isOpen, onClose, modelConfig = null }
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl overflow-hidden p-6 space-y-5 motion-modal-content">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 rounded-xl">

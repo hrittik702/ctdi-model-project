@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 // API Service & Canonical Data Contract
 import api from './services/api';
+import windowCache from './services/windowCache';
 import {
   HONG_KONG_STATIONS,
   CANONICAL_CHANNELS,
@@ -86,6 +87,9 @@ export default function App() {
   const [targetPollutant, setTargetPollutant] = useState('PM2.5');
   const [sampleData, setSampleData] = useState(null);
   const [isLoadingSample, setIsLoadingSample] = useState(false);
+
+  const availableChannels = metadata?.pollutants || CANONICAL_CHANNELS.map(c => c.name);
+  const totalWindowCount = metadata?.station_windows || 26281;
 
   // Visibility toggles for curve series
   const [visibleModels, setVisibleModels] = useState({
@@ -230,15 +234,29 @@ export default function App() {
     }
   };
 
-  // Fetch sample telemetry whenever sampleIdx or selectedStation changes
+  // Fetch sample telemetry with predictive cache & neighbor preloading (±1h, ±24h, ±48h)
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Check if sample is already in memory
+    const cached = windowCache.get(selectedStation, sampleIdx);
+    if (cached) {
+      setSampleData(cached);
+      setIsLoadingSample(false);
+      // Preload 1 day before/after (-24h, +24h), 2 days before/after (-48h, +48h), and adjacent steps
+      windowCache.preloadNeighbors(sampleIdx, selectedStation, totalWindowCount);
+      return;
+    }
+
+    // 2. Cache miss: fetch asynchronously and populate cache
     async function fetchSample() {
       setIsLoadingSample(true);
       try {
-        const data = await api.getSample(sampleIdx, selectedStation);
+        const data = await windowCache.fetchSample(sampleIdx, selectedStation);
         if (isMounted) {
           setSampleData(data);
+          // Preload neighbors after cache miss resolves
+          windowCache.preloadNeighbors(sampleIdx, selectedStation, totalWindowCount);
         }
       } catch (err) {
         console.error(`Failed to fetch sample ${sampleIdx} for station ${selectedStation}:`, err);
@@ -255,7 +273,7 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [sampleIdx, selectedStation]);
+  }, [sampleIdx, selectedStation, totalWindowCount]);
 
   // Execute live model inference with progress feedback
   const handleRunLiveImpute = async () => {
@@ -451,9 +469,6 @@ export default function App() {
     setIsContentScrolled(false);
   };
 
-  const availableChannels = metadata?.pollutants || CANONICAL_CHANNELS.map(c => c.name);
-  const totalWindowCount = metadata?.station_windows || 26281;
-
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-zinc-100 flex font-sans transition-colors duration-200 select-none">
       {/* 1. Full-Height Sidebar on the Left */}
@@ -493,14 +508,43 @@ export default function App() {
             isDashboard={currentTab === 'dashboard'}
           />
 
-          {/* Active View Router */}
-          {currentTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Executive Dynamic KPI Row */}
-              <KpiRow />
+          {/* Active View Router with Calm Page Transition */}
+          <div key={currentTab} className="motion-page-enter">
+            {currentTab === 'dashboard' && (
+              <div className="space-y-6">
+                {/* Executive Dynamic KPI Row */}
+                <KpiRow />
 
+                <TrajectoryExplorerView
+                  isDashboard={true}
+                  sampleIdx={sampleIdx}
+                  setSampleIdx={setSampleIdx}
+                  maxSamples={totalWindowCount}
+                  targetPollutant={targetPollutant}
+                  setTargetPollutant={setTargetPollutant}
+                  pollutants={availableChannels}
+                  sampleData={sampleData}
+                  chartData={chartData}
+                  visibleModels={visibleModels}
+                  setVisibleModels={setVisibleModels}
+                  curveSeries={curveSeries}
+                  isDark={isDark}
+                  gridStroke={gridStroke}
+                  axisStroke={axisStroke}
+                  isLoading={isLoadingSample}
+                />
+                <BenchmarkView
+                  isDashboard={true}
+                  metrics={metrics}
+                  isDark={isDark}
+                  gridStroke={gridStroke}
+                  axisStroke={axisStroke}
+                />
+              </div>
+            )}
+
+            {currentTab === 'explorer' && (
               <TrajectoryExplorerView
-                isDashboard={true}
                 sampleIdx={sampleIdx}
                 setSampleIdx={setSampleIdx}
                 maxSamples={totalWindowCount}
@@ -517,133 +561,106 @@ export default function App() {
                 axisStroke={axisStroke}
                 isLoading={isLoadingSample}
               />
+            )}
+
+            {currentTab === 'multigrid' && (
+              <MultiPollutantView
+                sampleData={sampleData}
+                pollutants={availableChannels}
+                sampleIdx={sampleIdx}
+                onDrillDown={handleDrillDownToPollutant}
+                isDark={isDark}
+                gridStroke={gridStroke}
+                axisStroke={axisStroke}
+              />
+            )}
+
+            {currentTab === 'scoreboard' && (
               <BenchmarkView
-                isDashboard={true}
                 metrics={metrics}
                 isDark={isDark}
                 gridStroke={gridStroke}
                 axisStroke={axisStroke}
               />
-            </div>
-          )}
+            )}
 
-          {currentTab === 'explorer' && (
-            <TrajectoryExplorerView
-              sampleIdx={sampleIdx}
-              setSampleIdx={setSampleIdx}
-              maxSamples={totalWindowCount}
-              targetPollutant={targetPollutant}
-              setTargetPollutant={setTargetPollutant}
-              pollutants={availableChannels}
-              sampleData={sampleData}
-              chartData={chartData}
-              visibleModels={visibleModels}
-              setVisibleModels={setVisibleModels}
-              curveSeries={curveSeries}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-              isLoading={isLoadingSample}
-            />
-          )}
+            {currentTab === 'station' && (
+              <StationAnalysisView
+                metadata={metadata}
+                stations={stations}
+                selectedStation={selectedStation}
+                onSelectStation={handleSelectStation}
+                sampleIdx={sampleIdx}
+                pollutantMetrics={pollutantMetrics}
+                onNavigateToTab={handleSelectTab}
+                isDark={isDark}
+                gridStroke={gridStroke}
+                axisStroke={axisStroke}
+              />
+            )}
 
-          {currentTab === 'multigrid' && (
-            <MultiPollutantView
-              sampleData={sampleData}
-              pollutants={availableChannels}
-              sampleIdx={sampleIdx}
-              onDrillDown={handleDrillDownToPollutant}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
+            {currentTab === 'data_explorer' && (
+              <DataExplorerView
+                sampleData={sampleData}
+                sampleIdx={sampleIdx}
+                pollutants={availableChannels}
+                stationName={metadata?.station || selectedStation}
+                isDark={isDark}
+                gridStroke={gridStroke}
+                axisStroke={axisStroke}
+              />
+            )}
 
-          {currentTab === 'scoreboard' && (
-            <BenchmarkView
-              metrics={metrics}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
+            {currentTab === 'sandbox' && (
+              <LiveImputationView
+                sampleIdx={sampleIdx}
+                liveRate={liveRate}
+                setLiveRate={setLiveRate}
+                liveMechanism={liveMechanism}
+                setLiveMechanism={setLiveMechanism}
+                liveSeed={liveSeed}
+                setLiveSeed={setLiveSeed}
+                liveResult={liveResult}
+                liveLoading={liveLoading}
+                liveStep={liveStep}
+                onRunLiveImpute={handleRunLiveImpute}
+                targetPollutant={targetPollutant}
+                setTargetPollutant={setTargetPollutant}
+                pollutants={availableChannels}
+                selectedStation={selectedStation}
+                framework="PyTorch"
+                checkpoint={null}
+                isDark={isDark}
+                gridStroke={gridStroke}
+                axisStroke={axisStroke}
+              />
+            )}
 
-          {currentTab === 'station' && (
-            <StationAnalysisView
-              metadata={metadata}
-              stations={stations}
-              selectedStation={selectedStation}
-              onSelectStation={handleSelectStation}
-              sampleIdx={sampleIdx}
-              pollutantMetrics={pollutantMetrics}
-              onNavigateToTab={handleSelectTab}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
+            {currentTab === 'comparison' && (
+              <ModelComparisonLabView
+                isDark={isDark}
+                gridStroke={gridStroke}
+                axisStroke={axisStroke}
+              />
+            )}
 
-          {currentTab === 'data_explorer' && (
-            <DataExplorerView
-              sampleData={sampleData}
-              sampleIdx={sampleIdx}
-              pollutants={availableChannels}
-              stationName={metadata?.station || selectedStation}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
+            {currentTab === 'experiments' && (
+              <ExperimentHistoryView
+                experiments={experiments}
+              />
+            )}
 
-          {currentTab === 'sandbox' && (
-            <LiveImputationView
-              sampleIdx={sampleIdx}
-              liveRate={liveRate}
-              setLiveRate={setLiveRate}
-              liveMechanism={liveMechanism}
-              setLiveMechanism={setLiveMechanism}
-              liveSeed={liveSeed}
-              setLiveSeed={setLiveSeed}
-              liveResult={liveResult}
-              liveLoading={liveLoading}
-              liveStep={liveStep}
-              onRunLiveImpute={handleRunLiveImpute}
-              targetPollutant={targetPollutant}
-              setTargetPollutant={setTargetPollutant}
-              pollutants={availableChannels}
-              selectedStation={selectedStation}
-              framework="PyTorch"
-              checkpoint={null}
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
-
-          {currentTab === 'comparison' && (
-            <ModelComparisonLabView
-              isDark={isDark}
-              gridStroke={gridStroke}
-              axisStroke={axisStroke}
-            />
-          )}
-
-          {currentTab === 'experiments' && (
-            <ExperimentHistoryView
-              experiments={experiments}
-            />
-          )}
-
-          {currentTab === 'settings' && (
-            <SettingsView
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              isSidebarCollapsed={isSidebarCollapsed}
-              onToggleSidebar={toggleSidebar}
-              onOpenModelModal={() => setIsModelConfigOpen(true)}
-              onNavigateToTab={handleSelectTab}
-            />
-          )}
+            {currentTab === 'settings' && (
+              <SettingsView
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={toggleSidebar}
+                onOpenModelModal={() => setIsModelConfigOpen(true)}
+                onNavigateToTab={handleSelectTab}
+              />
+            )}
+          </div>
         </main>
       </div>
 

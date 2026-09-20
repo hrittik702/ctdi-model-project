@@ -11,7 +11,7 @@ export default function GlassmorphicTooltip({ active, payload, label, isDark, un
   const isHiddenTarget = d.hiddenTarget !== null && d.hiddenTarget !== undefined;
 
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-800 shadow-xl p-3.5 rounded-2xl text-xs space-y-2 min-w-[240px] max-w-xs">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-800 shadow-xl p-3.5 rounded-2xl text-xs space-y-2 min-w-[240px] max-w-xs motion-fade-enter">
       {/* Header with Timestamp & Step Offset */}
       <div className="border-b border-slate-100 dark:border-zinc-800 pb-2 flex items-center justify-between gap-3">
         <div className="flex items-baseline gap-1.5">

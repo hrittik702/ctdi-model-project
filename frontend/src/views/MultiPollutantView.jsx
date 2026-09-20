@@ -402,7 +402,7 @@ export default function MultiPollutantView({
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer motion-press motion-tab-active ${
                   isSelected
                     ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-xs'
                     : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -509,7 +509,9 @@ export default function MultiPollutantView({
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 1 }}
                   connectNulls={false}
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={450}
+                  animationEasing="ease-out"
                 />
               ))}
             </LineChart>
@@ -539,7 +541,7 @@ export default function MultiPollutantView({
                 key={ch.name}
                 type="button"
                 onClick={() => setSelectedChannelName(ch.name)}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between select-none ${
+                className={`p-3 rounded-2xl border text-left cursor-pointer flex flex-col justify-between select-none motion-card-interactive motion-press ${
                   isSelected
                     ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-600 shadow-xs ring-1 ring-indigo-400/50 dark:ring-indigo-600/50'
                     : 'bg-white dark:bg-zinc-900/90 border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
@@ -617,7 +619,7 @@ export default function MultiPollutantView({
           <button
             type="button"
             onClick={() => onDrillDown && onDrillDown(selectedChannel.name)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs shrink-0 group"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs shrink-0 group motion-press"
             title={`Open ${selectedChannel.name} in 24-Hour Trajectory Workspace`}
           >
             <span>Open in 24h Trajectory</span>
@@ -714,7 +716,9 @@ export default function MultiPollutantView({
                   strokeWidth={1.2} 
                   strokeDasharray="3 3" 
                   dot={false} 
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={450}
+                  animationEasing="ease-out"
                 />
 
                 {/* Observed values */}
@@ -727,7 +731,9 @@ export default function MultiPollutantView({
                   dot={{ stroke: CHANNEL_PALETTE[selectedChannel.name] || '#3B82F6', strokeWidth: 1.5, fill: isDark ? '#18181b' : '#ffffff', r: 3 }} 
                   activeDot={{ r: 5 }}
                   connectNulls={false} 
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={450}
+                  animationEasing="ease-out"
                 />
 
                 {/* Natural Missing hours */}
@@ -737,7 +743,9 @@ export default function MultiPollutantView({
                   name="Natural Missing"
                   stroke="none" 
                   dot={{ stroke: '#f59e0b', strokeWidth: 1.5, fill: 'transparent', r: 4 }} 
-                  isAnimationActive={false}
+                  isAnimationActive={true}
+                  animationDuration={450}
+                  animationEasing="ease-out"
                 />
               </LineChart>
             </ResponsiveContainer>

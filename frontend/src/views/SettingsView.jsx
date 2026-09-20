@@ -148,7 +148,7 @@ export default function SettingsView({
               key={tab.id}
               type="button"
               onClick={() => handleScrollToSection(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap text-xs ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap text-xs motion-tab-active motion-press ${
                 isActive
                   ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs border border-slate-200/80 dark:border-zinc-700 font-bold'
                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50 font-medium'
@@ -211,19 +211,19 @@ export default function SettingsView({
               <button
                 type="button"
                 onClick={theme !== 'dark' ? onToggleTheme : undefined}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 motion-card-interactive motion-press ${
                   theme === 'dark'
                     ? 'border-indigo-500/60 dark:border-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/30 ring-1 ring-indigo-500/30 shadow-2xs'
                     : 'border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:border-slate-300 dark:hover:border-zinc-700'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700/60 flex items-center justify-center text-indigo-400 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-indigo-400 shrink-0">
                     <Moon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Dark Studio (Default)</div>
-                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">Deep #050505 canvas with zinc-900 elevated surfaces</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Dark Studio</div>
+                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">Deep OLED black optimized for continuous telemetry</div>
                   </div>
                 </div>
                 <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
@@ -239,7 +239,7 @@ export default function SettingsView({
               <button
                 type="button"
                 onClick={theme !== 'light' ? onToggleTheme : undefined}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 motion-card-interactive motion-press ${
                   theme === 'light'
                     ? 'border-indigo-500/60 dark:border-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/30 ring-1 ring-indigo-500/30 shadow-2xs'
                     : 'border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40 hover:border-slate-300 dark:hover:border-zinc-700'
@@ -280,7 +280,7 @@ export default function SettingsView({
               <button
                 type="button"
                 onClick={isSidebarCollapsed ? onToggleSidebar : undefined}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer motion-tab-active motion-press ${
                   !isSidebarCollapsed
                     ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-2xs'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
@@ -291,7 +291,7 @@ export default function SettingsView({
               <button
                 type="button"
                 onClick={!isSidebarCollapsed ? onToggleSidebar : undefined}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer motion-tab-active motion-press ${
                   isSidebarCollapsed
                     ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-bold shadow-2xs'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
@@ -646,7 +646,7 @@ export default function SettingsView({
             <button
               type="button"
               onClick={handleCopyManifestHash}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-750 transition cursor-pointer shrink-0"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-750 transition cursor-pointer shrink-0 motion-press"
             >
               {copiedHash ? (
                 <span className="flex items-center gap-1.5 text-emerald-500">

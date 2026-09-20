@@ -352,7 +352,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`h-full bg-slate-50/80 dark:bg-[#050505] border-r border-slate-200/80 dark:border-zinc-800 flex flex-col transition-[width] duration-300 ease-in-out shrink-0 select-none z-30 min-h-0 relative overflow-x-hidden will-change-[width] ${
+      className={`h-full bg-slate-50/80 dark:bg-[#050505] border-r border-slate-200/80 dark:border-zinc-800 flex flex-col transition-[width] duration-emphasis ease-in-out-subtle shrink-0 select-none z-30 min-h-0 relative overflow-x-hidden will-change-[width] ${
         isCollapsed ? 'w-[60px]' : 'w-[240px]'
       }`}
     >
@@ -369,14 +369,14 @@ export default function Sidebar({
             onClick={isCollapsed ? onToggleCollapse : undefined}
             title={isCollapsed ? "Expand sidebar (Ctrl+B)" : undefined}
             aria-label={isCollapsed ? "Expand sidebar" : "Air Pollution CTDI Studio"}
-            className={`group relative w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+            className={`group relative w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors motion-press ${
               isCollapsed
                 ? 'cursor-pointer hover:bg-slate-200/60 dark:hover:bg-zinc-800'
                 : 'cursor-default'
             }`}
           >
             {/* Diamond Logo Icon */}
-            <span className={`w-7 h-7 rounded-lg bg-slate-200/70 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 flex items-center justify-center shrink-0 border border-slate-300/80 dark:border-zinc-700/80 transition-all duration-200 ${
+            <span className={`w-7 h-7 rounded-lg bg-slate-200/70 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 flex items-center justify-center shrink-0 border border-slate-300/80 dark:border-zinc-700/80 transition-all duration-fast ease-out-subtle ${
               isCollapsed ? 'group-hover:opacity-0 group-hover:scale-75' : ''
             }`}>
               <ProjectDiamondLogo className="w-[18px] h-[18px]" />
@@ -384,14 +384,14 @@ export default function Sidebar({
 
             {/* Hover Expand Icon (only active when collapsed) */}
             {isCollapsed && (
-              <span className="absolute inset-0 flex items-center justify-center text-slate-800 dark:text-zinc-100 transition-all duration-200 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 pointer-events-none">
+              <span className="absolute inset-0 flex items-center justify-center text-slate-800 dark:text-zinc-100 transition-all duration-fast ease-out-subtle opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 pointer-events-none">
                 <ExpandHeaderIcon className="w-5 h-5 text-slate-800 dark:text-zinc-100" />
               </span>
             )}
           </button>
 
           {/* Project Title (Smoothly collapses width & fades) */}
-          <div className={`flex flex-col min-w-0 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${
+          <div className={`flex flex-col min-w-0 transition-all duration-emphasis ease-in-out-subtle whitespace-nowrap overflow-hidden ${
             isCollapsed 
               ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
               : 'opacity-100 max-w-[120px] translate-x-0'
@@ -406,7 +406,7 @@ export default function Sidebar({
         </div>
 
         {/* Right Action Icons (Search & Collapse) - Smoothly collapses width & fades */}
-        <div className={`flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${
+        <div className={`flex items-center gap-0.5 shrink-0 transition-all duration-emphasis ease-in-out-subtle whitespace-nowrap overflow-hidden ${
           isCollapsed
             ? 'opacity-0 max-w-0 scale-90 pointer-events-none'
             : 'opacity-100 max-w-[80px] scale-100'
@@ -417,7 +417,7 @@ export default function Sidebar({
             title="Search dataset, stations, channels, and views (Ctrl+K)"
             aria-label="Search"
             tabIndex={isCollapsed ? -1 : 0}
-            className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition cursor-pointer motion-press"
           >
             <SearchHeaderIcon className="w-[18px] h-[18px]" />
           </button>
@@ -427,7 +427,7 @@ export default function Sidebar({
             title="Collapse sidebar (Ctrl+B)"
             aria-label="Collapse sidebar"
             tabIndex={isCollapsed ? -1 : 0}
-            className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition cursor-pointer motion-press"
           >
             <CollapseHeaderIcon className="w-[18px] h-[18px]" />
           </button>
@@ -472,7 +472,7 @@ export default function Sidebar({
                     onMouseLeave={() => isCollapsed && setHoveredTooltip(null)}
                     aria-label={item.label}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`w-full h-9 rounded-lg transition-colors duration-150 cursor-pointer flex items-center min-w-0 overflow-hidden ${
+                    className={`w-full h-9 rounded-lg transition-colors duration-fast motion-press cursor-pointer flex items-center min-w-0 overflow-hidden ${
                       isCollapsed ? 'justify-center' : ''
                     } ${
                       isActive
@@ -482,7 +482,7 @@ export default function Sidebar({
                   >
                     <div className="w-9 h-9 shrink-0 flex items-center justify-center">
                       <item.Icon 
-                        className={`w-5 h-5 shrink-0 transition-colors ${
+                        className={`w-5 h-5 shrink-0 transition-colors duration-fast ${
                           isActive
                             ? 'text-slate-900 dark:text-zinc-100'
                             : 'text-slate-500 dark:text-[#d4d4d8] group-hover:text-slate-900 dark:group-hover:text-zinc-100'
@@ -490,7 +490,7 @@ export default function Sidebar({
                       />
                     </div>
 
-                    <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${
+                    <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-emphasis ease-in-out-subtle overflow-hidden ${
                       isCollapsed
                         ? 'opacity-0 max-w-0 w-0 p-0 m-0 -translate-x-2 pointer-events-none'
                         : 'opacity-100 max-w-[160px] translate-x-0 pl-0.5'
@@ -501,7 +501,7 @@ export default function Sidebar({
 
                   {/* Accessible Floating Tooltip (Collapsed mode) */}
                   {isCollapsed && hoveredTooltip === item.label && (
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 animate-in fade-in duration-100">
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 motion-popover-enter">
                       {item.label}
                     </div>
                   )}
@@ -526,7 +526,7 @@ export default function Sidebar({
             onMouseLeave={() => isCollapsed && setHoveredTooltip(null)}
             aria-label="Settings"
             aria-current={currentTab === 'settings' ? 'page' : undefined}
-            className={`w-full h-9 rounded-lg transition-colors duration-150 cursor-pointer flex items-center min-w-0 overflow-hidden ${
+            className={`w-full h-9 rounded-lg transition-colors duration-fast motion-press cursor-pointer flex items-center min-w-0 overflow-hidden ${
               isCollapsed ? 'justify-center' : ''
             } ${
               currentTab === 'settings'
@@ -536,14 +536,14 @@ export default function Sidebar({
           >
             <div className="w-9 h-9 shrink-0 flex items-center justify-center">
               <SettingsNavIcon 
-                className={`w-5 h-5 shrink-0 transition-colors ${
+                className={`w-5 h-5 shrink-0 transition-colors duration-fast ${
                   currentTab === 'settings'
                     ? 'text-slate-900 dark:text-zinc-100'
                     : 'text-slate-500 dark:text-[#d4d4d8] group-hover:text-slate-800 dark:group-hover:text-zinc-100'
                 }`}
               />
             </div>
-            <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${
+            <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-emphasis ease-in-out-subtle overflow-hidden ${
               isCollapsed
                 ? 'opacity-0 max-w-0 w-0 p-0 m-0 -translate-x-2 pointer-events-none'
                 : 'opacity-100 max-w-[160px] translate-x-0 pl-0.5'
@@ -552,7 +552,7 @@ export default function Sidebar({
             </span>
           </button>
           {isCollapsed && hoveredTooltip === 'Settings' && (
-            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 animate-in fade-in duration-100">
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 motion-popover-enter">
               Settings
             </div>
           )}
@@ -566,14 +566,14 @@ export default function Sidebar({
             onMouseEnter={() => isCollapsed && setHoveredTooltip('Help & Shortcuts')}
             onMouseLeave={() => isCollapsed && setHoveredTooltip(null)}
             aria-label="Help & Keyboard Shortcuts"
-            className={`w-full h-9 rounded-lg transition-colors duration-150 cursor-pointer flex items-center min-w-0 text-slate-600 dark:text-[#d4d4d8] hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 overflow-hidden ${
+            className={`w-full h-9 rounded-lg transition-colors duration-fast motion-press cursor-pointer flex items-center min-w-0 text-slate-600 dark:text-[#d4d4d8] hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 overflow-hidden ${
               isCollapsed ? 'justify-center' : ''
             }`}
           >
             <div className="w-9 h-9 shrink-0 flex items-center justify-center">
-              <HelpNavIcon className="w-5 h-5 shrink-0 text-slate-500 dark:text-[#d4d4d8] group-hover:text-slate-800 dark:group-hover:text-zinc-100" />
+              <HelpNavIcon className="w-5 h-5 shrink-0 text-slate-500 dark:text-[#d4d4d8] group-hover:text-slate-800 dark:group-hover:text-zinc-100 transition-colors duration-fast" />
             </div>
-            <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${
+            <span className={`truncate text-left text-[13px] font-medium tracking-tight whitespace-nowrap transition-all duration-emphasis ease-in-out-subtle overflow-hidden ${
               isCollapsed
                 ? 'opacity-0 max-w-0 w-0 p-0 m-0 -translate-x-2 pointer-events-none'
                 : 'opacity-100 max-w-[160px] translate-x-0 pl-0.5'
@@ -582,7 +582,7 @@ export default function Sidebar({
             </span>
           </button>
           {isCollapsed && hoveredTooltip === 'Help & Shortcuts' && (
-            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 animate-in fade-in duration-100">
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-slate-900 dark:bg-zinc-800 text-white dark:text-zinc-100 text-xs font-medium whitespace-nowrap shadow-lg z-50 pointer-events-none border border-slate-700 dark:border-zinc-700 motion-popover-enter">
               Help & Shortcuts
             </div>
           )}
